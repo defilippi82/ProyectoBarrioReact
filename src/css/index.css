@@ -1,0 +1,195 @@
+.container {
+  max-width: 90%;
+  margin: 0 auto;
+  padding: 20px;
+  border-radius: 8px;
+  background-color: #3e8ac484;
+  color: #eee;
+  
+}
+
+body{
+  background-image: url("../img/ingreso.jpg");
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+h1 {
+  text-align: center;
+  margin-top:20px;
+  margin-bottom: 40px;
+  color: #fff;
+}
+.navbarbrand{
+ 
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.navlinks{
+  color:rgb(33, 238, 98);
+  font-size: medium;
+  margin-top: 2px;
+  margin-right: 5px;
+}
+.navlinks:hover{
+  color: rgb(14, 14, 3);
+}
+/*Login */
+
+.login-key{
+  margin-bottom: 40px;
+}
+
+.form-label {
+  font-weight: bold;
+}
+
+.form-control {
+  width: auto;
+  padding: 5px;
+  margin-left: 5px;
+  margin-bottom: 25px;
+  border-radius: 5px !important;
+  background-color: #aecdb4c0;
+  color: #070701;
+  
+}
+.input-group{
+  
+  max-width: 500px;
+}
+.labels{
+  width: 150px;
+}
+
+no-outline:focus {
+  outline: none !important;
+  border-color: #aecdb4c0;
+  box-shadow: none !important;
+}
+h6{
+  color: #700a46;
+  background-color: rgb(128, 13, 93);
+  align-content: center;
+}
+
+.btn-primary {
+  display: grid;
+  max-width: 100px;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #008dca;
+  color: white;
+  text-align: center;
+  cursor: pointer;
+}
+.buttons{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap:2em
+}
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.btn-link {
+  text-decoration: none;
+  color: #007bff;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}
+.btn{
+  padding: 0.5rem 2rem;
+  transition: all;
+  transition-duration: 500ms;
+}
+.btn:hover{
+  scale: 1.25;
+}
+.card{
+  box-shadow: #070701;
+  max-height: fit-content;
+  height: auto;
+  align-content: center;
+  align-items: center;
+  background-color: aqua;
+}
+.card-img-top{
+  transition: all;
+  transition-duration: 500ms;
+  
+}
+.card-img-top:hover{
+  scale: 1.20;
+}
+/* Media Queries para Responsiveness */
+
+/* Dispositivos pequeños */
+@media (max-width: 576px) {
+  .container {
+    padding: 10px;
+  }
+  .navlinks {
+    font-size: small;
+    margin-right: 2px;
+  }
+  .form-control {
+    width: 100%;
+    margin-left: 0;
+  }
+  .labels {
+    width: 100%;
+    text-align: left;
+  }
+  .buttons {
+    flex-direction: column;
+    gap: 1em;
+  }
+}
+
+/* Dispositivos medianos */
+@media (min-width: 577px) and (max-width: 768px) {
+  .container {
+    padding: 15px;
+  }
+  .navlinks {
+    font-size: medium;
+    margin-right: 5px;
+  }
+  .form-control {
+    width: 100%;
+  }
+  .labels {
+    width: 120px;
+  }
+  .buttons {
+    gap: 1.5em;
+  }
+}
+
+/* Dispositivos grandes */
+@media (min-width: 769px) {
+  .container {
+    padding: 20px;
+  }
+  .navlinks {
+    font-size: medium;
+    margin-right: 5px;
+  }
+  .form-control {
+    width: auto;
+  }
+  .labels {
+    width: 150px;
+  }
+  .buttons {
+    gap: 2em;
+  }
+}

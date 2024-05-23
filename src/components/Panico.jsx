@@ -3,10 +3,13 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 
+
 export const Panico = () => {
+  
   const [lote, setLote] = useState(''); // Ejemplo de lote, puede ser dinámico
   const [manzana, setManzana] = useState(''); // Ejemplo de manzana, puede ser dinámico
   const [telefono, setTelefono] = useState(''); // Número de teléfono de contacto
+  const [isLoading, setIsLoading] = useState(true); 
 
   useEffect(() => {
     const obtenerDatosUsuario = async () => {
@@ -32,11 +35,24 @@ export const Panico = () => {
         }
       } catch (error) {
         console.error('Error al obtener los datos del usuario:', error);
+      } finally {
+        setIsLoading(false); // Marcar que la carga ha terminado
       }
     };
+    
+// Verificar si hay un usuario autenticado antes de obtener sus datos
+const auth = getAuth();
+const user = auth.currentUser;
+if (user) {
+  obtenerDatosUsuario();
+} else {
+  setIsLoading(false);
+}
+}, []);
 
-    obtenerDatosUsuario();
-  }, []);
+  if (isLoading) {
+    return <div>Loading...</div>; // O cualquier spinner de carga que prefieras
+  }
 
   const alerta = () => {
     if ("geolocation" in navigator) {
@@ -44,7 +60,7 @@ export const Panico = () => {
         (position) => {
           const latitud = position.coords.latitude;
           const longitud = position.coords.longitude;
-          const mensaje = 'Soy del lote ${manzana}-${lote}, escucho ruidos necesito que vengan acá, ${latitud}, ${longitud}';
+          const mensaje = `Soy del lote ${lote}, en la manzana ${manzana} y escucho ruidos sospechosos por acá: ${latitud}, ${longitud}`;
           const whatsappUrl = `https://api.whatsapp.com/send?phone=${telefono}&text=${encodeURIComponent(mensaje)}`;
           window.location.href = whatsappUrl;
         },
@@ -82,16 +98,19 @@ export const Panico = () => {
     const llamadaUrl = `tel:${numeroEmergencia}`;
     window.open(llamadaUrl);
   };
+  if (isLoading) {
+    return <div>Loading...</div>; // O cualquier spinner de carga que prefieras
+  }
 
   return (
-    <main className="container-fluid">
+    <main className="container">
       <div className="container alertas">
         <div className="row justify-content-center">
           <div className="col col-12 col-sm-6 col-lg-4 gx-4">
             <div className="card">
               <img
-                src="src/img/seguridadAlerta.png"
-                height="15%"
+                src="src/img/seguridadAlerta.png "
+                height="0.5%"
                 className="card-img-top"
                 alt="imagen de la guardia"
                 onClick={alerta}
@@ -115,7 +134,7 @@ export const Panico = () => {
             <div className="card">
               <img
                 src="src/img/vecinosAlerta.png"
-                height="15%"
+                height="0.5%"
                 className="card-img-top"
                 alt="imagen de los vecinos de la isla"
                 onClick={ruidos}
@@ -139,7 +158,7 @@ export const Panico = () => {
             <div className="card">
               <img
                 src="src/img/911.png"
-                height="15%"
+                height="0.5%"
                 className="card-img-top"
                 alt="imagen de la guardia"
                 onClick={llamar911}

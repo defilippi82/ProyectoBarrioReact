@@ -61,7 +61,7 @@ export const Invitados = () => {
   };
 
   return (
-    <main className="container-fluid">
+    <main className="container">
       <form>
         <label htmlFor="nombreapellido">Nombre y Apellido</label><br />
         <input

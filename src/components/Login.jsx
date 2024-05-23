@@ -31,11 +31,7 @@ export const Login = () => {
           if (userData.contrasena === password) {
             setUserData(userData); // Actualizar userData en el contexto
             localStorage.setItem('userData', JSON.stringify(userData));
-            const storedUserData= localStorage.getItem('userData');
-            if (storedUserData) {
-              setUserData(JSON.parse(storedUserData)); // Actualizar el contexto de usuario con los datos almacenados localmente
-            }
-            // Esperar a que setUserData se complete
+            setUserData(userData);// Esperar a que setUserData se complete
               MySwal.fire({
                 title: 'Ingreso exitoso',
                 text: `¡Bienvenido, ${userData.nombre}! Realice su reserva`,
@@ -43,7 +39,8 @@ export const Login = () => {
                 showConfirmButton: true,
                 timer: 3000,
               }).then(() => {
-                navigate('/panico');
+                //window.location = '/panico';
+               navigate('/panico');
                 
               });
               

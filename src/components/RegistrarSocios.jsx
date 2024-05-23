@@ -108,7 +108,7 @@ const RolSelect = () => {
   };
 
   return (
-    <div className="elem-group form-floating mb-3">
+    <div className="container elem-group form-floating mb-3">
       <select
         name="rol"
         id="rol"

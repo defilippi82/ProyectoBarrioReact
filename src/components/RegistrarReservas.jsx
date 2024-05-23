@@ -5,13 +5,13 @@ import { db } from '../firebaseConfig/firebase';
 import {useNavigate} from "react-router-dom";
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import {UserContext } from "./UserContext";
+
 
 
 
 export const RegistrarReserva = () => {
-  const [userData, setUserData]  = useState(null);
-  //const {userData} = useContext(UserContext);
+  const [userData, setUserData]  = useState();
+  
   console.log(userData);
   const [cancha, setCancha] = useState('');
   const [fecha, setFecha] = useState('');
@@ -159,7 +159,7 @@ export const RegistrarReserva = () => {
             type="text"
             id="nombre"
             placeholder="Nombre completo"
-            value={userData.nombre}
+            value={userData ? userData.nombre : ''}
             onChange={(e) => setNombre(e.target.value)}
             required
           />
