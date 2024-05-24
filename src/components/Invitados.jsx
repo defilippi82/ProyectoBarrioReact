@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from "react-router-dom";
 
 export const Invitados = () => {
   const [formData, setFormData] = useState({
@@ -9,10 +10,25 @@ export const Invitados = () => {
     enviarCorreo: false,
   });
   const [invitados, setInvitados] = useState([]);
+  const [invitacionHtml, setInvitacionHtml] = useState('');
   const lote = "someLoteValue"; // reemplaza con el valor real
   const manzana = "someManzanaValue"; // reemplaza con el valor real
   const telefono = "someTelefonoValue"; // reemplaza con el valor real
 
+  useEffect(() => {
+    const obtenerInvitacionHtml = async () => {
+      try {
+        const respuesta = await fetch('/pages/invitacion.html');
+        const html = await respuesta.text();
+        setInvitacionHtml(html);
+      } catch (error) {
+        console.error('Error al obtener el contenido de invitacion.html:', error);
+      }
+    };
+
+    obtenerInvitacionHtml();
+  }, []);
+  
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -39,7 +55,7 @@ export const Invitados = () => {
 
     if (enviarCorreo) {
       const destinatarioCorreo = "f.defilippi@gmail.com"; // modificar correo según corresponda
-      const emailSubject = `Lista de Invitados del lote ${lote}`;
+      const emailSubject = `Lista de Invitados del lote ${userData.lote}`;
       let emailBody = `Soy del lote ${lote} y quiero autorizar para su ingreso a las siguientes personas:\n\nNombre\t\t\tD.N.I.\t\t\tPatente\n`;
       invitados.forEach(inv => {
         emailBody += `${inv.nombre}\t\t${inv.dni}\t\t${inv.patente}\n`;
@@ -54,9 +70,9 @@ export const Invitados = () => {
 
   const handleEnviarInvitacion = (e) => {
     e.preventDefault();
-    const urlInvitacion = "/public/pages/invitacion.html"; // página de la invitación
-    const msj = `Te envío la invitación para autorizar el ingreso ${urlInvitacion}`;
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msj)}`;
+    const urlInvitacion = 'https://proyecto-barrio-react.vercel.app/pages/invitacion.html'; // Reemplaza con la URL real
+    const mensaje = `Te envío la invitación para autorizar el ingreso: ${urlInvitacion}`;
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensaje)}`;
     window.open(whatsappUrl);
   };
 
