@@ -26,6 +26,14 @@ export const Panico = () => {
             setLote(userData.lote);
             setManzana(userData.manzana);
             setTelefono(userData.numerotelefono);
+
+            const usuariosCollection = collection(db, 'usuarios');
+            const usuariosSnapshot = await getDocs(usuariosCollection);
+            const usuariosMismaManzana = usuariosSnapshot.docs
+              .filter((doc) => doc.data().manzana === userData.manzana)
+              .map((doc) => doc.data().numerotelefono);
+  
+            setUsuariosMismaManzana(usuariosMismaManzana);
           } else {
             console.log('No se encontraron datos del usuario en Firestore');
           }
@@ -78,12 +86,13 @@ if (user) {
         (position) => {
           const latitud = position.coords.latitude;
           const longitud = position.coords.longitude;
-          const mensaje = `Soy del lote ${userData.lote} y escucho ruidos sospechosos por acá: ${latitud}, ${longitud}`;
-          // Número de teléfono de los contactos de la isla
-          const telefonoisla = '+54911549394232';
-          const whatsappUrl = `https://api.whatsapp.com/send?phone=${userData.numerotelefono}&text=${encodeURIComponent(mensaje)}`;
+          const mensaje = `Soy del lote ${lote} y escucho ruidos sospechosos por acá: ${latitud}, ${longitud}`;
+         // Enviar mensaje a todos los usuarios de la misma manzana
+         usuariosMismaManzana.forEach((telefono) => {
+          const whatsappUrl = `https://api.whatsapp.com/send?phone=${telefono}&text=${encodeURIComponent(mensaje)}`;
           window.open(whatsappUrl);
-        },
+        });
+      },
         (error) => {
           console.log("Error al obtener la ubicación:", error);
         }

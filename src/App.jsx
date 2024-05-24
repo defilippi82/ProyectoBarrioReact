@@ -1,5 +1,5 @@
 import { useEffect, useState, useContext} from 'react';
-import { HashRouter as Router, Routes, Route, Navigate} from "react-router-dom";
+import { HashRouter as Router, Routes, Route, Navigate, UserProvider} from "react-router-dom";
 import Container from 'react-bootstrap/Container';
 import Button from 'react-bootstrap/Button';
 import Nav from 'react-bootstrap/Nav';
@@ -44,13 +44,11 @@ export const App = () => {
     <div className="App container ">
       <Router>
         <UserProvider>
-
-      
         <header>
         <Navbar expand="lg" className="navbar-collapse ">
             <Container>
-            <Navbar.Brand className="navbarbrand" href="/#/panico">CUBE{userData && userData.nombre && (<>
-            <>¡Hola {userData.nombre}!</></>)}</Navbar.Brand>
+            <Navbar.Brand className="navbarbrand" href="/#/panico">CUBE {userData && userData.nombre && (<>
+            <>  ¡Hola {userData.nombre}!</></>)}</Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav"/>
         <Navbar.Collapse id="basic-navbar-nav">
         <Nav className="me-auto">
@@ -59,9 +57,9 @@ export const App = () => {
             <>
 
             <Nav.Link className='navlinks' href="#/panico">Inicio</Nav.Link>
+            <Nav.Link className='navlinks' href="#/reservas/create">Reservar</Nav.Link>
             <Nav.Link className='navlinks' href="#/invitados">Invitados</Nav.Link>
             <Nav.Link className='navlinks' href="#/contacto">Contacto</Nav.Link>
-            <Nav.Link className='navlinks' href="#/reservas/create">Reservar</Nav.Link>
             </>
             )}
             {userData && userData.nombre && userData.rol.administrador && (
