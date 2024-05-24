@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from "react-router-dom";
+
 
 export const Invitados = () => {
   const [formData, setFormData] = useState({
@@ -10,24 +10,10 @@ export const Invitados = () => {
     enviarCorreo: false,
   });
   const [invitados, setInvitados] = useState([]);
-  const [invitacionHtml, setInvitacionHtml] = useState('');
-  const lote = "someLoteValue"; // reemplaza con el valor real
+  /*const lote = "someLoteValue"; // reemplaza con el valor real
   const manzana = "someManzanaValue"; // reemplaza con el valor real
   const telefono = "someTelefonoValue"; // reemplaza con el valor real
-
-  useEffect(() => {
-    const obtenerInvitacionHtml = async () => {
-      try {
-        const respuesta = await fetch('/pages/invitacion.html');
-        const html = await respuesta.text();
-        setInvitacionHtml(html);
-      } catch (error) {
-        console.error('Error al obtener el contenido de invitacion.html:', error);
-      }
-    };
-
-    obtenerInvitacionHtml();
-  }, []);
+*/
   
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -77,8 +63,10 @@ export const Invitados = () => {
   };
 
   return (
-    <main className="container">
+    <main className="container justify-content-center">
       <form>
+        <div className='container'>
+
         <label htmlFor="nombreapellido">Nombre y Apellido</label><br />
         <input
           type="text"
@@ -87,7 +75,7 @@ export const Invitados = () => {
           className="input-padron"
           value={formData.nombreapellido}
           onChange={handleChange}
-        /><br />
+          /><br />
 
         <label htmlFor="dni">D.N.I.</label><br />
         <input
@@ -98,7 +86,7 @@ export const Invitados = () => {
           placeholder="XX.XXXXXX"
           value={formData.dni}
           onChange={handleChange}
-        /><br />
+          /><br />
 
         <label htmlFor="patente">Patente</label><br />
         <input
@@ -109,11 +97,11 @@ export const Invitados = () => {
           placeholder="XX-XXX-XX o XXX-XXX"
           value={formData.patente}
           onChange={handleChange}
-        /><br />
+          /><br />
 
         <label htmlFor="mensaje">Mensaje</label><br />
         <textarea
-          cols="30"
+          cols="auto"
           rows="auto"
           name="mensaje"
           id="mensaje"
@@ -121,8 +109,9 @@ export const Invitados = () => {
           placeholder="aclaraciones"
           value={formData.mensaje}
           onChange={handleChange}
-        /><br />
+          /><br />
 
+          </div>
         <section>
           <h1>Lista de invitados</h1>
           <table className="table table-dark table-striped">
@@ -145,7 +134,7 @@ export const Invitados = () => {
           </table>
         </section>
 
-        <div>
+        <div className='container content-center'>
           <input
             type="checkbox"
             id="enviarCorreo"
@@ -154,10 +143,11 @@ export const Invitados = () => {
             onChange={handleChange}
           />
           <label htmlFor="enviarCorreo">Enviar Lista de Invitados</label>
-        </div>
-
+              </div>
+              <div className='container row justify-content-center'>
         <button onClick={handleAgregar} className="btn btn-success enviar">Agregar a la lista</button>
         <button onClick={handleEnviarGuardia} className="btn btn-primary enviar">Enviar a la Guardia</button><br />
+        </div>
         <h1>Enviar invitación</h1>
         <button onClick={handleEnviarInvitacion} className="btn btn-danger enviar">Enviar Invitacion</button>
       </form>
