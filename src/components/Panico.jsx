@@ -108,7 +108,7 @@ if (user) {
           <div className="col col-12 col-sm-6 col-lg-4 gx-4">
             <div className="card">
               <img
-                src="../img/seguridadAlerta.png "
+                src="./img/seguridadAlerta.png "
                 height="0.5%"
                 className="card-img-top"
                 alt="imagen de la guardia"
@@ -132,7 +132,7 @@ if (user) {
           <div className="col col-12 col-sm-6 col-lg-4 gx-4">
             <div className="card">
               <img
-                src="../img/vecinosAlerta.png"
+                src="/img/vecinosAlerta.png"
                 height="0.5%"
                 className="card-img-top"
                 alt="imagen de los vecinos de la isla"
@@ -156,7 +156,7 @@ if (user) {
           <div className="col col-12 col-sm-6 col-lg-4 gx-4">
             <div className="card">
               <img
-                src="./src/img/911.png"
+                src="/src/img/911.png"
                 height="0.5%"
                 className="card-img-top"
                 alt="imagen de la guardia"
