@@ -59,7 +59,7 @@ if (user) {
         (position) => {
           const latitud = position.coords.latitude;
           const longitud = position.coords.longitude;
-          const mensaje = `Soy del lote ${lote}, en la manzana ${manzana} y escucho ruidos sospechosos por acá: ${latitud}, ${longitud}`;
+          const mensaje = `Soy del lote ${userData.lote}, en la manzana ${userData.manzana} y escucho ruidos sospechosos por acá: ${latitud}, ${longitud}`;
           const whatsappUrl = `https://api.whatsapp.com/send?phone=${telefono}&text=${encodeURIComponent(mensaje)}`;
           window.location.href = whatsappUrl;
         },
@@ -78,10 +78,10 @@ if (user) {
         (position) => {
           const latitud = position.coords.latitude;
           const longitud = position.coords.longitude;
-          const mensaje = `Soy del lote ${lote} y escucho ruidos sospechosos por acá: ${latitud}, ${longitud}`;
+          const mensaje = `Soy del lote ${userData.lote} y escucho ruidos sospechosos por acá: ${latitud}, ${longitud}`;
           // Número de teléfono de los contactos de la isla
           const telefonoisla = '+54911549394232';
-          const whatsappUrl = `https://api.whatsapp.com/send?phone=${telefono}&text=${encodeURIComponent(mensaje)}`;
+          const whatsappUrl = `https://api.whatsapp.com/send?phone=${userData.numerotelefono}&text=${encodeURIComponent(mensaje)}`;
           window.open(whatsappUrl);
         },
         (error) => {
@@ -108,7 +108,7 @@ if (user) {
           <div className="col col-12 col-sm-6 col-lg-4 gx-4">
             <div className="card">
               <img
-                src="./img/seguridadAlerta.png "
+                src={"/img/seguridadAlerta.png"}
                 height="0.5%"
                 className="card-img-top"
                 alt="imagen de la guardia"
@@ -156,7 +156,7 @@ if (user) {
           <div className="col col-12 col-sm-6 col-lg-4 gx-4">
             <div className="card">
               <img
-                src="/public/img/911.png"
+                src={"/img/911.png"}
                 height="0.5%"
                 className="card-img-top"
                 alt="imagen de la guardia"
