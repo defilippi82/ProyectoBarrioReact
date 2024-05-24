@@ -3,7 +3,6 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 
-
 export const Panico = () => {
   
   const [lote, setLote] = useState(''); // Ejemplo de lote, puede ser dinámico
@@ -157,7 +156,7 @@ if (user) {
           <div className="col col-12 col-sm-6 col-lg-4 gx-4">
             <div className="card">
               <img
-                src="../img/911.png"
+                src="./src/img/911.png"
                 height="0.5%"
                 className="card-img-top"
                 alt="imagen de la guardia"
