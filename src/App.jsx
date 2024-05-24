@@ -1,5 +1,5 @@
 import { useEffect, useState, useContext} from 'react';
-import { HashRouter as Router, Routes, Route, Navigate, UserProvider} from "react-router-dom";
+import { HashRouter as Router, Routes, Route, Navigate} from "react-router-dom";
 import Container from 'react-bootstrap/Container';
 import Button from 'react-bootstrap/Button';
 import Nav from 'react-bootstrap/Nav';
