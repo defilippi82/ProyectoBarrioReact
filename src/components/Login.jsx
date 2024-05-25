@@ -1,4 +1,4 @@
-import { useState,  useContext } from 'react';
+import React,{ useState,  useContext } from 'react';
 import {Link, useNavigate} from "react-router-dom";
 import {collection,getDocs,deleteDoc,doc,query,where} from "firebase/firestore";
 import {db} from "../firebaseConfig/firebase";
@@ -19,10 +19,10 @@ export const Login = () => {
   const login = async (e) => {
       e.preventDefault();
 
+      
+      try {
       const q = query(collection(db, "usuarios"), where('email', '==', email));
       const querySnapshot = await getDocs(q);
-      
-    try {
       // Query Firestore para credenciales del usuario
       if (!querySnapshot.empty) {
         querySnapshot.forEach((doc) => {

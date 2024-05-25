@@ -30,7 +30,7 @@ export const App = () => {
     if (userDataFromStorage) {
       setUserData(JSON.parse(userDataFromStorage));
     }
-  }, [userData]);
+  }, []);
   
   const handleLogout = () => {
     // Limpiar los datos de usuario al cerrar sesión
