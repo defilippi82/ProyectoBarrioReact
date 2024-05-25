@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
 
 
 export const Invitados = () => {
@@ -9,12 +10,27 @@ export const Invitados = () => {
     mensaje: '',
     enviarCorreo: false,
   });
+  const [userData, setUserData] = useState(null);
   const [invitados, setInvitados] = useState([]);
-  /*const lote = "someLoteValue"; // reemplaza con el valor real
-  const manzana = "someManzanaValue"; // reemplaza con el valor real
-  const telefono = "someTelefonoValue"; // reemplaza con el valor real
-*/
   
+   useEffect(() => {
+    const userDataFromStorage = localStorage.getItem('userData');
+
+    if (userDataFromStorage) {
+      setUserData(JSON.parse(userDataFromStorage));
+    } else {
+      // Obtener datos del usuario desde otra fuente (por ejemplo, una API o base de datos)
+      const obtenerDatosUsuario = async () => {
+        // ... (código existente para obtener datos del usuario)
+        const datosUsuario = await obtenerDatosDesdeOtraFuente();
+        setUserData(datosUsuario);
+        localStorage.setItem('userData', JSON.stringify(datosUsuario));
+      };
+
+      obtenerDatosUsuario();
+    }
+  }, []); // Matriz
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -37,19 +53,19 @@ export const Invitados = () => {
   const handleEnviarGuardia = (e) => {
     e.preventDefault();
     const { nombreapellido, dni, patente, mensaje, enviarCorreo } = formData;
-    const msj = `Soy del lote ${manzana}-${lote} y quiero autorizar para su ingreso a ${nombreapellido} D.N.I. ${dni}, patente del automóvil ${patente}. ${mensaje}`;
+    const msj = `Soy del lote ${userData.manzana}-${userData.lote} y quiero autorizar para su ingreso a ${nombreapellido} D.N.I. ${dni}, patente del automóvil ${patente}. ${mensaje}`;
 
     if (enviarCorreo) {
       const destinatarioCorreo = "f.defilippi@gmail.com"; // modificar correo según corresponda
-      const emailSubject = `Lista de Invitados del lote ${userData.lote}`;
-      let emailBody = `Soy del lote ${lote} y quiero autorizar para su ingreso a las siguientes personas:\n\nNombre\t\t\tD.N.I.\t\t\tPatente\n`;
+      const emailSubject = `Lista de Invitados del lote ${userData.manzana}-${userData.lote}`;
+      let emailBody = `Soy del lote ${userData.manzana}-${userData.lote} y quiero autorizar para su ingreso a las siguientes personas:\n\nNombre\t\t\tD.N.I.\t\t\tPatente\n`;
       invitados.forEach(inv => {
         emailBody += `${inv.nombre}\t\t${inv.dni}\t\t${inv.patente}\n`;
       });
       const emailLink = `mailto:${encodeURIComponent(destinatarioCorreo)}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
       window.location.href = emailLink;
     } else {
-      const whatsappUrl = `https://api.whatsapp.com/send?phone=${telefono}&text=${encodeURIComponent(msj)}`;
+      const whatsappUrl = `https://api.whatsapp.com/send?phone=${userData.numerotelefono}&text=${encodeURIComponent(msj)}`;
       window.location.href = whatsappUrl;
     }
   };

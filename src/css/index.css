@@ -129,6 +129,9 @@ h6{
 .card-img-top:hover{
   scale: 1.20;
 }
+.form-group, .elem-group{
+  color: #070701;
+}
 /* Media Queries para Responsiveness */
 
 /* Dispositivos pequeños */

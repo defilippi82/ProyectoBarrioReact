@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 export const Contacto = () => {
     const [nombre, setNombre] = useState('');
@@ -7,20 +7,9 @@ export const Contacto = () => {
     const [destino, setDestino] = useState('administracion');
     const [whatsapp, setWhatsapp] = useState(false);
     const [correo, setCorreo] = useState(false);
-    const [telefono, setTelefono] = useState('');
-    const [userData, setUserData] = useState(null);
+    
 
-    useEffect(() => {
-        const userDataFromStorage = localStorage.getItem('userData');
-        if (userDataFromStorage) {
-            setUserData(JSON.parse(userDataFromStorage));
-        }
-    }, []);
-
-    useEffect(() => {
-        // Lógica para obtener el teléfono (o cualquier otro dato que necesites)
-        setTelefono('<AQUÍ_PON_TU_NÚMERO_DE_TELÉFONO>');
-    }, []);
+   
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -81,7 +70,7 @@ export const Contacto = () => {
                     value={lote}
                     onChange={(e) => setLote(e.target.value)}
                     required
-                    placeholder="ej. 5-10"
+                    placeholder="ej. XX-XXX"
                 /><br />
 
                 <label htmlFor="consulta">Mensaje</label><br />

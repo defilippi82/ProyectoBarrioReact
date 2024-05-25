@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig/firebase';
@@ -25,7 +25,7 @@ export const RegistrarSocio = () => {
   const [rol, setRol] = useState(roles.get('propietario')); // Valor inicial del rol
   const [tel, setTel] = useState('');
   const [codPais, setCodPais] = useState('');
-  const [numerotelefono, setNumeroTelefono] = useState ('${codPais} + ${tel}' );
+  const [numerotelefono, setNumeroTelefono] = useState ('');
   const [contrasena, setContrasena] = useState('');
   const [repetirContrasena, setRepetirContrasena] = useState('');
  
@@ -34,7 +34,13 @@ export const RegistrarSocio = () => {
   const sociosCollection = collection(db, 'usuarios');
   const navigate = useNavigate()
 
+
   const MySwal = whitReactContent(Swal);
+
+  useEffect(() => {
+    setNumeroTelefono(`${codPais}${tel}`);
+  }, [codPais, tel]);
+
 
   const crearSocio = async (e) => {
     e.preventDefault();
@@ -63,14 +69,14 @@ export const RegistrarSocio = () => {
 
     // Agregar datos del usuario a la colección 'usuarios' en Firestore
     await addDoc(sociosCollection, {
-      nombre: nombre,
-      email: email,
-      manzana: manzana,
-      lote: lote,
-      isla: isla,
+      nombre,
+      email,
+      manzana,
+      lote,
+      isla,
       rol: rol.valor,
-      numerotelefono: '+${codPais}${tel}',
-      contrasena: contrasena
+      numerotelefono,
+      contrasena,
       
     });
 
@@ -226,7 +232,7 @@ const RolSelect = () => {
             required />
           <label for="floatingInputDisabled" htmlFor="contrasena">Contraseña</label>
         </div>
-        <div className='form-floating mb-3'>
+        <div className='elem-group form-floating mb-3'>
           <input className='form-control'
             type="password"
             id="repetirContrasena"
