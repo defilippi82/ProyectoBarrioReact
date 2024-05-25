@@ -31,7 +31,7 @@ export const Login = () => {
           if (userData.contrasena === password) {
             setUserData(userData); // Actualizar userData en el contexto
             localStorage.setItem('userData', JSON.stringify(userData));
-            setUserData(userData);// Esperar a que setUserData se complete
+            //setUserData(userData);// Esperar a que setUserData se complete
               MySwal.fire({
                 title: 'Ingreso exitoso',
                 text: `¡Bienvenido, ${userData.nombre}! Realice su reserva`,
