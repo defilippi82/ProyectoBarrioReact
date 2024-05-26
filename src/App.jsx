@@ -12,7 +12,8 @@ import { Panico } from './components/Panico';
 import {Contacto} from "./components/Contacto";
 import { UserProvider } from './components/UserContext';
 import { NavbarComponent } from './components/Navbar.jsx';
-
+import {Footer} from './components/Footer';
+import './css/App.css'
 
 
 export const App = () => {
@@ -41,7 +42,7 @@ export const App = () => {
         <header>
         <NavbarComponent handleLogout={handleLogout}/>
         </header>
-
+        <main style={{ marginBottom: '100px' }}> {/* Add some margin to avoid overlapping with the footer */}
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/panico" element={<Panico />} />
@@ -54,7 +55,9 @@ export const App = () => {
           <Route path="/socios/edit/:id" element={<EditarSocio />} />
           <Route path="/reservas/edit/:id" element={<EditarReserva />} />
           {userData ? null : <Route path="*" element={<Navigate to="/" />} />}
-      </Routes>
+        </Routes>
+        </main>
+        <Footer/>
    
         </UserProvider>
       </Router>

@@ -3,6 +3,7 @@
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  background-position-y: center;
 }
 
 .logo {
@@ -39,4 +40,24 @@
 
 .read-the-docs {
   color: #888;
+}
+/* src/App.css */
+
+.footer {
+  background-color: #3e8ac484; /* Color de fondo del footer */
+  padding: 0.1%;
+  text-align: center;
+  position: inherit;
+  bottom: 0;
+  width: 100%;
+  color: antiquewhite;
+}
+
+.footer .rodapie {
+  margin-bottom: 0.5%;
+}
+
+.footer .eslogan {
+  font-size: 14px;
+  color: #fafafa;
 }

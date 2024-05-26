@@ -1,3 +1,19 @@
+/* Global Styles */
+body {
+  background-image: url("../img/ingreso.jpg");
+  background-size: cover;
+  background-repeat: no-repeat;
+  text-align: center;
+}
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+  background-position-y: center;
+}
+
 .container {
   max-width: 90%;
   margin: 0 auto;
@@ -5,41 +21,37 @@
   border-radius: 8px;
   background-color: #3e8ac484;
   color: #eee;
-  
-}
-
-body{
-  background-image: url("../img/ingreso.jpg");
-  background-size: cover;
-  background-repeat: no-repeat;
+  text-align: center;
 }
 
 h1 {
   text-align: center;
-  margin-top:20px;
+  margin-top: 20px;
   margin-bottom: 40px;
   color: #fff;
 }
-.navbarbrand{
- 
-  width: 100%;
+
+/* Navbar Styles */
+.navbarbrand {
+  width: 90%;
   align-items: center;
   justify-content: center;
   text-align: center;
 }
 
-.navlinks{
-  color:rgb(33, 238, 98);
+.navlinks {
+  color: rgb(33, 238, 98);
   font-size: medium;
   margin-top: 2px;
   margin-right: 5px;
 }
-.navlinks:hover{
+
+.navlinks:hover {
   color: rgb(14, 14, 3);
 }
-/*Login */
 
-.login-key{
+/* Login Styles */
+.login-key {
   margin-bottom: 40px;
 }
 
@@ -55,27 +67,23 @@ h1 {
   border-radius: 5px !important;
   background-color: #aecdb4c0;
   color: #070701;
-  
 }
-.input-group{
-  
+
+.input-group {
   max-width: 500px;
 }
-.labels{
+
+.labels {
   width: 150px;
 }
 
-no-outline:focus {
+.no-outline:focus {
   outline: none !important;
   border-color: #aecdb4c0;
   box-shadow: none !important;
 }
-h6{
-  color: #700a46;
-  background-color: rgb(128, 13, 93);
-  align-content: center;
-}
 
+/* Button Styles */
 .btn-primary {
   display: grid;
   max-width: 100px;
@@ -87,12 +95,7 @@ h6{
   text-align: center;
   cursor: pointer;
 }
-.buttons{
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap:2em
-}
+
 .btn-primary:hover {
   background-color: #0056b3;
 }
@@ -105,15 +108,18 @@ h6{
 .btn-link:hover {
   text-decoration: underline;
 }
-.btn{
+
+.btn {
   padding: 0.5rem 2rem;
-  transition: all;
-  transition-duration: 500ms;
+  transition: all 500ms;
 }
-.btn:hover{
-  scale: 1.25;
+
+.btn:hover {
+  transform: scale(1.25);
 }
-.card{
+
+/* Card Styles */
+.card {
   box-shadow: #070701;
   max-height: fit-content;
   height: auto;
@@ -121,20 +127,37 @@ h6{
   align-items: center;
   background-color: aqua;
 }
-.card-img-top{
-  transition: all;
-  transition-duration: 500ms;
-  
+
+.card-img-top {
+  transition: all 500ms;
 }
-.card-img-top:hover{
-  scale: 1.20;
+
+.card-img-top:hover {
+  transform: scale(1.20);
 }
-.form-group, .elem-group{
+
+.form-group,
+.elem-group {
   color: #070701;
 }
-/* Media Queries para Responsiveness */
 
-/* Dispositivos pequeños */
+/* Animation */
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+/* Media Queries */
 @media (max-width: 576px) {
   .container {
     padding: 10px;
@@ -157,7 +180,6 @@ h6{
   }
 }
 
-/* Dispositivos medianos */
 @media (min-width: 577px) and (max-width: 768px) {
   .container {
     padding: 15px;
@@ -177,7 +199,6 @@ h6{
   }
 }
 
-/* Dispositivos grandes */
 @media (min-width: 769px) {
   .container {
     padding: 20px;
@@ -195,4 +216,24 @@ h6{
   .buttons {
     gap: 2em;
   }
+}
+
+/* Footer Styles */
+.footer {
+  background-color: #3e8ac484;
+  padding: 0.1%;
+  text-align: center;
+  position: inherit;
+  bottom: 0;
+  width: 100%;
+  color: antiquewhite;
+}
+
+.footer .rodapie {
+  margin-bottom: 0.5%;
+}
+
+.footer .eslogan {
+  font-size: 14px;
+  color: #fafafa;
 }

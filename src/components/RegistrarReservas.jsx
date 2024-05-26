@@ -166,8 +166,8 @@ export const RegistrarReserva = () => {
         <label htmlFor="floatingInputDisabled nombre">Resposnsable</label>
         </div>
         <div id="mensaje">
-        <h6>Recuerde que se puede reservar de 1 hora por vez por socio</h6><div className="float-right">
-            <h6>Se cobrará la ficha de luz despues de las 20hs.</h6>
+        <h6 style={{ backgroundColor: 'red', color: 'white', padding: '5px', borderRadius: '3px' }}>Recuerde que se puede reservar de 1 hora por vez por socio</h6><div className="float-right">
+            <h6 style={{ backgroundColor: 'red', color: 'white', padding: '5px', borderRadius: '3px' }}>Se cobrará la ficha de luz despues de las 20hs.</h6>
         </div>
     </div>
         <button type="submit" className="btn btn-primary">
