@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-
+import { Tab } from 'react-bootstrap';
+import Table from 'react-bootstrap/Table';
 
 
 export const Invitados = () => {
@@ -80,8 +81,8 @@ export const Invitados = () => {
 
   return (
     <main className="container justify-content-center">
-      <form>
-        <div className='container'>
+      <form >
+        <div className='container col col-4'>
 
         <label htmlFor="nombreapellido">Nombre y Apellido</label><br />
         <input
@@ -130,7 +131,7 @@ export const Invitados = () => {
           </div>
         <section>
           <h1>Lista de invitados</h1>
-          <table className="table table-dark table-striped">
+          <Table striped bordered hover size="sm" >
             <thead>
               <tr>
                 <th>Nombre</th>
@@ -147,10 +148,10 @@ export const Invitados = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </section>
 
-        <div className='container content-center'>
+        <div className='container col col-6'>
           <input
             type="checkbox"
             id="enviarCorreo"
@@ -160,12 +161,15 @@ export const Invitados = () => {
           />
           <label htmlFor="enviarCorreo">Enviar Lista de Invitados</label>
               </div>
-              <div className='container row justify-content-center'>
+       <div className='container col col-6 col-4'>
         <button onClick={handleAgregar} className="btn btn-success enviar">Agregar a la lista</button>
         <button onClick={handleEnviarGuardia} className="btn btn-primary enviar">Enviar a la Guardia</button><br />
         </div>
         <h1>Enviar invitación</h1>
+        <div className='container col col-6'>
+
         <button onClick={handleEnviarInvitacion} className="btn btn-danger enviar">Enviar Invitacion</button>
+        </div>
       </form>
     </main>
   );

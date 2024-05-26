@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDoc, collection, getDocs } from 'firebase/firestore';
-
+import Image from 'react-bootstrap/Image';
 export const Panico = () => {
   const [userData, setUserData] = useState(null);
   const [usuariosMismaManzana, setUsuariosMismaManzana] = useState([]);
@@ -116,14 +116,16 @@ export const Panico = () => {
     <main className="container">
       <div className="container alertas">
         <div className="row justify-content-center">
-          <div className="col col-12 col-sm-6 col-lg-4 gx-4">
+          <div className="col col-12 col-sm-4 gx-4">
             <div className="card">
-              <img
-                src={"/img/seguridadAlerta.png"}
+              <Image
+                src={"/img/seguridadAlerta.png"} 
                 height="0.5%"
                 className="card-img-top"
                 alt="imagen de la guardia"
                 onClick={alerta}
+                roundedCircle
+                fluid={true}
               />
               <div className="card-body">
                 <h5 className="card-title">ALERTA</h5>
@@ -140,15 +142,17 @@ export const Panico = () => {
             </div>
           </div>
 
-          <div className="col col-12 col-sm-6 col-lg-4 gx-4">
+          <div className="col col-12 col-sm-4 gx-4">
             <div className="card">
-              <img
+              <Image
                 src={"/img/vecinosAlerta.png"}
                 height="0.5%"
+                sizes='mg'
                 className="card-img-top"
                 alt="imagen de los vecinos de la isla"
                 onClick={ruidos}
-              />
+                roundedCircle
+                />
               <div className="card-body">
                 <h5 className="card-title">RUIDOS</h5>
                 <p className="card-text">Avisar a los vecinos de la isla</p>
@@ -157,21 +161,22 @@ export const Panico = () => {
                   value="ruidos"
                   className="btn btn-warning"
                   onClick={ruidos}
-                >
+                  >
                   RUIDOS
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="col col-12 col-sm-6 col-lg-4 gx-4">
+          <div className="col col-12 col-sm-4  gx-4">
             <div className="card">
-              <img
+              <Image
                 src={"/img/911.png"}
                 height="0.5%"
                 className="card-img-top"
                 alt="imagen de la guardia"
                 onClick={llamar911}
+                roundedCircle
               />
               <div className="card-body">
                 <h5 className="card-title">EMERGENCIA</h5>
@@ -181,7 +186,7 @@ export const Panico = () => {
                   value="ayuda"
                   className="btn btn-primary"
                   onClick={llamar911}
-                >
+                  >
                   911
                 </button>
               </div>

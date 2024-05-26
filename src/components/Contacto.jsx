@@ -46,12 +46,13 @@ export const Contacto = () => {
     };
 
     return (
-        <main className="container">
+        <main className="container col col-6">
             <a href="https://api.whatsapp.com/send?phone=+5491154939423&text=hola%20hebert" target="_blank" rel="noopener noreferrer"></a>
             <form onSubmit={handleSubmit}>
                 <br />
                 <label htmlFor="nombre">Nombre y Apellido</label><br />
                 <input
+                    cols="auto"
                     type="text"
                     id="nombre"
                     name="nombre"
@@ -63,6 +64,7 @@ export const Contacto = () => {
 
                 <label htmlFor="lote">Lote</label><br />
                 <input
+                    cols="auto"
                     type="text"
                     id="lote"
                     name="lote"
@@ -76,7 +78,7 @@ export const Contacto = () => {
                 <label htmlFor="consulta">Mensaje</label><br />
                 <textarea
                     cols="auto"
-                    rows="5"
+                    rows="2"
                     id="consulta"
                     name="consulta"
                     className="input-padron"
@@ -115,7 +117,7 @@ export const Contacto = () => {
                 />
                 <label htmlFor="correo">Consultar por correo electrónico</label><br />
 
-                <input type="submit" value="Enviar consulta" id="enviarConsulta" className="btn btn-primary" />
+                <input type="submit" value="Enviar consulta" id="enviarConsulta" className="btn btn-lg-primary"  />
             </form>
         </main>
     );
