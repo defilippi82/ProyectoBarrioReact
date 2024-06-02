@@ -61,7 +61,7 @@ export const Reservas = ()=>{
         <div className="container">
             <div className="row">
                 <div className="col">
-                    <div className="d-grid gap-2 col-6 mx-auto">
+                    <div className="row justify-content-center">
                     <Link to="/reservas/create" className="btn btn-secondary mt-2 mb-2">Crear Reserva</Link>
                     
                     </div>
