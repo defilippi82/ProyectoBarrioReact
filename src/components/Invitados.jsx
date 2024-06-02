@@ -80,9 +80,9 @@ export const Invitados = () => {
   };
 
   return (
-    <main className="container justify-content-center">
+    <main className="container">
       <form >
-        <div className='container col col-4'>
+        <div className='container justify-content-center'>
 
         <label htmlFor="nombreapellido">Nombre y Apellido</label><br />
         <input
@@ -151,7 +151,7 @@ export const Invitados = () => {
           </Table>
         </section>
 
-        <div className='container col col-6'>
+        <div className='container'>
           <input
             type="checkbox"
             id="enviarCorreo"
