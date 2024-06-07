@@ -89,7 +89,7 @@ export const Panico = () => {
           const mensaje = `Soy del lote ${userData?.lote} y escucho ruidos sospechosos por acá: ${latitud}, ${longitud}`;
           // Enviar mensaje a todos los usuarios de la misma manzana
           usuariosMismaManzana.forEach((telefono) => {
-            const whatsappUrl = `https://api.whatsapp.com/send?phone=${telefono}&text=${encodeURIComponent(mensaje)}`;
+            const whatsappUrl = `https://api.whatsapp.com/send?phone=${userData?.numerotelefono}&text=${encodeURIComponent(mensaje)}`;
             window.open(whatsappUrl);
           });
         },
