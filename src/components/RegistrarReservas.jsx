@@ -29,9 +29,10 @@ export const RegistrarReserva = () => {
     }
   }, []);
 
-  // Otros efectos que dependan de userData
-  useEffect(() => {
-    // Lógica adicional que depende de userData
+    useEffect(() => {
+    if (userData && userData.nombre) {
+      setNombre(userData.nombre);
+    }
   }, [userData]);
 
   // Definir el rango horario permitido (de 8 am a 11 pm)
@@ -71,6 +72,23 @@ export const RegistrarReserva = () => {
       });
       return;
     }
+    // Verificar si la reserva se realiza después de las 20hs
+  if (fechaReserva.getHours() >= 20) {
+    // Mostrar alerta de cobro de ficha de luz
+    const confirmacion = await MySwal.fire({
+      title: 'Aviso',
+      text: 'Se cobrará la ficha de luz por reservar después de las 20hs.',
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'Aceptar',
+      cancelButtonText: 'Cancelar',
+    });
+
+    // Si el usuario cancela, detener la creación de la reserva
+    if (confirmacion.isDismissed) {
+      return;
+    }
+  }
 
     try {
       // Agregar nueva reserva a la colección 'reservas' en Firestore
