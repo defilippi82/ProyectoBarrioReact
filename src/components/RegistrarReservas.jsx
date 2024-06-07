@@ -55,11 +55,13 @@ export const RegistrarReserva = () => {
 
   const crearReserva = async (e) => {
     e.preventDefault();
+    // Definir fechaReserva con la fecha y hora seleccionadas
+  const fechaReserva = new Date(`${fecha}T${hora}`);
 
      // Verificar disponibilidad de la cancha en la fecha y hora seleccionadas
      const q = query(reservasCollection, 
       where('cancha', '==', cancha),
-      where('fecha', '==', Timestamp.fromDate(new Date(`${fecha}T${hora}`)))
+      where('fecha', '==', Timestamp.fromDate(fechaReserva))
     );
     const querySnapshot = await getDocs(q);
 
@@ -73,6 +75,7 @@ export const RegistrarReserva = () => {
       return;
     }
     // Verificar si la reserva se realiza después de las 20hs
+    
   if (fechaReserva.getHours() >= 20) {
     // Mostrar alerta de cobro de ficha de luz
     const confirmacion = await MySwal.fire({
