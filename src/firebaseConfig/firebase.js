@@ -1,6 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import {getFirestore} from "@firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { getFirestore, collection, addDoc, onSnapshot } from "firebase/firestore";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -30,5 +31,24 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
 export const db = getFirestore(app);
+export const auth = getAuth(app);
+
+// Añadir mensaje
+
+export const addMessage = async (message) => {
+  try {
+    await addDoc(collection(db, "messages"), message);
+  } catch (error) {
+    console.error("Error adding message: ", error);
+  }
+};
+
+export const subscribeToMessages = (callback) => {
+  return onSnapshot(collection(db, "messages"), (snapshot) => {
+    const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    callback(messages);
+  });
+};
+
+

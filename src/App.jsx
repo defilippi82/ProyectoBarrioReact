@@ -10,6 +10,7 @@ import { EditarReserva } from "./components/EditarReserva";
 import { EditarSocio } from "./components/EditarSocio";
 import { Panico } from './components/Panico';
 import {Contacto} from "./components/Contacto";
+import {ChatRoom} from "./components/ChatRoom";
 import { UserProvider } from './components/UserContext';
 import { NavbarComponent } from './components/Navbar.jsx';
 import {Footer} from './components/Footer';
@@ -48,6 +49,7 @@ export const App = () => {
           <Route path="/panico" element={<Panico />} />
           <Route path="/administracion" element={<Administracion />} />
           <Route path="/invitados" element={<Invitados />} />
+          <Route path="/chatroom" element={<ChatRoom />} />
           <Route path="/contacto" element={<Contacto />} />
           <Route path="/socios/create" element={<RegistrarSocio />} />
           <Route path="/reservas" element={<Reservas />} />
