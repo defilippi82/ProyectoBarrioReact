@@ -81,7 +81,7 @@ export const Panico = () => {
       return <div>Cargando...</div>;
     }
 
-    if (typeof navigator !== 'undefined' && navigator !== null && 'geolocation' in navigator) {
+    if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const latitud = position.coords.latitude;
@@ -90,7 +90,7 @@ export const Panico = () => {
           // Enviar mensaje a todos los usuarios de la misma manzana
           usuariosMismaManzana.forEach((telefono) => {
             const whatsappUrl = `https://api.whatsapp.com/send?phone=${userData?.numerotelefono}&text=${encodeURIComponent(mensaje)}`;
-            window.open(whatsappUrl);
+            window.location.href = whatsappUrl;
           });
         },
         (error) => {
