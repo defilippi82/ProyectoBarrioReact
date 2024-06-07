@@ -87,11 +87,9 @@ export const Panico = () => {
           const latitud = position.coords.latitude;
           const longitud = position.coords.longitude;
           const mensaje = `Soy del lote ${userData?.lote} y escucho ruidos sospechosos por acá: ${latitud}, ${longitud}`;
-          // Enviar mensaje a todos los usuarios de la misma manzana
-          usuariosMismaManzana.forEach((telefono) => {
-            const whatsappUrl = `https://api.whatsapp.com/send?phone=${userData?.numerotelefono}&text=${encodeURIComponent(mensaje)}`;
+         const whatsappUrl = `https://api.whatsapp.com/send?phone=${userData?.numerotelefono}&text=${encodeURIComponent(mensaje)}`;
             window.location.href = whatsappUrl;
-          });
+          
         },
         (error) => {
           console.log('Error al obtener la ubicación:', error);
