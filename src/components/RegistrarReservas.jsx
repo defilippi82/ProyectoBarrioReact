@@ -109,7 +109,7 @@ export const RegistrarReserva = () => {
   
  
   return (
-    <div className="container">
+    <div className="container fluid">
       <div className='card text-bg-primary mb-3 shadow-lg style="max-width: 18rem;'>
         <h1 className='card-header'>Registrar Nueva Reserva</h1>
       </div>

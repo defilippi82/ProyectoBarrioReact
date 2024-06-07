@@ -5,7 +5,20 @@ body {
   background-repeat: no-repeat;
   text-align: center;
 }
+.navbar-collapse {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
 
+.navbar-collapse strong {
+  margin-right: 10px;
+}
+
+.navbar-collapse em {
+  font-style: normal;
+  color: #007bff; /* Color azul para destacar el nombre del usuario */
+}
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -32,7 +45,7 @@ h1 {
 }
 
 /* Navbar Styles */
-.navbarbrand {
+.navbar-collapse {
   width: 90%;
   align-items: center;
   justify-content: center;
@@ -179,7 +192,15 @@ h1 {
     gap: 1em;
   }
 }
+@media (max-width: 768px) {
+  .navbar-brand {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 
+  .navbar-brand strong {
+    margin-bottom: 5px;
+  }
 @media (min-width: 577px) and (max-width: 768px) {
   .container {
     padding: 15px;
@@ -203,7 +224,7 @@ h1 {
   .container {
     padding: 20px;
   }
-  .navlinks {
+  .Nav.Links {
     font-size: medium;
     margin-right: 5px;
   }
@@ -236,4 +257,5 @@ h1 {
 .footer .eslogan {
   font-size: 14px;
   color: #fafafa;
+}
 }

@@ -73,16 +73,16 @@ export const Invitados = () => {
 
   const handleEnviarInvitacion = (e) => {
     e.preventDefault();
-    const urlInvitacion = 'https://proyecto-barrio-react.vercel.app/pages/invitacion.html'; // Reemplaza con la URL real
+    const urlInvitacion = 'https://defilippi82.github.io/SOS/invitacion.html'; // Reemplaza con la URL real
     const mensaje = `Te envío la invitación para autorizar el ingreso: ${urlInvitacion}`;
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensaje)}`;
     window.open(whatsappUrl);
   };
 
   return (
-    <main className="container">
+    <main className="container fluid">
       <form >
-        <div className='container justify-content-center'>
+        <div className='container fluid justify-content-center'>
 
         <label htmlFor="nombreapellido">Nombre y Apellido</label><br />
         <input
@@ -151,7 +151,7 @@ export const Invitados = () => {
           </Table>
         </section>
 
-        <div className='container'>
+        <div className='container fluid'>
           <input
             type="checkbox"
             id="enviarCorreo"
@@ -161,12 +161,12 @@ export const Invitados = () => {
           />
           <label htmlFor="enviarCorreo">Enviar Lista de Invitados</label>
               </div>
-       <div className='container col col-6 col-4'>
+       <div className='container fluid col col-6 col-4'>
         <button onClick={handleAgregar} className="btn btn-success enviar">Agregar a la lista</button>
         <button onClick={handleEnviarGuardia} className="btn btn-primary enviar">Enviar a la Guardia</button><br />
         </div>
         <h1>Enviar invitación</h1>
-        <div className='container col col-6'>
+        <div className='container fluid col col-6'>
 
         <button onClick={handleEnviarInvitacion} className="btn btn-danger enviar">Enviar Invitacion</button>
         </div>

@@ -39,12 +39,33 @@
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
 		<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js" integrity="<KEY>" crossorigin="anonymous"></script>
 			<script >
-				function invitar() {
-    var urlInvitacion = "https://defilippi82.github.io/SOS/invitacion.html"; //pagina de la invitacion
-    var msj = "Te envío la invitación para autorizar el ingreso " + urlInvitacion;
-    var whatsappUrl = "https://api.whatsapp.com/send?text=" + encodeURIComponent(msj);
+				function invitacion() {
 
-    window.open(whatsappUrl);}
+const nombreapellido = document.getElementById('nombreapellido').value;
+const dni = document.getElementById('dni').value;
+const patente = document.getElementById('patente').value;
+if (!nombreapellido || !dni || !patente) {
+	alert('Por favor complete todos los campos.');
+	return;
+}
+const lote = "<%= lote %>";
+const manzana = "<%= manzana %>"; // de base de datos "manzana + terreno"
+var msj = `Soy del lote ${manzana}-${lote} y quiero autorizar para su ingreso a ${nombreapellido} D.N.I. ${dni}, patente del automóvil ${patente}. ${mensaje}`;
+const telefono = "+5491154939423"; // Reemplazar con el número de teléfono del propietario para que lo reenvie a la guardia ;
+
+var whatsappUrl = "https://api.whatsapp.com/send?phone=" + telefono + "&text=" + encodeURIComponent(msj);
+window.location.href = whatsappUrl;
+setTimeout(function () {
+	window.close();
+}, 2000);
+const nombreapellidoInput = document.getElementById('nombreapellido');
+document.getElementById('nombreapellido').value = "";
+document.getElementById('dni').value = "";
+document.getElementById('patente').value = "";
+documente.getElementById('mensaje').value = "";
+nombreapellidoInput.focus();
+
+}
 			</script>
   </body>
     </body>

@@ -12,7 +12,7 @@ export const NavbarComponent = ({ handleLogout }) => {
     <Navbar expand="m" className="navbar-collapse ">
       <Container fluid>
         <Navbar.Brand href="/#/panico">
-          <strong>CUBE ||</strong> {userData && userData.nombre && <> ¡Hola <em>{userData.nombre}!</em> </>}
+          <strong>SafeNeighborhood App ||</strong> {userData && userData.nombre && <> ¡Hola <em>{userData.nombre}!</em> </>}
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">

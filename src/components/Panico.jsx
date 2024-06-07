@@ -113,7 +113,7 @@ export const Panico = () => {
   }
 
   return (
-    <main className="container">
+    <main className="container fluid">
       <div className="container alertas">
         <div className="row justify-content-center">
           <div className="col col-12 col-sm-4 gx-4">

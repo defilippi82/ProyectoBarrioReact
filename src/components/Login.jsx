@@ -68,7 +68,7 @@ export const Login = () => {
     }
   };
     return (
-      <div className="container">
+      <div className="container fluid">
         <div>
           <h1>Ingreso de Socios / Inquilinos</h1>
         </div>
