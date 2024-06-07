@@ -34,7 +34,7 @@ Para comenzar a utilizar SafeNeighborhood, sigue estos pasos:
 3. Explora las funcionalidades disponibles y contribuye a la seguridad y gestión de tu comunidad.
 
 ## Soporte
-Si necesitas ayuda o tienes alguna pregunta, no dudes en contactar a nuestro equipo de soporte a través de soporte@saferneighborhood.com.
+Si necesitas ayuda o tienes alguna pregunta, no dudes en contactar a nuestro equipo de soporte a través de f.defilippi@gmail.com
 
 ## Contribuir
 Para contribuir al proyecto, por favor envía un pull request o abre un issue en nuestro repositorio de GitHub.
