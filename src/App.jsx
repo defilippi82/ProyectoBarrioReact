@@ -11,6 +11,7 @@ import { EditarSocio } from "./components/EditarSocio";
 import { Panico } from './components/Panico';
 import {Contacto} from "./components/Contacto";
 import {Novedades} from "./components/Novedades";
+import {Mensajeria} from "./components/Mensajeria";
 import {Privacidad} from "./components/Privacidad";
 import {ChatRoom} from "./components/ChatRoom";
 import { UserProvider } from './components/UserContext';
@@ -53,6 +54,7 @@ export const App = () => {
           <Route path="/invitados" element={<Invitados />} />
           <Route path="/chatroom" element={<ChatRoom />} />
           <Route path="/novedades" element={<Novedades />} />
+          <Route path="/mensajeria" element={<Mensajeria />} />
           <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/contacto" element={<Contacto />} />
           <Route path="/socios/create" element={<RegistrarSocio />} />

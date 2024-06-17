@@ -104,6 +104,7 @@ export const Administracion = ()=>{
                         <thead>
                             <tr>
                                 <td>Nombre</td>
+                                <td>Apellido</td>
                                 <td>Email</td>
                                 <td>Contraseña</td>
                                 <td>Acciones</td>
@@ -113,6 +114,7 @@ export const Administracion = ()=>{
                             {socios.map((socio) => (
                             <tr key={socio.id}>
                                 <td>{socio.nombre}</td>
+                                <td>{socio.apellido}</td>
                                 <td>{socio.email}</td>
                                 <td>{socio.contrasena}</td>
                                 <td>
@@ -145,7 +147,7 @@ export const Administracion = ()=>{
                         <tbody>
                             {reservas.map((reserva) => (
                             <tr key={reserva.id}>
-                                <td>{reserva.nombre}</td>
+                                <td>{reserva.apellido}</td>
                                 <td>{reserva.fecha}</td>
                                 <td>{reserva.cancha}</td>
                                 <td>
