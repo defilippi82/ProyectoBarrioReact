@@ -23,14 +23,15 @@ import './css/App.css'
 export const App = () => {
   
   const [userData, setUserData]  = useState(null);
-  
+
+    
   useEffect(() => {
     const userDataFromStorage = localStorage.getItem('userData');
     if (userDataFromStorage) {
       setUserData(JSON.parse(userDataFromStorage));
     }
   }, []);
-  
+
   const handleLogout = () => {
     // Limpiar los datos de usuario al cerrar sesión
     localStorage.removeItem('userData');

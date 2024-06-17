@@ -34,21 +34,4 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 
-// Añadir mensaje
-
-export const addMessage = async (message) => {
-  try {
-    await addDoc(collection(db, "messages"), message);
-  } catch (error) {
-    console.error("Error adding message: ", error);
-  }
-};
-
-export const subscribeToMessages = (callback) => {
-  return onSnapshot(collection(db, "messages"), (snapshot) => {
-    const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    callback(messages);
-  });
-};
-
 

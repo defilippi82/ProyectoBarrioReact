@@ -33,8 +33,15 @@ export const NavbarComponent = ({ handleLogout }) => {
     <Navbar expand="m" className="navbar-collapse">
       <Container fluid>
         <Navbar.Brand href="/#/panico">
-          <strong>SafeNeighborhood App ||</strong> {userData && userData.nombre && <> ¡Hola <em>{userData.nombre}!</em> </>}
+          <strong>SafeNeighborhood App ||</strong> <Nav.Link className="navlinks" href="#/mensajeria">
+                  <FontAwesomeIcon icon={faEnvelope} />
+                  {newMessages > 0 && (
+                    <span className="badge bg-danger text-white ms-1">{newMessages}</span>
+                  )}
+                </Nav.Link>
         </Navbar.Brand>
+        {userData && userData.nombre && <> ¡Hola <em>{userData.nombre}!</em> </>}
+        
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto" variant="underline" defaultActiveKey="#/panico">
@@ -49,12 +56,7 @@ export const NavbarComponent = ({ handleLogout }) => {
                 <Nav.Link className="navlinks" href="#/invitados">
                   Invitados
                 </Nav.Link>
-                <Nav.Link className="navlinks" href="#/mensajeria">
-                  <FontAwesomeIcon icon={faEnvelope} />
-                  {newMessages > 0 && (
-                    <span className="badge bg-danger text-white ms-1">{newMessages}</span>
-                  )}
-                </Nav.Link>
+                
                 <Nav.Link className="navlinks" href="#/novedades">
                   Novedades
                 </Nav.Link>

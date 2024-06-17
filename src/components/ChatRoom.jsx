@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { addMessage } from "../firebaseConfig/firebase"; // Solo necesitamos la función addMessage
+
 import { signOut } from "firebase/auth";
 import { useUser } from "../components/UserContext";  
 

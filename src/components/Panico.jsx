@@ -1,14 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, collection, getDocs, query, where, addDoc } from 'firebase/firestore';
 import Image from 'react-bootstrap/Image';
-export const Panico = () => {
-  const [userData, setUserData] = useState(null);
-  const [usuariosMismaManzana, setUsuariosMismaManzana] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+import {UserContext} from "./UserContext";
 
+export const Panico = () => {
+  const { userData } = useContext(UserContext);
+  
+  const [isLoading, setIsLoading] = useState(true);
+  
   useEffect(() => {
-    const obtenerDatosUsuario = async () => {
+    setIsLoading(false); // Simular carga inicial, puedes ajustarlo según tu lógica real
+  }, []);
+    /*const obtenerDatosUsuario = async () => {
       try {
         const auth = getAuth();
         const user = auth.currentUser;
@@ -21,15 +25,6 @@ export const Panico = () => {
           if (usuarioDocSnap.exists()) {
             const userData = usuarioDocSnap.data();
             setUserData(userData);
-
-            // Obtener todos los usuarios de la misma manzana
-            const usuariosCollection = collection(db, 'usuarios');
-            const usuariosSnapshot = await getDocs(usuariosCollection);
-            const usuariosMismaManzana = usuariosSnapshot.docs
-              .filter((doc) => doc.data().manzana === userData.manzana)
-              .map((doc) => doc.data().numerotelefono);
-
-            setUsuariosMismaManzana(usuariosMismaManzana);
           } else {
             console.log('No se encontraron datos del usuario en Firestore');
           }
@@ -43,40 +38,43 @@ export const Panico = () => {
       }
     };
 
-    // Verificar si hay un usuario autenticado antes de obtener sus datos
-    const auth = getAuth();
-    const user = auth.currentUser;
-    if (user) {
-      obtenerDatosUsuario();
-    } else {
-      setIsLoading(false);
-    }
-  }, []);
+    obtenerDatosUsuario();
+  }, []);*/
 
-  const alerta = () => {
-    if (isLoading) {
-      return <div>Cargando...</div>;
-    }
+  
+  const ruidos = async () => {
+    try {
+      if (!userData || !userData.manzana || !userData.lote) {
+        console.error("El usuario no tiene asignada una manzana o userData es null.");
+        return;
+      }
 
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const latitud = position.coords.latitude;
-          const longitud = position.coords.longitude;
-          const mensaje = `Soy del lote ${userData?.lote}, en la manzana ${userData?.manzana} y escucho ruidos sospechosos por acá: ${latitud}, ${longitud}`;
-          const whatsappUrl = `https://api.whatsapp.com/send?phone=${userData?.numerotelefono}&text=${encodeURIComponent(mensaje)}`;
-          window.location.href = whatsappUrl;
-        },
-        (error) => {
-          console.log('Error al obtener la ubicación:', error);
-        }
+      const db = getFirestore();
+      const q = query(
+        collection(db, 'usuarios'),
+        where('manzana', '==', userData.manzana)
       );
-    } else {
-      console.log('Geolocalización no es compatible con este navegador.');
+
+      const querySnapshot = await getDocs(q);
+      const usersInSameManzana = querySnapshot.docs.map(doc => doc.data());
+
+      const messagePromises = usersInSameManzana.map(user => {
+        return addDoc(collection(db, 'mensajes'), {
+          sender: userData.nombre,
+          receiver: user.nombre,
+          content: `Soy del lote ${userData.manzana}-${userData.lote} y escucho ruidos sospechosos por mi lote`,
+          timestamp: new Date(),
+          read: false
+        });
+      });
+
+      await Promise.all(messagePromises);
+      console.log('Mensajes enviados a todos los usuarios en la misma manzana');
+    } catch (error) {
+      console.error("Error enviando mensajes: ", error);
     }
   };
-
-  const ruidos = () => {
+ /* const ruidos = () => {
     if (isLoading) {
       return <div>Cargando...</div>;
     }
@@ -98,7 +96,7 @@ export const Panico = () => {
     } else {
       console.log('Geolocalización no es compatible con este navegador.');
     }
-  };
+  };*/
 
   const llamar911 = () => {
     const numeroEmergencia = '911';
@@ -109,7 +107,29 @@ export const Panico = () => {
   if (isLoading) {
     return <div>Cargando...</div>;
   }
+  
+  const alerta = () => {
+  if (isLoading) {
+    return <div>Cargando...</div>;
+    }
 
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const latitud = position.coords.latitude;
+          const longitud = position.coords.longitude;
+          const mensaje = `Soy del lote ${userData?.lote}, en la manzana ${userData?.manzana} y escucho ruidos sospechosos por acá: ${latitud}, ${longitud}`;
+          const whatsappUrl = `https://api.whatsapp.com/send?phone=${userData?.numerotelefono}&text=${encodeURIComponent(mensaje)}`;
+          window.location.href = whatsappUrl;
+        },
+        (error) => {
+          console.log('Error al obtener la ubicación:', error);
+        }
+      );
+    } else {
+      console.log('Geolocalización no es compatible con este navegador.');
+    }
+  };
   return (
     <main className="container fluid">
       <div className="container alertas">
