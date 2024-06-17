@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
-import { db } from '../../firebaseConfig/firebase';
-import { UserContext } from '../../Services/UserContext';
+import { db } from './firebaseConfig/firebase';
+import { UserContext } from './UserContext';
 import Card from 'react-bootstrap/Card';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
