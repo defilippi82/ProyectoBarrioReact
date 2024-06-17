@@ -40,7 +40,7 @@ export const EditarReserva = () => {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setCancha(data.cancha);
-          setNombre(data.nombre);
+          setApellido(data.apellido);
           // Separar la fecha y la hora de la reserva existente
           const fechaHora = data.fecha.toDate();
           setFecha(fechaHora.toISOString().split('T')[0]);
@@ -131,16 +131,17 @@ export const EditarReserva = () => {
           </select>
         </div>
         <div>
-          <label htmlFor="nombre">Nombre</label>
+          <label htmlFor="apellido">Apellido</label>
           <input
             type="text"
             id="nombre"
             placeholder="Nombre completo"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
+            value={apellido}
+            onChange={(e) => setApellido(e.target.value)}
             required
           />
         </div>
+
         <button type="submit" className="btn btn-primary">
           Guardar Cambios
         </button>

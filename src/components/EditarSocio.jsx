@@ -12,6 +12,7 @@ export const EditarSocio = () => {
     const {id} = useParams();
     const [socio, setSocio] = useState({
         nombre: "",
+        apellido: "",
         email: "",
         contrasena: "",
         administrador: "",
@@ -112,6 +113,10 @@ export const EditarSocio = () => {
                 <div className="form-group">
                     <label htmlFor="nombre">Nombre</label>
                     <input type="text" className="form-control" id="nombre" name="nombre" value={socio.nombre} onChange={actualizarSocio} required />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="apellido">Apellido</label>
+                    <input type="text" className="form-control" id="apellido" name="apellido" value={socio.apellido} onChange={actualizarSocio} required />
                 </div>
                 <div className="form-group">
                     <label htmlFor="email">Email</label>

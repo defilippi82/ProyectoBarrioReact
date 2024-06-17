@@ -16,7 +16,7 @@ export const RegistrarReserva = () => {
   const [cancha, setCancha] = useState('');
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState('');
-  const [nombre, setNombre] = useState(userData ? userData.nombre : '');
+  const [apellido, setApellido] = useState(userData ? userData.apellido : '');
 
   const reservasCollection = collection(db, 'reservas');
   const navigate = useNavigate();
@@ -31,7 +31,7 @@ export const RegistrarReserva = () => {
 
     useEffect(() => {
     if (userData && userData.nombre) {
-      setNombre(userData.nombre);
+      setNombre(userData.apellido);
     }
   }, [userData]);
 
@@ -178,9 +178,9 @@ export const RegistrarReserva = () => {
         <div className='form-floating mb-3'>
           <input className='form-control'
             type="text"
-            id="nombre"
+            id="apellido"
             placeholder="Nombre completo"
-            value={userData ? userData.nombre : ''}
+            value={userData ? userData.apellido : ''}
             onChange={(e) => setNombre(e.target.value)}
             required
           />

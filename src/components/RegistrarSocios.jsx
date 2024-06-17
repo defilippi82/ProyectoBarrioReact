@@ -13,6 +13,7 @@ const MySwal = whitReactContent(Swal)
 
 export const RegistrarSocio = () => {
   const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
   const [email, setEmail] = useState('');
   const [manzana, setManzana] = useState('');
   const [lote, setLote] = useState('');
@@ -70,6 +71,7 @@ export const RegistrarSocio = () => {
     // Agregar datos del usuario a la colección 'usuarios' en Firestore
     await addDoc(sociosCollection, {
       nombre,
+      apellido,
       email,
       manzana,
       lote,
@@ -93,6 +95,7 @@ export const RegistrarSocio = () => {
     
     // Resetear los campos del formulario
     setNombre('');
+    setApellido('');
     setEmail('');
     setContrasena('');
   } catch (error) {
@@ -146,11 +149,24 @@ const RolSelect = () => {
           <input className='form-control'
             type="text"
             id="nombre"
-            placeholder="Nombre completo"
+            placeholder="Nombre"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
             required />
-          <label for="floatingInputDisabled" htmlFor="nombre">Nombre y Apellido</label>
+          <label for="floatingInputDisabled" htmlFor="nombre">Nombre</label>
+         </div>
+        </div>
+        <div className="elem-group">
+         <div className='form-floating mb-3'>
+
+          <input className='form-control'
+            type="text"
+            id="apellido"
+            placeholder="Apellido"
+            value={apellido}
+            onChange={(e) => setApellido(e.target.value)}
+            required />
+          <label for="floatingInputDisabled" htmlFor="apellido">Apellido</label>
          </div>
         </div>
         <div className="elem-group">

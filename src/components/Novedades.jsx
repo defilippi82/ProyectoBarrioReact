@@ -34,7 +34,7 @@ export const Novedades = () => {
         
         if (newNovedad.trim() === '') return;
         const newEntry = {
-            operador: userData.nombre,
+            socio: userData.nombre,
             fecha: formattedDate,
             novedad: newNovedad,
             imagen: newImage,
@@ -114,10 +114,10 @@ export const Novedades = () => {
         }
     };
 
-    const handleContact = (operador) => {
+    const handleContact = (socio) => {
         MySwal.fire({
-            title: 'Contactar Operador',
-            text: `Puedes contactar a ${operador} a través del sistema de mensajería interno.`,
+            title: 'Contactar Socio',
+            text: `Puedes contactar a ${socio} a través del sistema de mensajería interno.`,
             icon: 'info',
             confirmButtonText: 'Entendido'
         });
@@ -127,18 +127,18 @@ export const Novedades = () => {
         <div className="container mt-4">
             <h2>Novedades / Pendientes</h2>
             <div className="d-flex flex-wrap">
-                {novedades.map(({ id, operador, fecha, novedad, imagen, likes }) => (
+                {novedades.map(({ id, socio, fecha, novedad, imagen, likes }) => (
                     <Card key={id} style={{ width: '18rem', margin: '10px' }}>
                         {imagen && <Card.Img variant="top" src={imagen} />}
                         <Card.Body>
-                            <Card.Title>{operador}</Card.Title>
+                            <Card.Title>{socio}</Card.Title>
                             <Card.Subtitle className="mb-2 text-muted">{fecha}</Card.Subtitle>
                             <Card.Text>{novedad}</Card.Text>
                             <Button variant="primary" onClick={() => handleLike(id, likes)}>Like ({likes})</Button>
                             {' '}
-                            <Button variant="info" onClick={() => handleContact(operador)}>Contactar</Button>
+                            <Button variant="info" onClick={() => handleContact(socio)}>Contactar</Button>
                             {' '}
-                            {userData.nombre === operador && <Button variant="warning" onClick={() => handleEditNovedad(id, novedad)}>Editar</Button>}
+                            {userData.nombre === socio && <Button variant="warning" onClick={() => handleEditNovedad(id, novedad)}>Editar</Button>}
                             {' '}
                             <Button variant="danger" onClick={() => handleDeleteNovedad(id)}>Borrar</Button>
                         </Card.Body>
