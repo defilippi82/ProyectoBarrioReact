@@ -6,7 +6,8 @@ import Navbar from 'react-bootstrap/Navbar';
 import { UserContext } from './UserContext';
 import { db } from '../firebaseConfig/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
 
 export const NavbarComponent = ({ handleLogout }) => {
   const { userData } = useContext(UserContext);
