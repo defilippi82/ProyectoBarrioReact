@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '../firebaseConfig/firebase';
-import { UserContext } from './UserContext';
+import { db } from '/src/firebaseConfig/firebase.js';
+import { UserContext } from '../Services/UserContext';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import ListGroup from 'react-bootstrap/ListGroup';
@@ -30,15 +30,29 @@ export const Mensajeria = () => {
 
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
           const messagesData = [];
-          querySnapshot.forEach(async (doc) => {
-            messagesData.push({ id: doc.id, ...doc.data() });
+          let newUnreadMessage = false;
+          let newAlertMessage = false;
 
-            // Marcar mensaje como leído
-            if (!doc.data().read) {
+          querySnapshot.forEach(async (doc) => {
+            const data = doc.data();
+            messagesData.push({ id: doc.id, ...data });
+
+            // Detectar si hay un mensaje no leído
+            if (!data.read) {
+              newUnreadMessage = true;
+              if (data.source === 'alerta') {
+                newAlertMessage = true;
+              }
               await updateDoc(doc.ref, { read: true });
             }
           });
           setMessages(messagesData);
+          // Reproducir sonido si hay un nuevo mensaje no leído
+          if (newUnreadMessage) {
+            const audioSrc = newAlertMessage ?'/public/Sound/siren.mp3': '/public/Sound/mensaje.mp3'; // Ajusta la ruta según la ubicación de tu archivo de sonido
+            const audio = new Audio(audioSrc);
+            audio.play();
+          }
         });
 
         return () => unsubscribe();

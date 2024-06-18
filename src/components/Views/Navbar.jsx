@@ -3,8 +3,8 @@ import Container from 'react-bootstrap/Container';
 import Button from 'react-bootstrap/Button';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
-import { UserContext } from './UserContext';
-import { db } from '../firebaseConfig/firebase';
+import { UserContext } from '../Services/UserContext';
+import { db } from '/src/firebaseConfig/firebase.js';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
@@ -33,15 +33,16 @@ export const NavbarComponent = ({ handleLogout }) => {
     <Navbar expand="m" className="navbar-collapse">
       <Container fluid>
         <Navbar.Brand href="/#/panico">
-          <strong>SafeNeighborhood App ||</strong> <Nav.Link className="navlinks" href="#/mensajeria">
+          <strong>SafeNeighborhood App ||</strong> 
+        </Navbar.Brand >
+        <div className="d-flex align-items">
+        {userData && userData.nombre && <span  className="me-3 text-black"> ¡Hola <em>{userData.nombre}!</em> </span>}<Nav.Link className="navlinks" href="#/mensajeria">
                   <FontAwesomeIcon icon={faEnvelope} />
                   {newMessages > 0 && (
                     <span className="badge bg-danger text-white ms-1">{newMessages}</span>
                   )}
                 </Nav.Link>
-        </Navbar.Brand>
-        {userData && userData.nombre && <> ¡Hola <em>{userData.nombre}!</em> </>}
-        
+        </div>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto" variant="underline" defaultActiveKey="#/panico">

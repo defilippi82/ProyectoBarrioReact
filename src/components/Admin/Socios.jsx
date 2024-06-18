@@ -1,7 +1,7 @@
 import {useState,useEffect} from "react";
 import {Link} from "react-router-dom";
 import {collection,getDocs,deleteDoc,doc} from "firebase/firestore";
-import {db} from "../firebaseConfig/firebase";
+import {db} from "../../firebaseConfig/firebase";
 
 
 /* SWEET ALERT*/

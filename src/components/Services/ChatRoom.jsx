@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 
 import { signOut } from "firebase/auth";
-import { useUser } from "../components/UserContext";  
+import { useUser } from "../Services/UserContext";  
 
 export const ChatRoom = () => {
   const [messages, setMessages] = useState([]);

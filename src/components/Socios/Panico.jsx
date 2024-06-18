@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDoc, collection, getDocs, query, where, addDoc } from 'firebase/firestore';
 import Image from 'react-bootstrap/Image';
-import {UserContext} from "./UserContext";
+import {UserContext} from "../Services/UserContext";
 
 export const Panico = () => {
   const { userData } = useContext(UserContext);
@@ -64,7 +64,8 @@ export const Panico = () => {
           receiver: user.nombre,
           content: `Soy del lote ${userData.manzana}-${userData.lote} y escucho ruidos sospechosos por mi lote`,
           timestamp: new Date(),
-          read: false
+          read: false,
+          source: 'alerta'
         });
       });
 
@@ -74,27 +75,69 @@ export const Panico = () => {
       console.error("Error enviando mensajes: ", error);
     }
   };
-  const llamar911 = () => {
-    const numeroEmergencia = '911';
-    const llamadaUrl = `tel:${numeroEmergencia}`;
-    window.open(llamadaUrl);
-  };
-
-  if (isLoading) {
-    return <div>Cargando...</div>;
-  }
   
-  const alerta = () => {
+  const alerta = async() => {
   if (isLoading) {
     return <div>Cargando...</div>;
     }
+    if (!userData || !userData.manzana || !userData.isla) {
+      console.error("El usuario no tiene asignada una isla o userData es null.");
+      return;
+    }
+    try{
 
+    const db = getFirestore();
+    // Consultar usuarios de la misma isla
+    const usuariosIslaQuery = query(
+      collection(db, 'usuarios'),
+      where('isla', '==', userData.isla)
+    );
+
+    const usuariosGuardiaQuery = query(
+      collection(db, 'usuarios'),
+      where('rol', '==', 'guardia')
+    );
+    const [usuariosIslaSnapshot, usuariosGuardiaSnapshot] = await Promise.all([
+      getDocs(usuariosIslaQuery),
+      getDocs(usuariosGuardiaQuery)
+    ]);
+
+    const usuariosIsla = usuariosIslaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const usuariosGuardia = usuariosGuardiaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // Unificar ambos conjuntos de usuarios, evitando duplicados
+    const usuariosCombinados = [...usuariosIsla];
+    usuariosGuardia.forEach(guardia => {
+      if (!usuariosIsla.some(user => user.id === guardia.id)) {
+        usuariosCombinados.push(guardia);
+      }
+    });
+
+    const messagePromises = usuariosCombinados.map(user => {
+      return addDoc(collection(db, 'mensajes'), {
+        sender: userData.nombre,
+        receiver: user.nombre,
+        content: `Soy del lote ${userData.manzana}-${userData.lote} y necesito ayuda por mi lote`,
+        timestamp: new Date(),
+        read: false,
+        source: 'alerta'
+      });
+    });
+
+    await Promise.all(messagePromises);
+    console.log('Mensajes enviados a todos los usuarios en la misma isla y a la guardia');
+  } catch (error) {
+    console.error("Error enviando mensajes: ", error);
+  }
+
+
+    /* ENVIAR MENSAJE POR WHATSAPP
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const latitud = position.coords.latitude;
           const longitud = position.coords.longitude;
-          const mensaje = `Soy del lote ${userData?.lote}, en la manzana ${userData?.manzana} y escucho ruidos sospechosos por acá: ${latitud}, ${longitud}`;
+          const mensaje = `Soy del lote ${userData?.lote}, en la manzana ${userData?.manzana} y necesito ayuda por acá: ${latitud}, ${longitud}`;
           const whatsappUrl = `https://api.whatsapp.com/send?phone=${userData?.numerotelefono}&text=${encodeURIComponent(mensaje)}`;
           window.location.href = whatsappUrl;
         },
@@ -104,8 +147,16 @@ export const Panico = () => {
       );
     } else {
       console.log('Geolocalización no es compatible con este navegador.');
-    }
+    }*/
   };
+  const llamar911 = () => {
+    const numeroEmergencia = '911';
+    const llamadaUrl = `tel:${numeroEmergencia}`;
+    window.open(llamadaUrl);
+  };
+  if (isLoading) {
+    return <div>Cargando...</div>;
+  }
   return (
     <main className="container fluid">
       <div className="container alertas">

@@ -8,25 +8,13 @@ import { getFirestore, collection, addDoc, onSnapshot } from "firebase/firestore
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyD8lSjoGXYBRo8HDm8fQtmJWT9FQrEVtHg",
-
-  authDomain: "cube-b5537.firebaseapp.com",
-
-  projectId: "cube-b5537",
-
-  storageBucket: "cube-b5537.appspot.com",
-
-  messagingSenderId: "746288096117",
-
-  appId: "1:746288096117:web:4a121eea0fc0e72fb5e93c"
-
-  /*apiKey: process.env.API_KEY,
-
-  authDomain: process.env.AUTH_DOMAIN,
-  projectId: process.env.PROJECT_ID,
-  storageBucket: process.env.STORAGE_BUCKET,
-  messagingSenderId: process.env.MESSAGING_SENDER_ID,
-  appId: process.env.APP_ID*/
+ 
+  apiKey: import.meta.env.VITE_API_KEY,
+  authDomain: import.meta.env.VITE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_APP_ID
 };
 
 // Initialize Firebase

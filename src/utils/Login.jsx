@@ -1,8 +1,8 @@
 import React,{ useState,  useContext } from 'react';
 import {Link, useNavigate} from "react-router-dom";
 import {collection,getDocs,deleteDoc,doc,query,where} from "firebase/firestore";
-import {db} from "../firebaseConfig/firebase";
-import {UserContext} from "./UserContext";
+import {db} from "/src/firebaseConfig/firebase.js";
+import {UserContext} from "/src/components/Services/UserContext.jsx";
 
 /* SWEET ALERT*/
 import Swal from "sweetalert2";
