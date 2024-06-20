@@ -30,7 +30,7 @@ export const NavbarComponent = ({ handleLogout }) => {
   }, [userData]);
 
   return (
-    <Navbar expand="m" className="navbar-collapse">
+    <Navbar expand="m" fixed='top' className="navbar-collapse">
       <Container fluid>
         <Navbar.Brand href="/#/panico">
           <strong>SafeNeighborhood App ||</strong> 
