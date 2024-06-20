@@ -5,6 +5,37 @@ body {
   background-repeat: no-repeat;
   text-align: center;
 }
+.custom-navbar {
+  background-color: #343a40; /* Color de fondo de la barra de navegación */
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+}
+
+.user-name {
+  margin-left: 10px; /* Espaciado entre el nombre de usuario y el texto anterior */
+  color: #ffffff; /* Color del texto del nombre de usuario */
+}
+
+.navbar-collapse {
+  background-color: #343a40; /* Color de fondo del menú desplegable */
+}
+
+.navlinks {
+  color: #ffffff !important; /* Color de los enlaces del menú */
+}
+
+.navlinks:hover {
+  color: #ffc107 !important; /* Color al pasar el cursor sobre los enlaces */
+}
+
+.logout-button {
+  margin-left: 10px;
+  margin-top: 8px;
+}
+
 .footer{
   
   background-size: cover;

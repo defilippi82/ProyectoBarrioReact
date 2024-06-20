@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig/firebase';
-
+import { Form, Table, Button, FloatingLabel, Row, Col, Pagination } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 
 /* SWEET ALERT*/
@@ -138,11 +138,14 @@ const RolSelect = () => {
 
     return (
 
-        <div className="container">
+      
+       <div className="container">
         <div className='card text-bg-primary mb-3 shadow-lg" style="max-width: 18rem;"'>
          <h1 className='card-header'>Registrar Nueva Socio</h1>
        </div>
        <form onSubmit={crearSocio} className="card card-body shadow-lg">
+       <Row className="align-items-center">
+                            <Col xs="auto">
         <div className="elem-group">
          <div className='form-floating mb-3'>
 
@@ -156,6 +159,7 @@ const RolSelect = () => {
           <label for="floatingInputDisabled" htmlFor="nombre">Nombre</label>
          </div>
         </div>
+
         <div className="elem-group">
          <div className='form-floating mb-3'>
 
@@ -169,6 +173,10 @@ const RolSelect = () => {
           <label for="floatingInputDisabled" htmlFor="apellido">Apellido</label>
          </div>
         </div>
+        </Col>
+        </Row>
+        <Row className="align-items-center">
+                            <Col xs="auto">
         <div className="elem-group">
         <div className='form-floating mb-3'>
 
@@ -202,7 +210,10 @@ const RolSelect = () => {
                 <label for="floatingInputDisabled" htmlFor="isla">Isla</label>
                 </div>
                 </div>
-
+                </Col>
+                </Row>
+                <Row className="align-items-center">
+                            <Col xs="auto">
                 <div className="elem-group">
                 <div className='form-floating mb-3'>
                     <select className="form-select"
@@ -258,6 +269,8 @@ const RolSelect = () => {
             required />
           <label for="floatingInputDisabled" htmlFor="repetirContrasena">Repetir Contraseña</label>
         </div>
+        </Col>
+        </Row>
         <button type="submit" className="btn btn-primary">
           Registrar
         </button>

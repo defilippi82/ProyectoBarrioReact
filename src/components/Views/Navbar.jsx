@@ -8,6 +8,7 @@ import { db } from '/src/firebaseConfig/firebase.js';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
+import './NavbarComponent.css'; // Importar el archivo CSS
 
 export const NavbarComponent = ({ handleLogout }) => {
   const { userData } = useContext(UserContext);
@@ -30,22 +31,15 @@ export const NavbarComponent = ({ handleLogout }) => {
   }, [userData]);
 
   return (
-    <Navbar expand="m" fixed='top' className="navbar-collapse">
+    <Navbar expand="md" fixed='top' className="custom-navbar">
       <Container fluid>
-        <Navbar.Brand href="/#/panico">
-          <strong>SafeNeighborhood App ||</strong> 
-        </Navbar.Brand >
-        <div className="d-flex align-items">
-        {userData && userData.nombre && <span  className="me-3 text-black"> ¡Hola <em>{userData.nombre}!</em> </span>}<Nav.Link className="navlinks" href="#/mensajeria">
-                  <FontAwesomeIcon icon={faEnvelope} />
-                  {newMessages > 0 && (
-                    <span className="badge bg-danger text-white ms-1">{newMessages}</span>
-                  )}
-                </Nav.Link>
-        </div>
+        <Navbar.Brand href="/#/panico" className="brand">
+          <strong>SafeNeighborhood App ||</strong>
+          {userData && userData.nombre && <span className="user-name">¡Hola <em>{userData.nombre}!</em></span>}
+        </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="me-auto" variant="underline" defaultActiveKey="#/panico">
+          <Nav className="me-auto">
             {userData && userData.nombre && (
               <>
                 <Nav.Link className="navlinks" href="#/panico">
@@ -57,7 +51,6 @@ export const NavbarComponent = ({ handleLogout }) => {
                 <Nav.Link className="navlinks" href="#/invitados">
                   Invitados
                 </Nav.Link>
-                
                 <Nav.Link className="navlinks" href="#/novedades">
                   Novedades
                 </Nav.Link>
@@ -66,14 +59,22 @@ export const NavbarComponent = ({ handleLogout }) => {
                 </Nav.Link>
                 {userData.rol && userData.rol.administrador && (
                   <Nav.Link className="navlinks" href="#/administracion">
-                    Administracion
+                    Administración
                   </Nav.Link>
                 )}
-                <Button variant="outline-danger" size='sm' href="/" onClick={handleLogout}>
+                <Button variant="outline-danger" size='sm' href="/" onClick={handleLogout} className="logout-button">
                   Salir
                 </Button>
               </>
             )}
+          </Nav>
+          <Nav className="ms-auto">
+            <Nav.Link className="navlinks" href="#/mensajeria">
+              <FontAwesomeIcon icon={faEnvelope} />
+              {newMessages > 0 && (
+                <span className="badge bg-danger text-white ms-1">{newMessages}</span>
+              )}
+            </Nav.Link>
           </Nav>
         </Navbar.Collapse>
       </Container>
