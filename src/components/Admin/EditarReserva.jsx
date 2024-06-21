@@ -10,7 +10,7 @@ export const EditarReserva = () => {
   const [cancha, setCancha] = useState('');
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState('');
-  const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
   const MySwal = withReactContent(Swal);
   const navigate = useNavigate()
 
@@ -62,7 +62,7 @@ export const EditarReserva = () => {
       await updateDoc(doc(db, "reservas", id), {
         cancha,
         fecha: new Date(`${fecha}T${hora}`),
-        nombre,
+        apellido,
       });
 
       // Mostrar alerta de éxito
@@ -87,12 +87,12 @@ export const EditarReserva = () => {
   };
 
   return (
-    <div className="container">
+    <div className="container fluid mt-5">
       <div>
         <h1>Editar Reserva</h1>
       </div>
-      <form onSubmit={editarSubmit} className="card card-body shadow-lg">
-        <div className="elem-group">
+      <form onSubmit={editarSubmit} className="card card-body text-bg-primary">
+        <div className="elem-group fluid">
           <label htmlFor="cancha">Cancha</label>
           <select
             id="cancha"
@@ -134,15 +134,15 @@ export const EditarReserva = () => {
           <label htmlFor="apellido">Apellido</label>
           <input
             type="text"
-            id="nombre"
-            placeholder="Nombre completo"
+            id="apellido"
+            placeholder="Apellido"
             value={apellido}
             onChange={(e) => setApellido(e.target.value)}
             required
           />
         </div>
 
-        <button type="submit" className="btn btn-primary">
+        <button type="submit" className="btn btn-success">
           Guardar Cambios
         </button>
       </form>

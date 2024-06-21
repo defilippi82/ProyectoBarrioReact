@@ -8,7 +8,7 @@ import { db } from '/src/firebaseConfig/firebase.js';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
-import './NavbarComponent.css'; // Importar el archivo CSS
+
 
 export const NavbarComponent = ({ handleLogout }) => {
   const { userData } = useContext(UserContext);
@@ -31,9 +31,15 @@ export const NavbarComponent = ({ handleLogout }) => {
   }, [userData]);
 
   return (
-    <Navbar expand="md" fixed='top' className="custom-navbar">
+    <Navbar collapseOnSelect bg="primary" data-bs-theme="primary" expand="lg" fixed='top' >
       <Container fluid>
-        <Navbar.Brand href="/#/panico" className="brand">
+        <Navbar.Brand href="/#/panico" >
+            <Nav.Link className="d-inline-block align-top" href="#/mensajeria">
+              <FontAwesomeIcon icon={faEnvelope} />
+              {newMessages > 0 && (
+                <span className="badge bg-danger text-white ms-1">{newMessages}</span>
+              )}
+            </Nav.Link>
           <strong>SafeNeighborhood App ||</strong>
           {userData && userData.nombre && <span className="user-name">¡Hola <em>{userData.nombre}!</em></span>}
         </Navbar.Brand>
@@ -69,12 +75,6 @@ export const NavbarComponent = ({ handleLogout }) => {
             )}
           </Nav>
           <Nav className="ms-auto">
-            <Nav.Link className="navlinks" href="#/mensajeria">
-              <FontAwesomeIcon icon={faEnvelope} />
-              {newMessages > 0 && (
-                <span className="badge bg-danger text-white ms-1">{newMessages}</span>
-              )}
-            </Nav.Link>
           </Nav>
         </Navbar.Collapse>
       </Container>

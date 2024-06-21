@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../firebaseConfig/firebase";
-import Form from 'react-bootstrap/Form';
+import { Form, Table, Button, FloatingLabel, Row, Col, Pagination } from 'react-bootstrap';
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 
@@ -107,46 +107,75 @@ export const EditarSocio = () => {
     }
 
     return (
-        <div className="container">
+        <div className="container ">
             <h1>Editar Socio</h1>
+          
+            
             <form onSubmit={editarSubmit} style={{ backgroundColor: '#f0f0f0', padding: '20px', borderRadius: '10px' }}>
+            <Row className="align-items-center">
+            <Col xs="auto">
                 <div className="form-group">
                     <label htmlFor="nombre">Nombre</label>
                     <input type="text" className="form-control" id="nombre" name="nombre" value={socio.nombre} onChange={actualizarSocio} required />
                 </div>
+                </Col>
+                <Col xs="auto">
+
                 <div className="form-group">
                     <label htmlFor="apellido">Apellido</label>
                     <input type="text" className="form-control" id="apellido" name="apellido" value={socio.apellido} onChange={actualizarSocio} required />
                 </div>
+                </Col>
+                <Col xs="auto">
                 <div className="form-group">
                     <label htmlFor="email">Email</label>
                     <input type="text" className="form-control" id="email" name="email" value={socio.email} onChange={actualizarSocio} required />
                 </div>
+                </Col>
+                <Col xs="auto">
                 <div className="form-group">
                     <label htmlFor="manzana">Manzana</label>
                     <input type="number" className="form-control" id="manzana" name="manzana" value={socio.manzana} onChange={actualizarSocio} required maxLength={2} />
                 </div>
+                </Col>
+                <Col xs="auto">
                 <div className="form-group">
                     <label htmlFor="lote">Lote</label>
                     <input type="number" className="form-control" id="lote" name="lote" value={socio.lote} onChange={actualizarSocio} required maxLength={3} />
                 </div>
+                </Col>
+                <Col xs="auto">
                 <div className="form-group">
                     <label htmlFor="isla">Isla</label>
                     <input type="number" className="form-control" id="isla" name="isla" value={socio.isla} onChange={actualizarSocio} required maxLength={3} />
                 </div>
+                </Col>
+                </Row>
+                <Row className="align-items-center">
+                <Col xs="auto">
                 <div className="form-group">
                     <label htmlFor="contrasena">Contraseña</label>
                     <input type="password" className="form-control" id="contrasena" name="contrasena" value={socio.contrasena} onChange={actualizarSocio} required />
                 </div>
+                </Col>
+                <Col xs="auto">
                 <div className="form-group">
                     <label htmlFor="numerotelefono">Número de teléfono</label>
                     <input type="text" className="form-control" id="numerotelefono" name="numerotelefono" value={socio.numerotelefono} onChange={actualizarSocio} required />
                 </div>
+                </Col>
+                <Col xs="auto">
                 <div className="form-group form-check">
                 <RolSelect />
                 </div>
+                </Col>
+                <Col xs="auto">
                 <button type="submit" className="btn btn-primary">Guardar Cambios</button>
+                </Col>
+                </Row>
             </form>
+            
         </div>
+           
     );
 };

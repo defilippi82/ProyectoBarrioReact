@@ -69,7 +69,7 @@ export const Login = () => {
     }
   };
     return (
-      <div className="container fluid">
+      <div className="container fluid mt-5">
         <div>
           <h1>Ingreso de Socios / Inquilinos</h1>
         </div>
@@ -104,10 +104,10 @@ export const Login = () => {
             />
           </div>
           <div className="buttons">
-          <button type="submit" className="btn btn-primary">
+          <button type="submit" className="btn btn-success m-1">
             Ingresar
           </button>
-          <Link to ="/socios/create" className="btn btn-primary"> Registrarse </Link>
+          <Link to ="/socios/create" className="btn btn-secondary m-2"> Registrarse </Link>
           </div>
         </form>
         

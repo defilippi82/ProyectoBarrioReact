@@ -31,7 +31,7 @@ export const RegistrarReserva = () => {
 
     useEffect(() => {
     if (userData && userData.nombre) {
-      setNombre(userData.apellido);
+      setApellido(userData.apellido);
     }
   }, [userData]);
 
@@ -116,7 +116,7 @@ export const RegistrarReserva = () => {
       setCancha('');
       setFecha(null);
       setHora('');
-      setNombre('');
+      setApellido('');
     } catch (error) {
       // Mostrar alerta de error
       MySwal.fire({
@@ -134,11 +134,11 @@ export const RegistrarReserva = () => {
       <div className='card text-bg-primary mb-3 shadow-lg style="max-width: 18rem;'>
         <h1 className='card-header'>Registrar Nueva Reserva</h1>
       </div>
-      <form onSubmit={crearReserva} className="card card-body shadow-lg">
+      <form onSubmit={crearReserva} className="card text-bg-primary card-body shadow-lg">
         <div className="elem-group">
           
           <div className='form-floating mb-3'>
-            <select className="form-select"
+            <select className="form-select text-bg-primary"
             id="cancha"
             value={cancha}
             onChange={(e) => setCancha(e.target.value)}
@@ -153,8 +153,8 @@ export const RegistrarReserva = () => {
             </div>
         </div>
         <div className="elem-group">
-          <div className='form-floating mb-3'>
-          <input className='form-control'
+          <div className='form-floating mb-3 '>
+          <input className='form-control text-bg-primary'
             type="date"
             id="fecha"
             value={fecha}
@@ -163,7 +163,7 @@ export const RegistrarReserva = () => {
             />
           <label htmlFor="floatingInputDisabled fecha">Fecha</label>
             </div>
-          <select className="form-select"
+          <select className="form-select text-bg-primary"
             id="hora"
             value={hora}
             onChange={(e) => setHora(e.target.value)}
@@ -176,12 +176,12 @@ export const RegistrarReserva = () => {
           </select>
         </div>
         <div className='form-floating mb-3'>
-          <input className='form-control'
+          <input className='form-control text-bg-primary'
             type="text"
             id="apellido"
             placeholder="Nombre completo"
             value={userData ? userData.apellido : ''}
-            onChange={(e) => setNombre(e.target.value)}
+            onChange={(e) => setApellido(e.target.value)}
             required
           />
         <label htmlFor="floatingInputDisabled nombre">Resposnsable</label>
@@ -191,7 +191,7 @@ export const RegistrarReserva = () => {
             <h6 style={{ backgroundColor: 'red', color: 'white', padding: '5px', borderRadius: '3px' }}>Se cobrará la ficha de luz despues de las 20hs.</h6>
         </div>
     </div>
-        <button type="submit" className="btn btn-primary">
+        <button type="submit" className="btn btn-secondary">
           Registrar
         </button>
       </form>

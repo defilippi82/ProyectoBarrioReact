@@ -2,8 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '/src/firebaseConfig/firebase.js';
 import { UserContext } from '../Services/UserContext';
-import Form from 'react-bootstrap/Form';
-import Button from 'react-bootstrap/Button';
+import { Form, Table, Button, FloatingLabel, Row, Col, Pagination } from 'react-bootstrap';
 import ListGroup from 'react-bootstrap/ListGroup';
 import {MessageDetail} from './MessageDetail';
 import Swal from 'sweetalert2';
@@ -24,7 +23,7 @@ export const Mensajeria = () => {
       if (userData && userData.nombre) {
         const q = query(
           collection(db, 'mensajes'),
-          where('receiver', '==', userData.nombre),
+          where('receiver', '==', (userData.manzana,userData.lote)),
           orderBy('timestamp', 'desc')
         );
 
@@ -70,7 +69,7 @@ export const Mensajeria = () => {
     const currentDate = new Date();
 
     const newEntry = {
-      sender: userData.nombre,
+      sender: userData.nombre ,
       receiver: receiver,
       content: newMessage,
       timestamp: currentDate,
@@ -135,15 +134,27 @@ export const Mensajeria = () => {
           </ListGroup.Item>
         ))}
       </ListGroup>
-      <Form onSubmit={handleSendMessage} className="mt-4">
+      <Form Fluid onSubmit={handleSendMessage} className="xs mt-4" xs="auto">
+        <Row className="align-items-center">
+        <Col xs="auto">
+          
         <Form.Group controlId="receiverInput">
           <Form.Label>Para</Form.Label>
           <Form.Control
-            type="text"
+          placeholder='manzana '
+            type="number"
+            value={receiver}
+            onChange={(e) => setReceiver(e.target.value)}
+          />
+           <Form.Control
+          placeholder='lote'
+            type="number"
             value={receiver}
             onChange={(e) => setReceiver(e.target.value)}
           />
         </Form.Group>
+        </Col>
+        <Col xs="auto">
         <Form.Group controlId="messageInput" className="mt-2">
           <Form.Label>Mensaje</Form.Label>
           <Form.Control
@@ -153,18 +164,13 @@ export const Mensajeria = () => {
             onChange={(e) => setNewMessage(e.target.value)}
           />
         </Form.Group>
+        </Col>
+        </Row>
         <Button variant="primary" type="submit" className="mt-3">
           Enviar Mensaje
         </Button>
       </Form>
-      {selectedMessage && (
-        <MessageDetail
-          show={showDetail}
-          handleClose={handleCloseDetail}
-          message={selectedMessage}
-          handleDelete={handleDeleteMessage}
-        />
-      )}
+      
     </div>
   );
 };
