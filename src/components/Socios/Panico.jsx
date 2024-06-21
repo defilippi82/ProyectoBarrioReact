@@ -1,47 +1,16 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDoc, collection, getDocs, query, where, addDoc } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, query, where, addDoc } from 'firebase/firestore';
 import Image from 'react-bootstrap/Image';
-import {UserContext} from "../Services/UserContext";
+import { UserContext } from "../Services/UserContext";
 
 export const Panico = () => {
   const { userData } = useContext(UserContext);
-  
   const [isLoading, setIsLoading] = useState(true);
-  
+
   useEffect(() => {
     setIsLoading(false); // Simular carga inicial, puedes ajustarlo según tu lógica real
   }, []);
-    /*const obtenerDatosUsuario = async () => {
-      try {
-        const auth = getAuth();
-        const user = auth.currentUser;
 
-        if (user) {
-          const db = getFirestore();
-          const usuarioDocRef = doc(db, 'usuarios', user.uid);
-          const usuarioDocSnap = await getDoc(usuarioDocRef);
-
-          if (usuarioDocSnap.exists()) {
-            const userData = usuarioDocSnap.data();
-            setUserData(userData);
-          } else {
-            console.log('No se encontraron datos del usuario en Firestore');
-          }
-        } else {
-          console.log('No hay usuario autenticado');
-        }
-      } catch (error) {
-        console.error('Error al obtener los datos del usuario:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    obtenerDatosUsuario();
-  }, []);*/
-
-  
   const ruidos = async () => {
     try {
       if (!userData || !userData.manzana || !userData.lote) {
@@ -60,8 +29,8 @@ export const Panico = () => {
 
       const messagePromises = usersInSameManzana.map(user => {
         return addDoc(collection(db, 'mensajes'), {
-          sender: userData.nombre,
-          receiver: user.nombre,
+          sender: `${userData.manzana}-${userData.lote}`,
+          receiver: `${user.manzana}-${user.lote}`,
           content: `Soy del lote ${userData.manzana}-${userData.lote} y escucho ruidos sospechosos por mi lote`,
           timestamp: new Date(),
           read: false,
@@ -75,85 +44,68 @@ export const Panico = () => {
       console.error("Error enviando mensajes: ", error);
     }
   };
-  
-  const alerta = async() => {
-  if (isLoading) {
-    return <div>Cargando...</div>;
+
+  const alerta = async () => {
+    if (isLoading) {
+      return <div>Cargando...</div>;
     }
     if (!userData || !userData.manzana || !userData.isla) {
       console.error("El usuario no tiene asignada una isla o userData es null.");
       return;
     }
-    try{
-
-    const db = getFirestore();
-    // Consultar usuarios de la misma isla
-    const usuariosIslaQuery = query(
-      collection(db, 'usuarios'),
-      where('isla', '==', userData.isla)
-    );
-
-    const usuariosGuardiaQuery = query(
-      collection(db, 'usuarios'),
-      where('rol', '==', 'guardia')
-    );
-    const [usuariosIslaSnapshot, usuariosGuardiaSnapshot] = await Promise.all([
-      getDocs(usuariosIslaQuery),
-      getDocs(usuariosGuardiaQuery)
-    ]);
-
-    const usuariosIsla = usuariosIslaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const usuariosGuardia = usuariosGuardiaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    // Unificar ambos conjuntos de usuarios, evitando duplicados
-    const usuariosCombinados = [...usuariosIsla];
-    usuariosGuardia.forEach(guardia => {
-      if (!usuariosIsla.some(user => user.id === guardia.id)) {
-        usuariosCombinados.push(guardia);
-      }
-    });
-
-    const messagePromises = usuariosCombinados.map(user => {
-      return addDoc(collection(db, 'mensajes'), {
-        sender: userData.nombre,
-        receiver: user.nombre,
-        content: `Soy del lote ${userData.manzana}-${userData.lote} y necesito ayuda por mi lote`,
-        timestamp: new Date(),
-        read: false,
-        source: 'alerta'
-      });
-    });
-
-    await Promise.all(messagePromises);
-    console.log('Mensajes enviados a todos los usuarios en la misma isla y a la guardia');
-  } catch (error) {
-    console.error("Error enviando mensajes: ", error);
-  }
-
-
-    /* ENVIAR MENSAJE POR WHATSAPP
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const latitud = position.coords.latitude;
-          const longitud = position.coords.longitude;
-          const mensaje = `Soy del lote ${userData?.lote}, en la manzana ${userData?.manzana} y necesito ayuda por acá: ${latitud}, ${longitud}`;
-          const whatsappUrl = `https://api.whatsapp.com/send?phone=${userData?.numerotelefono}&text=${encodeURIComponent(mensaje)}`;
-          window.location.href = whatsappUrl;
-        },
-        (error) => {
-          console.log('Error al obtener la ubicación:', error);
-        }
+    try {
+      const db = getFirestore();
+      // Consultar usuarios de la misma isla
+      const usuariosIslaQuery = query(
+        collection(db, 'usuarios'),
+        where('isla', '==', userData.isla)
       );
-    } else {
-      console.log('Geolocalización no es compatible con este navegador.');
-    }*/
+
+      const usuariosGuardiaQuery = query(
+        collection(db, 'usuarios'),
+        where('rol', '==', 'guardia')
+      );
+
+      const [usuariosIslaSnapshot, usuariosGuardiaSnapshot] = await Promise.all([
+        getDocs(usuariosIslaQuery),
+        getDocs(usuariosGuardiaQuery)
+      ]);
+
+      const usuariosIsla = usuariosIslaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const usuariosGuardia = usuariosGuardiaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // Unificar ambos conjuntos de usuarios, evitando duplicados
+      const usuariosCombinados = [...usuariosIsla];
+      usuariosGuardia.forEach(guardia => {
+        if (!usuariosIsla.some(user => user.id === guardia.id)) {
+          usuariosCombinados.push(guardia);
+        }
+      });
+
+      const messagePromises = usuariosCombinados.map(user => {
+        return addDoc(collection(db, 'mensajes'), {
+          sender: `${userData.manzana}-${userData.lote}`,
+          receiver: `${user.manzana}-${user.lote}`,
+          content: `Soy del lote ${userData.manzana}-${userData.lote} y necesito ayuda por mi lote`,
+          timestamp: new Date(),
+          read: false,
+          source: 'alerta'
+        });
+      });
+
+      await Promise.all(messagePromises);
+      console.log('Mensajes enviados a todos los usuarios en la misma isla y a la guardia');
+    } catch (error) {
+      console.error("Error enviando mensajes: ", error);
+    }
   };
+
   const llamar911 = () => {
     const numeroEmergencia = '911';
     const llamadaUrl = `tel:${numeroEmergencia}`;
     window.open(llamadaUrl);
   };
+
   if (isLoading) {
     return <div>Cargando...</div>;
   }
@@ -164,7 +116,7 @@ export const Panico = () => {
           <div className="col col-12 col-sm-4 gx-4">
             <div className="card">
               <Image
-                src={"/img/seguridadAlerta.png"} 
+                src={"/img/seguridadAlerta.png"}
                 height="0.5%"
                 className="card-img-top"
                 alt="imagen de la guardia"
@@ -197,7 +149,7 @@ export const Panico = () => {
                 alt="imagen de los vecinos de la isla"
                 onClick={ruidos}
                 roundedCircle
-                />
+              />
               <div className="card-body">
                 <h5 className="card-title">RUIDOS</h5>
                 <p className="card-text">Avisar a los vecinos de la isla</p>
@@ -206,7 +158,7 @@ export const Panico = () => {
                   value="ruidos"
                   className="btn btn-warning"
                   onClick={ruidos}
-                  >
+                >
                   RUIDOS
                 </button>
               </div>
@@ -231,7 +183,7 @@ export const Panico = () => {
                   value="ayuda"
                   className="btn btn-primary"
                   onClick={llamar911}
-                  >
+                >
                   911
                 </button>
               </div>

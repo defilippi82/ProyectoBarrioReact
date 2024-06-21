@@ -2,8 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '/src/firebaseConfig/firebase.js';
 import { UserContext } from '../Services/UserContext';
-import { Form, Table, Button, FloatingLabel, Row, Col, Pagination } from 'react-bootstrap';
-import ListGroup from 'react-bootstrap/ListGroup';
+import { Form, Button, Row, Col, ListGroup } from 'react-bootstrap';
 import { MessageDetail } from './MessageDetail';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
@@ -76,7 +75,8 @@ export const Mensajeria = () => {
       receiver: receiver,
       content: newMessage,
       timestamp: currentDate,
-      read: false
+      read: false,
+      source: 'mensaje' // Ajusta según sea necesario
     };
 
     try {
@@ -187,4 +187,3 @@ export const Mensajeria = () => {
     </div>
   );
 };
-
