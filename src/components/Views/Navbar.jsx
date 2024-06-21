@@ -8,22 +8,36 @@ import { db } from '/src/firebaseConfig/firebase.js';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
-
+import './NavbarComponent.css'; // Importa tu archivo CSS
 
 export const NavbarComponent = ({ handleLogout }) => {
   const { userData } = useContext(UserContext);
   const [newMessages, setNewMessages] = useState(0);
 
+  const playSound = (source) => {
+    const audioSrc = source === 'alerta' ? '/public/Sound/siren.mp3' : '/public/Sound/mensaje.mp3';
+    const audio = new Audio(audioSrc);
+    audio.play();
+  };
+
   useEffect(() => {
-    if (userData && userData.nombre) {
+    if (userData && userData.manzana && userData.lote) {
+      const socioNumber = `${userData.manzana}-${userData.lote}`;
       const q = query(
         collection(db, 'mensajes'),
-        where('receiver', '==', userData.nombre),
+        where('receiver', '==', socioNumber),
         where('read', '==', false)
       );
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
         setNewMessages(querySnapshot.size);
+
+        if (querySnapshot.size > 0) {
+          querySnapshot.forEach(doc => {
+            const data = doc.data();
+            playSound(data.source);
+          });
+        }
       });
 
       return () => unsubscribe();
@@ -31,20 +45,20 @@ export const NavbarComponent = ({ handleLogout }) => {
   }, [userData]);
 
   return (
-    <Navbar collapseOnSelect bg="primary" data-bs-theme="primary" expand="lg" fixed='top' >
+    <Navbar collapseOnSelect bg="primary" data-bs-theme="primary" expand="lg" fixed='top'>
       <Container fluid>
-        <Navbar.Brand href="/#/panico" >
-            <Nav.Link className="d-inline-block align-top" href="#/mensajeria">
-              <FontAwesomeIcon icon={faEnvelope} />
-              {newMessages > 0 && (
-                <span className="badge bg-danger text-white ms-1">{newMessages}</span>
-              )}
-            </Nav.Link>
+        <Navbar.Brand href="/#/panico">
+          <Nav.Link className="d-inline-block align-top" href="#/mensajeria">
+            <FontAwesomeIcon icon={faEnvelope} />
+            {newMessages > 0 && (
+              <span className="badge bg-danger text-white ms-1">{newMessages}</span>
+            )}
+          </Nav.Link>
           <strong>SafeNeighborhood App ||</strong>
           {userData && userData.nombre && <span className="user-name">¡Hola <em>{userData.nombre}!</em></span>}
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
-        <Navbar.Collapse id="basic-navbar-nav">
+        <Navbar.Collapse id="basic-navbar-nav" tyle={{ backgroundColor: 'rgba(0, 123, 255, 0.5)' }}> <Navbar.Toggle /> 
           <Nav className="me-auto">
             {userData && userData.nombre && (
               <>
