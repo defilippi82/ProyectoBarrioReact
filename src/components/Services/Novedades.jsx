@@ -125,13 +125,14 @@ export const Novedades = () => {
 
     return (
         <div className="container mt-4">
-            <h2>Novedades / Pendientes</h2>
-            <div className="d-flex flex-wrap">
+            <h2>Novedades / Avisos</h2>
+            <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                 {novedades.map(({ id, socio, fecha, novedad, imagen, likes }) => (
-                    <Card key={id} style={{ width: '18rem', margin: '10px' }}>
+                    <div className="col mb-4" key={id}>
+                    <Card key={id} style={{ width: 'auto', margin: '10px' }}>
                         {imagen && <Card.Img variant="top" src={imagen} />}
                         <Card.Body>
-                            <Card.Title>{socio}</Card.Title>
+                            <Card.Title>{socio} Lote:{userData.manzana}-{userData.lote}</Card.Title>
                             <Card.Subtitle className="mb-2 text-muted">{fecha}</Card.Subtitle>
                             <Card.Text>{novedad}</Card.Text>
                             <Button variant="primary" onClick={() => handleLike(id, likes)}>Like ({likes})</Button>
@@ -143,6 +144,7 @@ export const Novedades = () => {
                             <Button variant="danger" onClick={() => handleDeleteNovedad(id)}>Borrar</Button>
                         </Card.Body>
                     </Card>
+                    </div>
                 ))}
             </div>
             <Form onSubmit={handleAddNovedad}>
