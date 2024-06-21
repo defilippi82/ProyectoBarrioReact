@@ -8,7 +8,7 @@ import { db } from '/src/firebaseConfig/firebase.js';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
-import './NavbarComponent.css'; // Importa tu archivo CSS
+
 
 export const NavbarComponent = ({ handleLogout }) => {
   const { userData } = useContext(UserContext);

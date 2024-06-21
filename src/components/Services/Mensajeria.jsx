@@ -48,11 +48,11 @@ export const Mensajeria = () => {
           });
           setMessages(messagesData);
           // Reproducir sonido si hay un nuevo mensaje no leído
-          if (newUnreadMessage) {
+          /*if (newUnreadMessage) {
             const audioSrc = newAlertMessage ? '/public/Sound/siren.mp3' : '/public/Sound/mensaje.mp3'; // Ajusta la ruta según la ubicación de tu archivo de sonido
             const audio = new Audio(audioSrc);
             audio.play();
-          }
+          }*/
         });
 
         return () => unsubscribe();
