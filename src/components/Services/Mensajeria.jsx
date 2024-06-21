@@ -2,7 +2,8 @@ import React, { useState, useEffect, useContext } from 'react';
 import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '/src/firebaseConfig/firebase.js';
 import { UserContext } from '../Services/UserContext';
-import { Form, Button, Row, Col, ListGroup } from 'react-bootstrap';
+import { Form, Table, Button, FloatingLabel, Row, Col, Pagination } from 'react-bootstrap';
+import ListGroup from 'react-bootstrap/ListGroup';
 import { MessageDetail } from './MessageDetail';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
@@ -30,29 +31,11 @@ export const Mensajeria = () => {
 
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
           const messagesData = [];
-          let newUnreadMessage = false;
-          let newAlertMessage = false;
-
-          querySnapshot.forEach(async (doc) => {
+          querySnapshot.forEach((doc) => {
             const data = doc.data();
             messagesData.push({ id: doc.id, ...data });
-
-            // Detectar si hay un mensaje no leído
-            if (!data.read) {
-              newUnreadMessage = true;
-              if (data.source === 'alerta') {
-                newAlertMessage = true;
-              }
-              await updateDoc(doc.ref, { read: true });
-            }
           });
           setMessages(messagesData);
-          // Reproducir sonido si hay un nuevo mensaje no leído
-          /*if (newUnreadMessage) {
-            const audioSrc = newAlertMessage ? '/public/Sound/siren.mp3' : '/public/Sound/mensaje.mp3'; // Ajusta la ruta según la ubicación de tu archivo de sonido
-            const audio = new Audio(audioSrc);
-            audio.play();
-          }*/
         });
 
         return () => unsubscribe();
@@ -67,16 +50,15 @@ export const Mensajeria = () => {
 
     if (newMessage.trim() === '' || receiverManzana.trim() === '' || receiverLote.trim() === '') return;
 
-    const currentDate = new Date();
     const receiver = `${receiverManzana}-${receiverLote}`;
+    const currentDate = new Date();
 
     const newEntry = {
       sender: `${userData.manzana}-${userData.lote}`,
       receiver: receiver,
       content: newMessage,
       timestamp: currentDate,
-      read: false,
-      source: 'mensaje' // Ajusta según sea necesario
+      read: false
     };
 
     try {
@@ -89,9 +71,17 @@ export const Mensajeria = () => {
     }
   };
 
-  const handleShowDetail = (message) => {
+  const handleShowDetail = async (message) => {
     setSelectedMessage(message);
     setShowDetail(true);
+    if (!message.read) {
+      try {
+        await updateDoc(doc(db, 'mensajes', message.id), { read: true });
+        setMessages(messages.map(msg => msg.id === message.id ? { ...msg, read: true } : msg));
+      } catch (error) {
+        console.error('Error marking message as read: ', error);
+      }
+    }
   };
 
   const handleCloseDetail = () => {
@@ -133,57 +123,60 @@ export const Mensajeria = () => {
             <br />
             <small>{new Date(message.timestamp.seconds * 1000).toLocaleString()}</small>
             <Button variant="danger" size="sm" className="float-end" onClick={() => handleDeleteMessage(message.id)}>
-              Borrar
+              Eliminar
             </Button>
           </ListGroup.Item>
         ))}
       </ListGroup>
-      <Form Fluid onSubmit={handleSendMessage} className="xs mt-4" xs="auto">
-        <Row className="align-items-center">
-          <Col xs="auto">
-            <Form.Group controlId="receiverManzanaInput">
-              <Form.Label>Manzana</Form.Label>
-              <Form.Control
-                type="number"
-                value={receiverManzana}
-                onChange={(e) => setReceiverManzana(e.target.value)}
-              />
-            </Form.Group>
-          </Col>
-          <Col xs="auto">
-            <Form.Group controlId="receiverLoteInput">
-              <Form.Label>Lote</Form.Label>
-              <Form.Control
-                type="number"
-                value={receiverLote}
-                onChange={(e) => setReceiverLote(e.target.value)}
-              />
-            </Form.Group>
-          </Col>
-          <Col xs="auto">
-            <Form.Group controlId="messageInput" className="mt-2">
-              <Form.Label>Mensaje</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-              />
-            </Form.Group>
-          </Col>
-        </Row>
-        <Button variant="primary" type="submit" className="mt-3">
-          Enviar Mensaje
-        </Button>
-      </Form>
-      {selectedMessage && (
-        <MessageDetail
-          show={showDetail}
-          handleClose={handleCloseDetail}
-          message={selectedMessage}
-          handleDelete={handleDeleteMessage}
-        />
+
+      {showDetail && selectedMessage && (
+        <MessageDetail message={selectedMessage} handleCloseDetail={handleCloseDetail} />
       )}
+
+      <Form onSubmit={handleSendMessage} className="mt-3">
+      <Row className="align-items-center">
+          <Col xs="auto">
+
+        <Form.Group  className="mb-3" controlId="formManzana">
+          <Form.Label >Manzana:</Form.Label>
+            <Form.Control
+              type="number"
+              value={receiverManzana}
+              onChange={(e) => setReceiverManzana(e.target.value)}
+              required
+            />
+          
+        </Form.Group>
+        </Col>
+        <Col xs="auto">
+
+        <Form.Group  className="mb-3" controlId="formLote">
+          <Form.Label >Lote:</Form.Label>
+          
+            <Form.Control
+              type="number"
+              value={receiverLote}
+              onChange={(e) => setReceiverLote(e.target.value)}
+              required
+            />
+        </Form.Group>
+          </Col>
+        <Col xs="auto">
+
+        <FloatingLabel controlId="floatingTextarea" label="Mensaje" className="mb-3">
+          <Form.Control
+            as="textarea"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            style={{ height: '100px' }}
+            required
+            />
+        </FloatingLabel>
+            </Col>
+            </Row>
+
+        <Button variant="primary" type="submit">Enviar</Button>
+      </Form>
     </div>
   );
 };

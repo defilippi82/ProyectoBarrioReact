@@ -9,7 +9,6 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
 
-
 export const NavbarComponent = ({ handleLogout }) => {
   const { userData } = useContext(UserContext);
   const [newMessages, setNewMessages] = useState(0);
@@ -58,7 +57,7 @@ export const NavbarComponent = ({ handleLogout }) => {
           {userData && userData.nombre && <span className="user-name">¡Hola <em>{userData.nombre}!</em></span>}
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
-        <Navbar.Collapse id="basic-navbar-nav" tyle={{ backgroundColor: 'rgba(0, 123, 255, 0.5)' }}> <Navbar.Toggle /> 
+        <Navbar.Collapse id="basic-navbar-nav" style={{ backgroundColor: 'rgba(0, 123, 255, 0.5)' }}>
           <Nav className="me-auto">
             {userData && userData.nombre && (
               <>
