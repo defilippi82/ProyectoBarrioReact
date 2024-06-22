@@ -96,7 +96,7 @@ export const Invitados = () => {
 
   const handleEnviarInvitacion = (e) => {
     e.preventDefault();
-    const urlInvitacion = `${window.location.origin}/public/pages/invitacion.html`;
+    const urlInvitacion = `${window.location.origin}/pages/invitacion.html`;
     //const urlInvitacion = 'https://defilippi82.github.io/SOS/invitacion.html'; // Reemplaza con la URL real
     const mensaje = `Te envío la invitación para autorizar el ingreso: ${urlInvitacion}`;
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensaje)}`;
