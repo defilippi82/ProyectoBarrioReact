@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, getDocs, where } from 'firebase/firestore';
-import { db } from '../../firebaseConfig/firebase';
+import { db } from '../firebaseConfig/firebase';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
@@ -13,25 +13,21 @@ export const Contacto = () => {
     const [lote, setLote] = useState('');
     const [consulta, setConsulta] = useState('');
     const [destino, setDestino] = useState('');
-    const [contacto, setContacto] = useState({ email: '', telefono: '' });
+    const [usuarios, setUsuarios] = useState([]);
     const [whatsapp, setWhatsapp] = useState(false);
-    const [correo, setCorreo] = useState(false);
+    const [email, setemail] = useState(false);
     
-    useEffect(() => {
-        if (destino) {
-            fetchContacto(destino);
-        }
-    }, [destino]);
+    
    
     const fetchContacto = async (destino) => {
         try {
-            const q = query(collection(db, "usuarios"), where('nombre', '==', destino));
+            const q = query(collection(db, "usuarios"), where('destino', '==', userData.nombre));
             const querySnapshot = await getDocs(q);
             if (!querySnapshot.empty) {
                 const userData = querySnapshot.docs[0].data();
-                setContacto({ email: userData.email, telefono: userData.numerotelefono });
+                setDestino({ email: userData.email, telefono: userData.numerotelefono });
             } else {
-                setContacto({ email: '', telefono: '' });
+                setDestino({ email: '', telefono: '' });
             }
         } catch (error) {
             console.error("Error fetching contact:", error);
@@ -42,44 +38,58 @@ export const Contacto = () => {
         e.preventDefault();
         Swal.fire({
             title: 'Confirmar envío',
-            text: `¿Deseas enviar el mensaje para ${destino}?`,
+            text: `¿Deseas enviar el mensaje al departamento ${departamento}?`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Sí, enviar',
             cancelButtonText: 'No, cancelar'
           }).then((result) => {
             if (result.isConfirmed) {
-                let msj = `Soy del ${lote}, quiero ${consulta}. Desde ya, muchas gracias, ${nombre}`;
-
-                if (whatsapp) {
-                    var whatsappUrl = `https://api.whatsapp.com/send?phone=${contacto.numerotelefono}&text=${encodeURIComponent(msj)}`;
-                    window.open(whatsappUrl, '_blank');
-                }
-                if (correo) {
-                    var emailSubject = `Consulta del lote ${lote}`;
-                    var emailLink = `mailto:${contacto.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(msj)}`;
-                    window.open(emailLink);
-                }
-
-                Swal.fire(
-                    'Enviado!',
-                    `Tu mensaje ha sido enviado a ${destino}.`,
-                    'success'
-                );
-
-                setNombre('');
-                setLote('');
-                setConsulta('');
+              // Aquí puedes realizar el envío del mensaje, por ejemplo, enviando un correo electrónico
+              Swal.fire(
+                'Enviado!',
+                `Tu mensaje ha sido enviado a ${departamento} (${email}).`,
+                'success'
+              );
             }
-        });
+          });
+        let msj = `Soy del ${lote}, quiero ${consulta}. Desde ya, muchas gracias, ${nombre}`;
+
+        if (destino === 'administracion' && whatsapp) {
+            var whatsappUrl = `whatsapp://send?text=${encodeURIComponent(msj)}`;
+            window.location.href = whatsappUrl;
+        } else if (destino === 'Administracion' && email) {
+            var emailSubject = `Consulta del lote ${lote}`;
+            var emailLink = `mailto:${destino.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(msj)}`;
+            window.location.href = emailLink;
+        }
+        if (destino === 'facturacion' && whatsapp) {
+            var whatsappUrl = `whatsapp://send?text=${encodeURIComponent(msj)}`;
+            window.location.href = whatsappUrl;
+        } else if (destino === 'Facturacion' && email) {
+            var emailSubject = `Consulta del lote ${lote}`;
+            var emailLink = `mailto:f.defilippi@gmail.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(msj)}`;
+            window.location.href = emailLink;
+        }
+        if (destino === 'controlDeObras' && whatsapp) {
+            var whatsappUrl = `whatsapp://send?text=${encodeURIComponent(msj)}`;
+            window.location.href = whatsappUrl;
+        } else if (destino === 'ControlDeObras' && email) {
+            var emailSubject = `Consulta del lote ${lote}`;
+            var emailLink = `mailto:f.defilippi@gmail.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(msj)}`;
+            window.location.href = emailLink;
+        }
+
+        setNombre('');
+        setLote('');
+        setConsulta('');
     };
 
     return (
-        <main className="container col col-auto">
+        <main className="container col col-6">
             <a href="https://api.whatsapp.com/send?phone=+5491154939423&text=hola%20hebert" target="_blank" rel="noopener noreferrer"></a>
             <form onSubmit={handleSubmit}>
                 <br />
-                <Col sm="auto">
                 <label htmlFor="nombre">Nombre y Apellido</label><br />
                 <input
                     cols="auto"
@@ -90,7 +100,7 @@ export const Contacto = () => {
                     value={nombre}
                     onChange={(e) => setNombre(e.target.value)}
                     required
-                    /><br />
+                /><br />
 
                 <label htmlFor="lote">Lote</label><br />
                 <input
@@ -103,7 +113,7 @@ export const Contacto = () => {
                     onChange={(e) => setLote(e.target.value)}
                     required
                     placeholder="ej. XX-XXX"
-                    /><br />
+                /><br />
 
                 <label htmlFor="consulta">Mensaje</label><br />
                 <textarea
@@ -115,10 +125,7 @@ export const Contacto = () => {
                     value={consulta}
                     onChange={(e) => setConsulta(e.target.value)}
                     required
-                    >
-
-                </textarea>
-                    </Col>
+                ></textarea>
                 <fieldset>
                     <legend> ¿A quien le gustaría que lo enviemos?</legend>
                     <select
@@ -127,9 +134,9 @@ export const Contacto = () => {
                         value={destino}
                         onChange={(e) => setDestino(e.target.value)}
                     >
-                        <option value="Administracion">Administración</option>
-                        <option value="Administracion">Facturación</option>
-                        <option value="ControlDeObras">Control de Obras</option>
+                        <option value="administracion">Administración</option>
+                        <option value="facturacion">Facturación</option>
+                        <option value="controlDeObras">Control de Obras</option>
                     </select>
                 </fieldset>
                 <br />
@@ -143,14 +150,14 @@ export const Contacto = () => {
                 <label htmlFor="whatsapp">Contactar por Whatsapp</label><br />
                 <input
                     type="checkbox"
-                    id="correo"
-                    name="correo"
-                    checked={correo}
-                    onChange={() => setCorreo(!correo)}
+                    id="email"
+                    name="email"
+                    checked={email}
+                    onChange={() => setemail(!email)}
                 />
-                <label htmlFor="correo">Consultar por correo electrónico</label><br />
+                <label htmlFor="email">Consultar por email electrónico</label><br />
 
-                <input type="submit" value="Enviar consulta" id="enviarConsulta" className="btn btn-secondary "  />
+                <input type="submit" value="Enviar consulta" id="enviarConsulta" className="btn btn-lg-primary"  />
             </form>
         </main>
     );
