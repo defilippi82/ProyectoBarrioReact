@@ -16,6 +16,7 @@ export const Invitados = () => {
   });
   const [userData, setUserData] = useState(null);
   const [invitados, setInvitados] = useState([]);
+  const [userData, setUserData] = useState(null);
   const [destino, setDestino] = useState('Puerta');
   const [contacto, setContacto] = useState({ email: '', telefono: '' });
   
