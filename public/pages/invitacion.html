@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    
   <link rel="stylesheet" href="src/css/index.css">
   <title> Invitacion by FHD</title>
 </head>
@@ -20,11 +23,11 @@
       <label for="dni"> D.N.I.</label><br>
       <input type="text" name="dni" id="dni" class="input-padron" required placeholder="XX.XXXXXX"><br>
     </div>
-    <div class="col-sm-4">
+    <div class="col-sm-4 text-center">
       <label for="patente">Patente</label><br>
       <input type="text" name="patente" id="patente" class="input-padron" required placeholder="XX-XXX-XX o XXX-XXX"><br>
     </div>
-    <div class="col-sm-4">
+    <div class="col-sm-4 text-center" >
       <label for="mensaje">Mensaje</label><br>
       <textarea cols="auto" rows="auto" name="mensaje" id="mensaje" class="input-padron" placeholder="aclaraciones"></textarea><br>
     </div>
@@ -68,8 +71,36 @@
     }
   </script>
   <footer class="container">
+    <div className="footer">
+        <hr class="sm-4" />
+    
+          
+          <section class="sm-4 text-center">
+           
+                    
+            <a
+               class="btn btn-outline-light btn-floating m-1"
+               href="mailto:federico.filippi@trenesargentinos.gob.ar"
+               role="button"
+               ><i class="fa fa-train "></i
+              ></a>
+    
+            <a
+               class="btn btn-outline-light btn-floating m-1"
+               href="https://www.linkedin.com/in/defilippi/"
+               role="button"
+               ><i class="fab fa-linkedin-in"></i
+              ></a>
+    
+            <a
+               class="btn btn-outline-light btn-floating m-1"
+               href="https://github.com/defilippi82"
+               role="button"
+               ><i class="fab fa-github"></i
+              ></a>
+          </section>
     <div class="row">
-        <div class="col-sm-4">
+        <div class="col-lg-4 text-center">
         <img class="rodapie" src="../img/logo-grisSin-fondo.png" width="75px" height="75px">
         <p class="eslogan">Navegá más allá de lo esperado</p>
     </div>
