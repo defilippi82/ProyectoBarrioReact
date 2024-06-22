@@ -97,7 +97,7 @@ export const Administracion = ()=>{
                 <div className="col">
                     <div className="d-grid gap-2 col-6 mx-auto">
                         
-                        <Link to ="/socios/create" className="btn btn-secondary mt-2 mb-2"> CREAR </Link>
+                        <Link to ="/socios/create" className="btn btn-secondary mt-2 mb-2"> Nuevo Socio o Personal </Link>
 
                     </div>
                     <table className="table table-dark table-hover">
@@ -132,7 +132,7 @@ export const Administracion = ()=>{
             <div className="row">
                 <div className="col">
                     <div className="d-grid gap-2 col-6 mx-auto">
-                    <Link to="/reservas/create" className="btn btn-secondary mt-2 mb-2">Crear Reserva</Link>
+                    <Link to="/reservas/create" className="btn btn-secondary mt-2 mb-2">Nueva Reserva</Link>
                     
                     </div>
                     <table className="table table-dark table-hover">

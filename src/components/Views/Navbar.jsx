@@ -59,7 +59,7 @@ export const NavbarComponent = ({ handleLogout }) => {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav" style={{ backgroundColor: 'rgba(0, 123, 255, 0.5)' }}>
           <Nav className="me-auto">
-            {userData && userData.nombre && (
+            {userData && userData.nombre && (userData.rol.propietario || userData.rol.inquilino || userData.rol.administrador )&& (
               <>
                 <Nav.Link className="navlinks" href="#/panico">
                   Inicio

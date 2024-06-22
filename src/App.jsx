@@ -5,14 +5,13 @@ import { Reservas } from "./components/Admin/Reservas";
 import { Administracion } from "./components/Admin/Administracion";
 import { EditarReserva } from "./components/Admin/EditarReserva";
 import { EditarSocio } from "./components/Admin/EditarSocio";
-import { RegistrarReserva } from "./components/Socios/RegistrarReservas";
-import { RegistrarSocio } from "./components/Socios/RegistrarSocios";
 import { Panico } from './components/Socios/Panico';
 import {Contacto} from "./components/Socios/Contacto";
+import { RegistrarReserva } from "./components/Services/RegistrarReservas";
+import { RegistrarSocio } from "./components/Services/RegistrarSocios";
 import { Invitados } from "./components/Services/Invitados";
 import {Novedades} from "./components/Services/Novedades";
 import {Mensajeria} from "./components/Services/Mensajeria";
-import {ChatRoom} from "./components/Services/ChatRoom";
 import { UserProvider } from './components/Services/UserContext';
 import {Privacidad} from "./components/Views/Privacidad";
 import { NavbarComponent } from './components/Views/Navbar.jsx';
@@ -53,7 +52,6 @@ export const App = () => {
           <Route path="/panico" element={<Panico />} />
           <Route path="/administracion" element={<Administracion />} />
           <Route path="/invitados" element={<Invitados />} />
-          <Route path="/chatroom" element={<ChatRoom />} />
           <Route path="/novedades" element={<Novedades />} />
           <Route path="/mensajeria" element={<Mensajeria />} />
           <Route path="/privacidad" element={<Privacidad />} />

@@ -16,11 +16,19 @@ body {
 
 .user-name {
   margin-left: 10px; /* Espaciado entre el nombre de usuario y el texto anterior */
-  color: #ffffff; /* Color del texto del nombre de usuario */
+  color: #050404; /* Color del texto del nombre de usuario */
+}
+.html{
+  background: #375DDB;
+  background: -moz-linear-gradient(-45deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%);
+  background: -webkit-linear-gradient(-45deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%);
+  background: linear-gradient(135deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%);
+  background-size:contain;
+  background-repeat: no-repeat;
 }
 
 .navbar-collapse {
-  background-color: #343a40; /* Color de fondo del menú desplegable */
+  background-color: #6388ad; /* Color de fondo del menú desplegable */
 }
 
 .navlinks {

@@ -53,7 +53,7 @@ export const Contacto = () => {
 
                 if (whatsapp) {
                     var whatsappUrl = `https://api.whatsapp.com/send?phone=${contacto.numerotelefono}&text=${encodeURIComponent(msj)}`;
-                    window.open(whatsappUrl, '_blank');
+                    window.open(whatsappUrl);
                 }
                 if (correo) {
                     var emailSubject = `Consulta del lote ${lote}`;

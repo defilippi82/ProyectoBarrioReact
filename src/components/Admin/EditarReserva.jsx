@@ -73,7 +73,7 @@ export const EditarReserva = () => {
         showConfirmButton: true,
       }).then(() => {
         // Redirigir al usuario a otra página después de la alerta
-        navigate ('/reservas');
+        navigate ('/administracion');
       });;
     } catch (error) {
       // Mostrar alerta de error

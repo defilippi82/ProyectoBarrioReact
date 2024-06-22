@@ -98,7 +98,7 @@ export const RegistrarReserva = () => {
       await addDoc(reservasCollection, {
         cancha: cancha,
         fecha: Timestamp.fromDate(new Date(`${fecha}T${hora}`)),
-        nombre: nombre,
+        apellido: apellido,
       });
 
       // Mostrar alerta de éxito
@@ -109,7 +109,7 @@ export const RegistrarReserva = () => {
         showConfirmButton: true,
       }).then(() => {
         // Redirigir al usuario a otra página después de la alerta
-        navigate('/panico');
+        navigate('#/panico');
       });
 
       // Resetear los campos del formulario
@@ -179,7 +179,7 @@ export const RegistrarReserva = () => {
           <input className='form-control text-bg-primary'
             type="text"
             id="apellido"
-            placeholder="Nombre completo"
+            placeholder="Nombre"
             value={userData ? userData.apellido : ''}
             onChange={(e) => setApellido(e.target.value)}
             required

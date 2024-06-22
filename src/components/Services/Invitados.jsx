@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Tab } from 'react-bootstrap';
 import Table from 'react-bootstrap/Table';
+import { collection, query, getDocs, where } from 'firebase/firestore';
+import { db } from '../../firebaseConfig/firebase';
+import Swal from 'sweetalert2';
 
 
 export const Invitados = () => {
@@ -13,6 +16,8 @@ export const Invitados = () => {
   });
   const [userData, setUserData] = useState(null);
   const [invitados, setInvitados] = useState([]);
+  const [destino, setDestino] = useState('Puerta');
+  const [contacto, setContacto] = useState({ email: '', telefono: '' });
   
    useEffect(() => {
     const userDataFromStorage = localStorage.getItem('userData');
@@ -30,7 +35,26 @@ export const Invitados = () => {
 
       obtenerDatosUsuario();
     }
-  }, []); // Matriz
+  }, []); 
+  useEffect(() => {
+    if (destino) {
+        fetchContacto(destino);
+    }
+}, [destino]);
+  const fetchContacto = async (destino) => {
+    try {
+        const q = query(collection(db, "usuarios"), where('nombre', '==', destino));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            const userData = querySnapshot.docs[0].data();
+            setContacto({ email: userData.email, telefono: userData.numerotelefono });
+        } else {
+            setContacto({ email: '', telefono: '' });
+        }
+    } catch (error) {
+        console.error("Error fetching contact:", error);
+    }
+};
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -57,23 +81,23 @@ export const Invitados = () => {
     const msj = `Soy del lote ${userData.manzana}-${userData.lote} y quiero autorizar para su ingreso a ${nombreapellido} D.N.I. ${dni}, patente del automóvil ${patente}. ${mensaje}`;
 
     if (enviarCorreo) {
-      const destinatarioCorreo = "f.defilippi@gmail.com"; // modificar correo según corresponda
       const emailSubject = `Lista de Invitados del lote ${userData.manzana}-${userData.lote}`;
       let emailBody = `Soy del lote ${userData.manzana}-${userData.lote} y quiero autorizar para su ingreso a las siguientes personas:\n\nNombre\t\t\tD.N.I.\t\t\tPatente\n`;
       invitados.forEach(inv => {
-        emailBody += `${inv.nombre}\t\t${inv.dni}\t\t${inv.patente}\n`;
+        emailBody += `${inv.nombre}\t\t\t\t${inv.dni}\t\t\t\t${inv.patente}\n`;
       });
-      const emailLink = `mailto:${encodeURIComponent(destinatarioCorreo)}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-      window.location.href = emailLink;
+      var emailLink = `mailto:${contacto.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+      window.open(emailLink);
     } else {
-      const whatsappUrl = `https://api.whatsapp.com/send?phone=${userData.numerotelefono}&text=${encodeURIComponent(msj)}`;
-      window.location.href = whatsappUrl;
+      const whatsappUrl = `https://api.whatsapp.com/send?phone=${contacto.numerotelefono}&text=${encodeURIComponent(msj)}`;
+      window.open(whatsappUrl);
     }
   };
 
   const handleEnviarInvitacion = (e) => {
     e.preventDefault();
-    const urlInvitacion = 'https://defilippi82.github.io/SOS/invitacion.html'; // Reemplaza con la URL real
+    const urlInvitacion = `${window.location.origin}/public/pages/invitacion.html`;
+    //const urlInvitacion = 'https://defilippi82.github.io/SOS/invitacion.html'; // Reemplaza con la URL real
     const mensaje = `Te envío la invitación para autorizar el ingreso: ${urlInvitacion}`;
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensaje)}`;
     window.open(whatsappUrl);
@@ -131,7 +155,7 @@ export const Invitados = () => {
           </div>
         <section>
           <h1>Lista de invitados</h1>
-          <Table striped bordered hover size="sm" >
+          <Table responsive striped bordered hover size="sm" >
             <thead>
               <tr>
                 <th>Nombre</th>
