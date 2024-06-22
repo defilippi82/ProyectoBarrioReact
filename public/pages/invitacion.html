@@ -11,21 +11,23 @@
 <body style="background-color: #1ed4ec;" display="flex" align-items= "center">
   <main class="container">
     <form action="https://formsubmit.co/f.defilippi@gmail.com" method="POST">
-        <div class="mb-3">
+        <div class="row">
+    <div class="col-sm-4">
       <label for="nombreapellido">Nombre y Apellido</label><br>
       <input type="text" name="nombreapellido" id="nombreapellido" class="input-padron" required><br>
     </div>
-    <div class="mb-3">
+    <div class="col-sm-4">
       <label for="dni"> D.N.I.</label><br>
       <input type="text" name="dni" id="dni" class="input-padron" required placeholder="XX.XXXXXX"><br>
     </div>
-    <div class="mb-3">
+    <div class="col-sm-4">
       <label for="patente">Patente</label><br>
       <input type="text" name="patente" id="patente" class="input-padron" required placeholder="XX-XXX-XX o XXX-XXX"><br>
     </div>
-    <div class="mb-3">
+    <div class="col-sm-4">
       <label for="mensaje">Mensaje</label><br>
       <textarea cols="auto" rows="auto" name="mensaje" id="mensaje" class="input-padron" placeholder="aclaraciones"></textarea><br>
+    </div>
     </div>
       <input type="submit" value="Enviar" class="enviar" onclick="invitacion()">
     </form>
@@ -65,9 +67,13 @@
       document.getElementById('nombreapellido').focus();
     }
   </script>
-  <footer>
-    <img class="rodapie" src="../img/logo-grisSin-fondo.png" width="125px" height="125px">
-    <p class="eslogan">Navegá más allá de lo esperado</p>
+  <footer class="container">
+    <div class="row">
+        <div class="col-sm-4">
+        <img class="rodapie" src="../img/logo-grisSin-fondo.png" width="75px" height="75px">
+        <p class="eslogan">Navegá más allá de lo esperado</p>
+    </div>
+    </div>
   </footer>
   <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
 </body>
