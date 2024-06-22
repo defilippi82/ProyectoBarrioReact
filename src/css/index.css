@@ -25,6 +25,8 @@ body {
   background: linear-gradient(135deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%);
   background-size:contain;
   background-repeat: no-repeat;
+  display: flex;
+  align-items: center
 }
 
 .navbar-collapse {
