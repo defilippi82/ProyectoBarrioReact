@@ -16,7 +16,6 @@ export const Invitados = () => {
   });
   const [userData, setUserData] = useState(null);
   const [invitados, setInvitados] = useState([]);
-  const [userData, setUserData] = useState(null);
   const [destino, setDestino] = useState('Puerta');
   const [contacto, setContacto] = useState({ email: '', telefono: '' });
   
@@ -39,7 +38,7 @@ export const Invitados = () => {
   }, []); 
   useEffect(() => {
     if (destino) {
-        fetchContacto(destino);
+        fetchContacto('Puerta');
     }
 }, [destino]);
   const fetchContacto = async (destino) => {
