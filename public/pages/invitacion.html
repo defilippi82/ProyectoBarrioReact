@@ -9,17 +9,24 @@
   <title> Invitacion by FHD</title>
 </head>
 <body style="background-color: #1ed4ec;" display="flex" align-items= "center">
-  <main>
+  <main class="container">
     <form action="https://formsubmit.co/f.defilippi@gmail.com" method="POST">
-      <br>
+        <div class="mb-3">
       <label for="nombreapellido">Nombre y Apellido</label><br>
       <input type="text" name="nombreapellido" id="nombreapellido" class="input-padron" required><br>
+    </div>
+    <div class="mb-3">
       <label for="dni"> D.N.I.</label><br>
       <input type="text" name="dni" id="dni" class="input-padron" required placeholder="XX.XXXXXX"><br>
+    </div>
+    <div class="mb-3">
       <label for="patente">Patente</label><br>
       <input type="text" name="patente" id="patente" class="input-padron" required placeholder="XX-XXX-XX o XXX-XXX"><br>
+    </div>
+    <div class="mb-3">
       <label for="mensaje">Mensaje</label><br>
       <textarea cols="auto" rows="auto" name="mensaje" id="mensaje" class="input-padron" placeholder="aclaraciones"></textarea><br>
+    </div>
       <input type="submit" value="Enviar" class="enviar" onclick="invitacion()">
     </form>
   </main>
