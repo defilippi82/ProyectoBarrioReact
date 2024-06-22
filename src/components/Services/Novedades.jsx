@@ -2,9 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 import { db } from '/src/firebaseConfig/firebase.js';
 import { UserContext } from '../Services/UserContext';
-import Card from 'react-bootstrap/Card';
-import Button from 'react-bootstrap/Button';
-import Form from 'react-bootstrap/Form';
+import {Card, Button,Form, Row, Col} from 'react-bootstrap';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 
@@ -126,10 +124,10 @@ export const Novedades = () => {
     return (
         <div className="container mt-4">
             <h2>Novedades / Avisos</h2>
-            <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            <div className="row row-cols-1 row-cols-md-2 row-cols-sm-3 g-4">
                 {novedades.map(({ id, socio, fecha, novedad, imagen, likes }) => (
-                    <div className="col mb-4" key={id}>
-                    <Card key={id} style={{ width: 'auto', margin: '10px' }}>
+                    <div className="col auto" key={id}>
+                    <Card key={id} style={{ width: 'auto', margin: 'auto' }}>
                         {imagen && <Card.Img variant="top" src={imagen} />}
                         <Card.Body>
                             <Card.Title>{socio} Lote:{userData.manzana}-{userData.lote}</Card.Title>
@@ -147,7 +145,10 @@ export const Novedades = () => {
                     </div>
                 ))}
             </div>
+            <Row className="align-items-center">
+            
             <Form onSubmit={handleAddNovedad}>
+            <Col xs="auto">
                 <Form.Group controlId="novedadInput">
                     <Form.Label>Agregar Novedad</Form.Label>
                     <Form.Control
@@ -157,6 +158,8 @@ export const Novedades = () => {
                         onChange={(e) => setNewNovedad(e.target.value)}
                     />
                 </Form.Group>
+                </Col>
+                <Col xs="auto">
                 <Form.Group controlId="imageInput" className="mt-3">
                     <Form.Label>Agregar Imagen</Form.Label>
                     <Form.Control
@@ -165,10 +168,13 @@ export const Novedades = () => {
                         onChange={(e) => setNewImage(URL.createObjectURL(e.target.files[0]))}
                     />
                 </Form.Group>
+                </Col>
                 <Button variant="primary" type="submit" className="mt-3">
                     Agregar Novedad
                 </Button>
             </Form>
+            
+            </Row>
         </div>
     );
 };

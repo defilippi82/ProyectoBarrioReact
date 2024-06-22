@@ -19,10 +19,10 @@ export const RegistrarSocio = () => {
   const [lote, setLote] = useState('');
   const [isla, setIsla] = useState('');
   const roles = new Map([
-    ['administrador', { valor: 'administrador', administrador: true, propietario: true, inquilino: true, guardia: true }],
+    
     ['propietario', { valor: 'propietario', administrador: false, propietario: true, inquilino: false, guardia: false }],
     ['inquilino', { valor: 'inquilino', administrador: false, propietario: false, inquilino: true, guardia: false }],
-    ['guardia', { valor: 'guardia', administrador: false, propietario: false, inquilino: false, guardia: true }],
+    
   ]);
   const [rol, setRol] = useState(roles.get('propietario')); // Valor inicial del rol
   const [tel, setTel] = useState('');
@@ -127,7 +127,7 @@ const RolSelect = () => {
         className="form-select"
       >
         {Array.from(roles.keys()).map((key) => (
-          <option key={key} value={key} disabled={key === 'administrador' } disabled={key === 'guardia' }>
+          <option key={key} value={key}  >
             {key}
           </option>
         ))}
