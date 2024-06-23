@@ -1,5 +1,9 @@
 import React,{ useEffect, useState} from 'react';
 import { HashRouter as Router, Routes, Route, Navigate} from "react-router-dom";
+import { getMessaging, getToken, onMessage } from "firebase/messaging";
+import { messaging } from './firebaseConfig'; // Asegúrate de que la ruta sea correcta
+import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
+import { auth } from './firebaseConfig'; // Asegúrate de que la ruta sea correcta
 import { Login } from "./utils/Login";
 import { Reservas } from "./components/Admin/Reservas";
 import { Administracion } from "./components/Admin/Administracion";
@@ -22,8 +26,59 @@ import './css/App.css'
 export const App = () => {
   
   const [userData, setUserData]  = useState(null);
+  const guardarTokenEnBaseDeDatos = async (token) => {
+    const db = getFirestore();
+    const usuario = auth.currentUser;
+  
+    if (usuario) {
+      const usuarioRef = doc(db, 'usuarios', usuario.uid);
+      
+      try {
+        const usuarioDoc = await getDoc(usuarioRef);
+        if (usuarioDoc.exists()) {
+          await setDoc(usuarioRef, { fcmToken: token }, { merge: true });
+          console.log('Token FCM guardado en la base de datos');
+        } else {
+          console.error('El documento del usuario no existe');
+        }
+      } catch (error) {
+        console.error('Error al guardar el token en la base de datos:', error);
+      }
+    } else {
+      console.error('No hay usuario autenticado');
+    }
+  };
 
-    
+  useEffect(() => {
+    const solicitarPermisoParaNotificaciones = async () => {
+      try {
+        const permiso = await Notification.requestPermission();
+        if (permiso === 'granted') {
+          const token = await getToken(messaging, { vapidKey: 'BC1dFTH3QJeInZ8LL-2ZrBj6EXE8iWmDu7PDfDGhx7LiADYJ_KjzZdK-izhIaPOpmI2qQ0cveH_fl5orZ1znFTw ' });
+          console.log('Token de FCM:', token);
+          // Aquí deberías guardar este token en la base de datos para el usuario actual
+          guardarTokenEnBaseDeDatos(token);
+        } else {
+          console.log('Permiso de notificación denegado');
+        }
+      } catch (error) {
+        console.error('Error al solicitar permiso:', error);
+      }
+    };
+
+    solicitarPermisoParaNotificaciones();
+
+    const unsubscribe = onMessage(messaging, (payload) => {
+      console.log('Mensaje recibido:', payload);
+      // Aquí puedes manejar la notificación recibida, por ejemplo, mostrar una alerta
+      alert(payload.notification.body);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   useEffect(() => {
     const userDataFromStorage = localStorage.getItem('userData');
     if (userDataFromStorage) {

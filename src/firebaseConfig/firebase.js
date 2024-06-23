@@ -36,4 +36,18 @@ export const auth = getAuth(app);
 // Initialize Firebase Cloud Messaging and get a reference to the service
 export const messaging = getMessaging(app);
 
-
+export const obtenerTokenFCM = async () => {
+  try {
+    const currentToken = await getToken(messaging, { vapidKey: 'BC1dFTH3QJeInZ8LL-2ZrBj6EXE8iWmDu7PDfDGhx7LiADYJ_KjzZdK-izhIaPOpmI2qQ0cveH_fl5orZ1znFTw ' });
+    if (currentToken) {
+      console.log('Token de FCM:', currentToken);
+      return currentToken;
+    } else {
+      console.log('No se pudo obtener el token. Solicita permiso para recibir notificaciones primero.');
+      return null;
+    }
+  } catch (error) {
+    console.error('Error al obtener el token de FCM:', error);
+    return null;
+  }
+};
