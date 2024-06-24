@@ -79,14 +79,17 @@ export const NavbarComponent = ({ handleLogout }) => {
                 {userData.rol && userData.rol.administrador && (
                   <><Nav.Link className="navlinks" href="#/administracion">
                     Administración
-                  </Nav.Link><Nav.Link className="navlinks" href="#/campanas">
+                  </Nav.Link>
+                <Nav.Link className="navlinks" href="#/campanas">
                       Campañas
-                    </Nav.Link>
-                    <Nav.Link className="navlinks" href="#/seguridad">
-                      Seguridad
                     </Nav.Link>
                     </>
                 )}
+                {userData.rol && (userData.rol.guardia || userData.rol.administrador ) && (
+                    <Nav.Link className="navlinks" href="#/seguridad">
+                      Seguridad
+                    </Nav.Link>
+                    )}
                 <Button variant="outline-danger" size='sm' href="/" onClick={handleLogout} className="logout-button">
                   Salir
                 </Button>

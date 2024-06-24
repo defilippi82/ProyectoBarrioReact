@@ -7,7 +7,7 @@ export const SeguridadDashboard = () => {
     <div>
       <h1>Panel de Seguridad</h1>
       <Mensajero />
-      <MapaSeguridad />
+      
     </div>
   );
 };
