@@ -3,9 +3,7 @@ import { getFirestore, collection, getDocs, query, where, addDoc } from 'firebas
 import Image from 'react-bootstrap/Image';
 import { UserContext } from "../Services/UserContext";
 import { obtenerTokenFCM } from '../../firebaseConfig/firebase';
-import { getMessaging, onMessage } from 'firebase/messaging';
 
-const messaging = getMessaging();
 
 export const Panico = () => {
   const { userData } = useContext(UserContext);
@@ -21,7 +19,7 @@ export const Panico = () => {
     inicializar();
   }, []);
   useEffect(() => {
-    onMessage(messaging, payload => {
+    messaging.onMessage(payload => {
       console.log('Message received in Panico component. ', payload);
       // Aquí puedes manejar la notificación específica para Panico
     });

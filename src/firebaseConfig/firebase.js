@@ -3,6 +3,8 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore, collection, addDoc, onSnapshot } from "firebase/firestore";
 import { getMessaging } from "firebase/messaging";
+import { getAnalytics } from "firebase/analytics";
+
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -13,13 +15,18 @@ const firebaseConfig = {
 
   authDomain: "cube-b5537.firebaseapp.com",
 
+  databaseURL: "https://cube-b5537-default-rtdb.firebaseio.com",
+
   projectId: "cube-b5537",
 
   storageBucket: "cube-b5537.appspot.com",
 
   messagingSenderId: "746288096117",
 
-  appId: "1:746288096117:web:4a121eea0fc0e72fb5e93c"
+  appId: "1:746288096117:web:4a121eea0fc0e72fb5e93c",
+
+  measurementId: "G-3HVP2KTDDX"
+
 
   /*apiKey: import.meta.env.VITE_API_KEY,
   authDomain: import.meta.env.VITE_AUTH_DOMAIN,
@@ -33,12 +40,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+export const analytics = getAnalytics(app);
 // Initialize Firebase Cloud Messaging and get a reference to the service
 export const messaging = getMessaging(app);
 
 export const obtenerTokenFCM = async () => {
   try {
-    const currentToken = await getToken(messaging, { vapidKey: 'BC1dFTH3QJeInZ8LL-2ZrBj6EXE8iWmDu7PDfDGhx7LiADYJ_KjzZdK-izhIaPOpmI2qQ0cveH_fl5orZ1znFTw ' });
+    const currentToken = await getToken(messaging, { vapidKey: 'BC1dFTH3QJeInZ8LL-2ZrBj6EXE8iWmDu7PDfDGhx7LiADYJ_KjzZdK-izhIaPOpmI2qQ0cveH_fl5orZ1znFTw' });
     if (currentToken) {
       console.log('Token de FCM:', currentToken);
       return currentToken;

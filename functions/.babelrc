@@ -1,0 +1,13 @@
+{
+    "presets": [
+      [
+        "@babel/preset-env",
+        {
+          "targets": {
+            "node": "14" // La versión de Node.js que usa Firebase Functions
+          }
+        }
+      ]
+    ]
+  }
+  

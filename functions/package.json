@@ -1,6 +1,5 @@
 {
   "name": "functions",
-  "type": "module",
   "description": "Cloud Functions for Firebase",
   "scripts": {
     "lint": "eslint '**/*.{js,mjs}'",
@@ -8,20 +7,22 @@
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "build:functions": "babel src/functions -d dist/functions"
   },
-  "engines": {
-    "node": "18"
-  },
-  "main": "index.mjs",
   "dependencies": {
-    "firebase-admin": "^12.1.0",
-    "firebase-functions": "^5.0.0"
+    "firebase-admin": "^11.0.0",
+    "firebase-functions": "^5.0.1"
   },
   "devDependencies": {
-    "eslint": "^8.15.0",
-    "eslint-config-google": "^0.14.0",
-    "firebase-functions-test": "^3.1.0"
+    "@babel/cli": "^7.24.7",
+    "@babel/core": "^7.24.7",
+    "@babel/preset-env": "^7.24.7",
+    "eslint": "^7.32.0",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-promise": "^4.3.1"
   },
-  "private": true
+  "engines": {
+    "node": "20"
+  }
 }

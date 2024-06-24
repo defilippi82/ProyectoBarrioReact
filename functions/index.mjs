@@ -1,31 +1,47 @@
-//import { onRequest } from "firebase-functions/v2/https";
-import { onDocumentCreated } from "firebase-functions/v2/firestore";
-import { initializeApp } from "firebase-admin/app";
-import { getMessaging } from "firebase-admin/messaging";
+import { initializeApp } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getMessaging } from 'firebase-admin/messaging';
+import functions from 'firebase-functions';
 
 initializeApp();
 
-export const enviarNotificacion = onDocumentCreated("notificaciones/{notificacionId}", async (event) => {
-    const nuevaNotificacion = event.data.data();
-    const { token, mensaje, prioridad } = nuevaNotificacion;
+const db = getFirestore();
 
-    const mensaje_notificacion = {
-        token: token,
-        notification: {
-            title: 'Alerta de seguridad',
-            body: mensaje
-        },
-        data: {
-            prioridad: prioridad
-        }
-    };
+export const sendNotification = functions.https.onCall(async (data) => {
+  const { title, body, userIds } = data;
 
-    try {
-        const respuesta = await getMessaging().send(mensaje_notificacion);
-        console.log('Notificación enviada con éxito:', respuesta);
-        return null;
-    } catch (error) {
-        console.error('Error al enviar la notificación:', error);
-        return null;
+  if (!userIds || userIds.length === 0) {
+    throw new functions.https.HttpsError('invalid-argument', 'User IDs must be provided');
+  }
+
+  const tokens = [];
+
+  for (const userId of userIds) {
+    const userDoc = await db.collection('usuarios').doc(userId).get();
+    if (userDoc.exists) {
+      const userData = userDoc.data();
+      if (userData.fcmToken) {
+        tokens.push(userData.fcmToken);
+      }
     }
+  }
+
+  if (tokens.length === 0) {
+    throw new functions.https.HttpsError('not-found', 'No FCM tokens found for the provided user IDs');
+  }
+
+  const message = {
+    notification: {
+      title,
+      body
+    },
+    tokens
+  };
+
+  try {
+    const response = await getMessaging().sendMulticast(message);
+    return { success: true, response };
+  } catch (error) {
+    throw new functions.https.HttpsError('internal', 'Error sending notification', error);
+  }
 });
