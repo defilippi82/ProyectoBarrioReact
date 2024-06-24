@@ -21,6 +21,7 @@ import { UserProvider } from './components/Services/UserContext';
 import { Privacidad } from "./components/Views/Privacidad";
 import { NavbarComponent } from './components/Views/Navbar.jsx';
 import { Footer } from './components/Views/Footer';
+import { SeguridadDashboard } from "./components/Seguridad/SeguridadDashboard";
 import './css/App.css';
 
 export const App = () => {
@@ -112,6 +113,7 @@ export const App = () => {
               <Route path="/reservas/create" element={<RegistrarReserva />} />
               <Route path="/socios/edit/:id" element={<EditarSocio />} />
               <Route path="/reservas/edit/:id" element={<EditarReserva />} />
+              <Route path="/seguridad" element={<SeguridadDashboard />} />
               {userData ? null : <Route path="*" element={<Navigate to="/" />} />}
             </Routes>
           </main>

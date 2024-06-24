@@ -81,7 +81,11 @@ export const NavbarComponent = ({ handleLogout }) => {
                     Administración
                   </Nav.Link><Nav.Link className="navlinks" href="#/campanas">
                       Campañas
-                    </Nav.Link></>
+                    </Nav.Link>
+                    <Nav.Link className="navlinks" href="#/seguridad">
+                      Seguridad
+                    </Nav.Link>
+                    </>
                 )}
                 <Button variant="outline-danger" size='sm' href="/" onClick={handleLogout} className="logout-button">
                   Salir
