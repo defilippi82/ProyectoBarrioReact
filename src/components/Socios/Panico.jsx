@@ -187,46 +187,54 @@ export const Panico = () => {
     }
     try {
       const db = getFirestore();
+      
       // Consultar usuarios de la misma isla
       const usuariosIslaQuery = query(
         collection(db, 'usuarios'),
         where('isla', '==', userData.isla)
       );
-
+  
+      // Consultar guardias
       const usuariosGuardiaQuery = query(
         collection(db, 'usuarios'),
-        where('rol.guardia', '==', true)
+        where('rol', '==', userData.rol.guardia)
       );
-
+  
       const [usuariosIslaSnapshot, usuariosGuardiaSnapshot] = await Promise.all([
         getDocs(usuariosIslaQuery),
         getDocs(usuariosGuardiaQuery)
       ]);
-
+  
       const usuariosIsla = usuariosIslaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const usuariosGuardia = usuariosGuardiaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-      // Unificar ambos conjuntos de usuarios, evitando duplicados
-      const usuariosCombinados = [...usuariosIsla];
-      usuariosGuardia.forEach(guardia => {
-        if (!usuariosIsla.some(user => user.id === guardia.id)) {
-          usuariosCombinados.push(guardia);
-        }
-      });
-
-      const messagePromises = usuariosCombinados.map(user => {
-        return addDoc(collection(db, 'mensajes'), {
+  
+      // Función para enviar mensaje
+      const enviarMensaje = async (user) => {
+        const receiverInfo = user.rol?.guardia ? 'guardia' : `${user.manzana}-${user.lote}`;
+        await addDoc(collection(db, 'mensajes'), {
           sender: `${userData.manzana}-${userData.lote}`,
-          receiver: `${user.manzana}-${user.lote}`,
+          receiver: receiverInfo,
           content: `Soy del lote ${userData.manzana}-${userData.lote} y necesito ayuda por mi lote`,
           timestamp: new Date(),
           read: false,
           source: 'alerta',
-          ubicacion: location  // Añadiendo la ubicación al mensaje
+          ubicacion: location
         });
+      };
+  
+      // Combinar usuarios de isla y guardias, eliminando duplicados
+      const todosUsuarios = [...usuariosIsla];
+      usuariosGuardia.forEach(guardia => {
+        if (!todosUsuarios.some(user => user.id === guardia.id)) {
+          todosUsuarios.push(guardia);
+        }
       });
-
-      await Promise.all(messagePromises);
+  
+      // Enviar mensajes a todos los usuarios
+      const promesasMensajes = todosUsuarios.map(user => enviarMensaje(user));
+  
+      await Promise.all(promesasMensajes);
+  
       console.log('Mensajes enviados a todos los usuarios en la misma isla y a la guardia');
     } catch (error) {
       console.error("Error enviando mensajes: ", error);
