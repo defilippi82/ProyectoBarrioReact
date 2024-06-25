@@ -19,7 +19,8 @@ export const EditarSocio = () => {
         manzana: "",
         lote: "",
         isla: "",
-        numerotelefono: ""
+        numerotelefono: "",
+        rol: { valor: 'propietario', administrador: false, propietario: true, inquilino: false, guardia: false }
     });
     const roles = new Map([
         ['administrador', { valor: 'administrador', administrador: true, propietario: true, inquilino: true, guardia: true }],
@@ -80,11 +81,12 @@ export const EditarSocio = () => {
         }
     };
     const RolSelect = () => {
-        const [rol, setRol] = useState(roles.get('propietario'));
-      
         const handleRolChange = (e) => {
           const nuevoRol = roles.get(e.target.value);
-          setRol(nuevoRol);
+          setSocio({
+            ...socio,
+            rol: nuevoRol
+          });
         };
       
         return (
@@ -92,7 +94,7 @@ export const EditarSocio = () => {
             <select
               name="rol"
               id="rol"
-              value={rol.valor}
+              value={socio.rol.valor}
               onChange={handleRolChange}
               className="form-select"
             >

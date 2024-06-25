@@ -11,6 +11,7 @@ export const Panico = () => {
   const { userData } = useContext(UserContext);
   const [isLoading, setIsLoading] = useState(true);
   const [fcmToken, setFcmToken] = useState(null);
+  const [location, setLocation] = useState(null);
 
   useEffect(() => {
     const inicializar = async () => {
@@ -27,6 +28,24 @@ export const Panico = () => {
     });
   }, []);
 
+  const obtenerUbicacion = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          setLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        error => {
+          console.error("Error obteniendo la ubicación: ", error);
+        }
+      );
+    } else {
+      console.error("Geolocalización no es soportada por este navegador.");
+    }
+  };
+
   const enviarNotificacion = async (usuarios, mensaje, prioridad) => {
     const db = getFirestore();
     const notificacionesRef = collection(db, 'notificaciones');
@@ -36,6 +55,7 @@ export const Panico = () => {
         token: usuario.fcmToken,
         mensaje: mensaje,
         prioridad: prioridad,
+        ubicacion: ubicacion,
         timestamp: new Date(),
       });
     });
@@ -122,6 +142,7 @@ export const Panico = () => {
   };*/
 
  const ruidos = async () => {
+  obtenerUbicacion();
     try {
       if (!userData || !userData.manzana || !userData.lote) {
         console.error("El usuario no tiene asignada una manzana o userData es null.");
@@ -144,7 +165,8 @@ export const Panico = () => {
           content: `Soy del lote ${userData.manzana}-${userData.lote} y escucho ruidos sospechosos por mi lote`,
           timestamp: new Date(),
           read: false,
-          source: 'alerta'
+          source: 'alerta',
+          ubicacion: location
         });
       });
 
@@ -173,7 +195,7 @@ export const Panico = () => {
 
       const usuariosGuardiaQuery = query(
         collection(db, 'usuarios'),
-        where('rol', '==', 'guardia')
+        where('rol.guardia', '==', true)
       );
 
       const [usuariosIslaSnapshot, usuariosGuardiaSnapshot] = await Promise.all([
@@ -199,7 +221,8 @@ export const Panico = () => {
           content: `Soy del lote ${userData.manzana}-${userData.lote} y necesito ayuda por mi lote`,
           timestamp: new Date(),
           read: false,
-          source: 'alerta'
+          source: 'alerta',
+          ubicacion: location  // Añadiendo la ubicación al mensaje
         });
       });
 

@@ -53,12 +53,19 @@ export const NavbarComponent = ({ handleLogout }) => {
               <span className="badge bg-danger text-white ms-1">{newMessages}</span>
             )}
           </Nav.Link>
-          <strong>SafeNeighborhood App ||</strong>
+          <strong>S.N. App ||</strong>
           {userData && userData.nombre && <span className="user-name">¡Hola <em>{userData.nombre}!</em></span>}
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav" style={{ backgroundColor: 'rgba(0, 123, 255, 0.5)' }}>
           <Nav className="me-auto">
+            <>
+            {userData && userData.rol && (userData.rol.administrador || userData.rol.guardia) && (
+              <Nav.Link className="navlinks" href="#/seguridad">
+              Seguridad
+            </Nav.Link>
+              )}
+              </>
             {userData && userData.nombre && (userData.rol.propietario || userData.rol.inquilino || userData.rol.administrador )&& (
               <>
                 <Nav.Link className="navlinks" href="#/panico">
@@ -76,7 +83,7 @@ export const NavbarComponent = ({ handleLogout }) => {
                 <Nav.Link className="navlinks" href="#/contacto">
                   Contacto
                 </Nav.Link>
-                {userData.rol && userData.rol.administrador && (
+                {userData.rol && (userData.rol.administrador) && (
                   <><Nav.Link className="navlinks" href="#/administracion">
                     Administración
                   </Nav.Link>
@@ -85,11 +92,6 @@ export const NavbarComponent = ({ handleLogout }) => {
                     </Nav.Link>
                     </>
                 )}
-                {userData.rol && (userData.rol.guardia || userData.rol.administrador ) && (
-                    <Nav.Link className="navlinks" href="#/seguridad">
-                      Seguridad
-                    </Nav.Link>
-                    )}
                 <Button variant="outline-danger" size='sm' href="/" onClick={handleLogout} className="logout-button">
                   Salir
                 </Button>
