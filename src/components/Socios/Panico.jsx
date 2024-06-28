@@ -15,16 +15,21 @@ export const Panico = () => {
 
   useEffect(() => {
     const inicializar = async () => {
-      const token = await obtenerTokenFCM();
-      setFcmToken(token);
-      setIsLoading(false);
+      try {
+        const token = await obtenerTokenFCM();
+        setFcmToken(token);
+      } catch (error) {
+        console.error("Error obteniendo el token FCM: ", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     inicializar();
   }, []);
+  
   useEffect(() => {
     onMessage(messaging, payload => {
       console.log('Message received in Panico component. ', payload);
-      // Aquí puedes manejar la notificación específica para Panico
     });
   }, []);
 
@@ -46,131 +51,42 @@ export const Panico = () => {
     }
   };
 
-  const enviarNotificacion = async (usuarios, mensaje, prioridad) => {
+  const enviarMensaje = async (usuarios, mensaje, prioridad) => {
     const db = getFirestore();
-    const notificacionesRef = collection(db, 'notificaciones');
-    
-    const promesasNotificaciones = usuarios.map(async (usuario) => {
-      await addDoc(notificacionesRef, {
-        token: usuario.fcmToken,
-        mensaje: mensaje,
+    const promesasMensajes = usuarios.map(async (usuario) => {
+      await addDoc(collection(db, 'mensajes'), {
+        sender: `${userData.manzana}-${userData.lote}`,
+        receiver: `${usuario.manzana}-${usuario.lote}`,
+        content: mensaje,
         prioridad: prioridad,
-        ubicacion: ubicacion,
+        ubicacion: location,
         timestamp: new Date(),
+        read: false,
+        source: 'alerta'
       });
     });
-
-    await Promise.all(promesasNotificaciones);
+    await Promise.all(promesasMensajes);
   };
 
-  useEffect(() => {
-    setIsLoading(false); // Simular carga inicial, puedes ajustarlo según tu lógica real
-  }, []);
-  /*
   const ruidos = async () => {
-    try {
-      if (!userData || !userData.manzana || !userData.lote) {
-        console.error("El usuario no tiene asignada una manzana o userData es null.");
-        return;
-      }
+    obtenerUbicacion();
+    if (!userData || !userData.manzana || !userData.lote) {
+      console.error("El usuario no tiene asignada una manzana o userData es null.");
+      return;
+    }
 
+    try {
       const db = getFirestore();
       const usuariosManzanaQuery = query(
         collection(db, 'usuarios'),
         where('manzana', '==', userData.manzana)
       );
-      const usuariosGuardiaQuery = query(
-        collection(db, 'usuarios'),
-        where('rol', '==', 'guardia')
-      );
-
-      const [usuariosManzanaSnapshot, usuariosGuardiaSnapshot] = await Promise.all([
-        getDocs(usuariosManzanaQuery),
-        getDocs(usuariosGuardiaQuery)
-      ]);
-
-      const usuariosManzana = usuariosManzanaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const usuariosGuardia = usuariosGuardiaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-      const usuariosCombinados = [...usuariosManzana, ...usuariosGuardia];
+      const usuariosSnapshot = await getDocs(usuariosManzanaQuery);
+      const usuariosManzana = usuariosSnapshot.docs.map(doc => doc.data());
 
       const mensaje = `Soy del lote ${userData.manzana}-${userData.lote} y escucho ruidos sospechosos por mi lote`;
-      await enviarNotificacion(usuariosCombinados, mensaje, 'media');
+      await enviarMensaje(usuariosManzana, mensaje, 'media');
 
-      console.log('Notificaciones enviadas a los usuarios de la misma manzana y al personal de seguridad');
-    } catch (error) {
-      console.error("Error enviando notificaciones: ", error);
-    }
-  };
-
-  const alerta = async () => {
-    if (isLoading) {
-      return <div>Cargando...</div>;
-    }
-    if (!userData || !userData.manzana || !userData.isla) {
-      console.error("El usuario no tiene asignada una isla o userData es null.");
-      return;
-    }
-    try {
-      const db = getFirestore();
-      const usuariosIslaQuery = query(
-        collection(db, 'usuarios'),
-        where('isla', '==', userData.isla)
-      );
-      const usuariosGuardiaQuery = query(
-        collection(db, 'usuarios'),
-        where('rol', '==', 'guardia')
-      );
-
-      const [usuariosIslaSnapshot, usuariosGuardiaSnapshot] = await Promise.all([
-        getDocs(usuariosIslaQuery),
-        getDocs(usuariosGuardiaQuery)
-      ]);
-
-      const usuariosIsla = usuariosIslaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const usuariosGuardia = usuariosGuardiaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-      const usuariosCombinados = [...usuariosIsla, ...usuariosGuardia];
-
-      const mensaje = `Soy del lote ${userData.manzana}-${userData.lote} y necesito ayuda por mi lote`;
-      await enviarNotificacion(usuariosCombinados, mensaje, 'alta');
-
-      console.log('Notificaciones enviadas a todos los usuarios en la misma isla y al personal de seguridad');
-    } catch (error) {
-      console.error("Error enviando notificaciones: ", error);
-    }
-  };*/
-
- const ruidos = async () => {
-  obtenerUbicacion();
-    try {
-      if (!userData || !userData.manzana || !userData.lote) {
-        console.error("El usuario no tiene asignada una manzana o userData es null.");
-        return;
-      }
-
-      const db = getFirestore();
-      const q = query(
-        collection(db, 'usuarios'),
-        where('manzana', '==', userData.manzana)
-      );
-
-      const querySnapshot = await getDocs(q);
-      const usersInSameManzana = querySnapshot.docs.map(doc => doc.data());
-
-      const messagePromises = usersInSameManzana.map(user => {
-        return addDoc(collection(db, 'mensajes'), {
-          sender: `${userData.manzana}-${userData.lote}`,
-          receiver: `${user.manzana}-${user.lote}`,
-          content: `Soy del lote ${userData.manzana}-${userData.lote} y escucho ruidos sospechosos por mi lote`,
-          timestamp: new Date(),
-          read: false,
-          source: 'alerta',
-          ubicacion: location
-        });
-      });
-
-      await Promise.all(messagePromises);
       console.log('Mensajes enviados a todos los usuarios en la misma manzana');
     } catch (error) {
       console.error("Error enviando mensajes: ", error);
@@ -185,56 +101,36 @@ export const Panico = () => {
       console.error("El usuario no tiene asignada una isla o userData es null.");
       return;
     }
+
     try {
       const db = getFirestore();
-      
-      // Consultar usuarios de la misma isla
       const usuariosIslaQuery = query(
         collection(db, 'usuarios'),
         where('isla', '==', userData.isla)
       );
-  
-      // Consultar guardias
       const usuariosGuardiaQuery = query(
         collection(db, 'usuarios'),
-        where('rol', '==', userData.rol.guardia)
+        where('rol', '==', 'guardia')
       );
-  
+
       const [usuariosIslaSnapshot, usuariosGuardiaSnapshot] = await Promise.all([
         getDocs(usuariosIslaQuery),
         getDocs(usuariosGuardiaQuery)
       ]);
-  
+
       const usuariosIsla = usuariosIslaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const usuariosGuardia = usuariosGuardiaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  
-      // Función para enviar mensaje
-      const enviarMensaje = async (user) => {
-        const receiverInfo = user.rol?.guardia ? 'guardia' : `${user.manzana}-${user.lote}`;
-        await addDoc(collection(db, 'mensajes'), {
-          sender: `${userData.manzana}-${userData.lote}`,
-          receiver: receiverInfo,
-          content: `Soy del lote ${userData.manzana}-${userData.lote} y necesito ayuda por mi lote`,
-          timestamp: new Date(),
-          read: false,
-          source: 'alerta',
-          ubicacion: location
-        });
-      };
-  
-      // Combinar usuarios de isla y guardias, eliminando duplicados
+
       const todosUsuarios = [...usuariosIsla];
       usuariosGuardia.forEach(guardia => {
         if (!todosUsuarios.some(user => user.id === guardia.id)) {
           todosUsuarios.push(guardia);
         }
       });
-  
-      // Enviar mensajes a todos los usuarios
-      const promesasMensajes = todosUsuarios.map(user => enviarMensaje(user));
-  
-      await Promise.all(promesasMensajes);
-  
+
+      const mensaje = `Soy del lote ${userData.manzana}-${userData.lote} y necesito ayuda por mi lote`;
+      await enviarMensaje(todosUsuarios, mensaje, 'alta');
+
       console.log('Mensajes enviados a todos los usuarios en la misma isla y a la guardia');
     } catch (error) {
       console.error("Error enviando mensajes: ", error);
@@ -250,6 +146,7 @@ export const Panico = () => {
   if (isLoading) {
     return <div>Cargando...</div>;
   }
+
   return (
     <main className="container fluid">
       <div className="container alertas">

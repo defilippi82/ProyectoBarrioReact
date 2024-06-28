@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { getToken, onMessage } from "firebase/messaging";
-import { messaging } from './firebaseConfig/firebase.js';
+import { messaging } from './firebaseConfig/firebase.js';  // Asegúrate de importar la instancia de messaging desde tu configuración de Firebase
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 import { auth } from './firebaseConfig/firebase.js';
 import { Login } from "./utils/Login";
@@ -27,6 +27,7 @@ import './css/App.css';
 export const App = () => {
   const [userData, setUserData] = useState(null);
 
+  // Función para guardar el token en la base de datos Firestore
   const guardarTokenEnBaseDeDatos = async (token) => {
     const db = getFirestore();
     const usuario = auth.currentUser;
@@ -51,6 +52,7 @@ export const App = () => {
   };
 
   useEffect(() => {
+    // Función para solicitar permiso para notificaciones y obtener el token
     const solicitarPermisoParaNotificaciones = async () => {
       try {
         const permiso = await Notification.requestPermission();
@@ -68,6 +70,7 @@ export const App = () => {
 
     solicitarPermisoParaNotificaciones();
 
+    // Suscripción para manejar mensajes recibidos
     const unsubscribe = onMessage(messaging, (payload) => {
       console.log('Mensaje recibido:', payload);
       alert(payload.notification.body);
@@ -91,7 +94,7 @@ export const App = () => {
   };
 
   return (
-    <div className="App container ">
+    <div className="App container">
       <Router>
         <UserProvider>
           <header>

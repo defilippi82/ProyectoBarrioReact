@@ -106,7 +106,7 @@ export const MapaSeguridad = () => {
         <button onClick={handleAddUnidad}>Agregar</button>
       </div>
 
-      <MapContainer center={[-34.285767, -58.782887]} zoom={13} style={{ height: "600px", width: "100%" }}>
+      <MapContainer center={[-34.285767, -58.782887]} zoom={13} style={{ height: "400px", width: "100%" }}>
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
