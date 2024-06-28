@@ -27,7 +27,6 @@ import './css/App.css';
 export const App = () => {
   const [userData, setUserData] = useState(null);
 
-  // Función para guardar el token en la base de datos Firestore
   const guardarTokenEnBaseDeDatos = async (token) => {
     const db = getFirestore();
     const usuario = auth.currentUser;
@@ -51,26 +50,25 @@ export const App = () => {
     }
   };
 
-  useEffect(() => {
-    // Función para solicitar permiso para notificaciones y obtener el token
-    const solicitarPermisoParaNotificaciones = async () => {
-      try {
-        const permiso = await Notification.requestPermission();
-        if (permiso === 'granted') {
-          const token = await getToken(messaging, { vapidKey: 'BC1dFTH3QJeInZ8LL-2ZrBj6EXE8iWmDu7PDfDGhx7LiADYJ_KjzZdK-izhIaPOpmI2qQ0cveH_fl5orZ1znFTw' });
-          console.log('Token de FCM:', token);
-          guardarTokenEnBaseDeDatos(token);
-        } else {
-          console.log('Permiso de notificación denegado');
-        }
-      } catch (error) {
-        console.error('Error al solicitar permiso:', error);
+  const solicitarPermisoParaNotificaciones = async () => {
+    try {
+      const permiso = await Notification.requestPermission();
+      if (permiso === 'granted') {
+        const token = await getToken(messaging, { vapidKey: 'BC1dFTH3QJeInZ8LL-2ZrBj6EXE8iWmDu7PDfDGhx7LiADYJ_KjzZdK-izhIaPOpmI2qQ0cveH_fl5orZ1znFTw' });
+        console.log('Token de FCM:', token);
+        guardarTokenEnBaseDeDatos(token);
+      } else {
+        console.log('Permiso de notificación denegado');
       }
-    };
+    } catch (error) {
+      console.error('Error al solicitar permiso:', error);
+    }
+  };
 
+  useEffect(() => {
+    // Solicitar permiso cuando el componente se monta
     solicitarPermisoParaNotificaciones();
 
-    // Suscripción para manejar mensajes recibidos
     const unsubscribe = onMessage(messaging, (payload) => {
       console.log('Mensaje recibido:', payload);
       alert(payload.notification.body);
