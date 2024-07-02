@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter as Router, Routes, Route, Navigate, Switch } from "react-router-dom";
 import { getToken, onMessage } from "firebase/messaging";
 import { messaging } from './firebaseConfig/firebase.js';  // Asegúrate de importar la instancia de messaging desde tu configuración de Firebase
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
@@ -12,6 +12,7 @@ import { EditarSocio } from "./components/Admin/EditarSocio";
 import { Panico } from './components/Socios/Panico';
 import { Contacto } from "./components/Socios/Contacto";
 import { RegistrarReserva } from "./components/Services/RegistrarReservas";
+import { ProtectedRoute } from "./components/Services/ProtectedRoute";
 import { RegistrarSocio } from "./components/Services/RegistrarSocios";
 import { Invitados } from "./components/Services/Invitados";
 import { Novedades } from "./components/Services/Novedades";
@@ -94,6 +95,7 @@ export const App = () => {
   return (
     <div className="App container">
       <Router>
+      <Switch>
         <UserProvider>
           <header>
             <NavbarComponent handleLogout={handleLogout} />
@@ -101,6 +103,8 @@ export const App = () => {
           <main style={{ marginBottom: '100px' }}>
             <Routes>
               <Route path="/" element={<Login />} />
+              <ProtectedRoute path="/" component={Login} />
+              <Redirect from="/" to="/" />
               <Route path="/panico" element={<Panico />} />
               <Route path="/administracion" element={<Administracion />} />
               <Route path="/invitados" element={<Invitados />} />
@@ -120,6 +124,7 @@ export const App = () => {
           </main>
           <Footer />
         </UserProvider>
+        </Switch>
       </Router>
     </div>
   );
