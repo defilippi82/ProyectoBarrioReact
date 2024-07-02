@@ -108,7 +108,7 @@ export const Panico = () => {
       const [usuariosIslaSnapshot, usuariosGuardiaSnapshot] = await Promise.all([
         getDocs(usuariosIslaQuery),
         getDocs(usuariosGuardiaQuery),
-        console.log("usuariosGuardiaQuery"),
+        console.log(usuariosGuardiaQuery),
       ]);
 
       const usuariosIsla = usuariosIslaSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
