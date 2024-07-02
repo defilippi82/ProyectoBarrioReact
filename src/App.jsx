@@ -104,7 +104,7 @@ export const App = () => {
             <Routes>
               <Route path="/" element={<Login />} />
               <ProtectedRoute path="/" component={Login} />
-              <Redirect from="/" to="/" />
+              <Redirect from="/" to="#/" />
               <Route path="/panico" element={<Panico />} />
               <Route path="/administracion" element={<Administracion />} />
               <Route path="/invitados" element={<Invitados />} />
