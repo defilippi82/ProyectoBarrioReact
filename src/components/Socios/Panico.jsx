@@ -103,7 +103,7 @@ export const Panico = () => {
     try {
       const db = getFirestore();
       const usuariosIslaQuery = query(collection(db, 'usuarios'), where('isla', '==', userData.isla));
-      const usuariosGuardiaQuery = query(collection(db, 'usuarios'), where('rol', '==', 'guardia'));
+      const usuariosGuardiaQuery = query(collection(db, 'usuarios'), where('rol', '==', userData.rol.guardia));
 
       const [usuariosIslaSnapshot, usuariosGuardiaSnapshot] = await Promise.all([
         getDocs(usuariosIslaQuery),
