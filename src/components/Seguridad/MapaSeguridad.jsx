@@ -4,6 +4,14 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { db } from '../../firebaseConfig/firebase'; // Importa tu configuración de Firebase
 
+const iconUrl = 'public/img/house.png'; // Reemplaza con la ruta correcta a tu icono
+const customIcon = new L.Icon({
+  iconUrl: iconUrl,
+  iconSize: [25, 41], // Tamaño del icono
+  iconAnchor: [12, 41], // Punto de anclaje del icono
+  popupAnchor: [1, -34], // Punto de anclaje del popup
+  shadowSize: [41, 41] // Tamaño de la sombra del icono
+});
 export const MapaSeguridad = () => {
   const [unidades, setUnidades] = useState([]);
   const [manzana, setManzana] = useState('');
@@ -111,7 +119,7 @@ export const MapaSeguridad = () => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {filteredUnidades.map(unidad => (
-          <Marker key={unidad.id} position={[unidad.lat, unidad.lng]}>
+          <Marker key={unidad.id} position={[unidad.lat, unidad.lng]} icon={customIcon}>
             <Popup>
               {`Manzana: ${unidad.manzana}, Lote: ${unidad.lote}`}
             </Popup>
