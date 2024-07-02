@@ -12,7 +12,6 @@ import { EditarSocio } from "./components/Admin/EditarSocio";
 import { Panico } from './components/Socios/Panico';
 import { Contacto } from "./components/Socios/Contacto";
 import { RegistrarReserva } from "./components/Services/RegistrarReservas";
-import { ProtectedRoute } from "./components/Services/ProtectedRoute";
 import { RegistrarSocio } from "./components/Services/RegistrarSocios";
 import { Invitados } from "./components/Services/Invitados";
 import { Novedades } from "./components/Services/Novedades";
