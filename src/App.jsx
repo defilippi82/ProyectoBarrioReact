@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate, Switch } from "react-router-dom";
+import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { getToken, onMessage } from "firebase/messaging";
 import { messaging } from './firebaseConfig/firebase.js';  // Asegúrate de importar la instancia de messaging desde tu configuración de Firebase
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
@@ -96,15 +96,13 @@ export const App = () => {
     <div className="App container">
       <Router>
         <UserProvider>
-      <Switch>
-          <header>
+               <header>
             <NavbarComponent handleLogout={handleLogout} />
           </header>
           <main style={{ marginBottom: '100px' }}>
             <Routes>
-              <Route path="/" element={<Login />} />
-              <ProtectedRoute path="/" component={Login} />
-              <Redirect from="/" to="#/" />
+              <Route path="/" element={userData ? <Navigate to="/panico" /> : <Login />} />
+              <Route path="/login" element={<Login />} />
               <Route path="/panico" element={<Panico />} />
               <Route path="/administracion" element={<Administracion />} />
               <Route path="/invitados" element={<Invitados />} />
@@ -123,7 +121,6 @@ export const App = () => {
             </Routes>
           </main>
           <Footer />
-        </Switch>
         </UserProvider>
       </Router>
     </div>
