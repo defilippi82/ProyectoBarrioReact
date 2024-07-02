@@ -103,21 +103,21 @@ export const App = () => {
             <Routes>
               <Route path="/" element={userData ? <Navigate to="/panico" /> : <Login />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/panico" element={<Panico />} />
-              <Route path="/administracion" element={<Administracion />} />
-              <Route path="/invitados" element={<Invitados />} />
-              <Route path="/novedades" element={<Novedades />} />
-              <Route path="/mensajeria" element={<Mensajeria />} />
-              <Route path="/campanas" element={<AdminMensajeria />} />
-              <Route path="/privacidad" element={<Privacidad />} />
-              <Route path="/contacto" element={<Contacto />} />
-              <Route path="/socios/create" element={<RegistrarSocio />} />
-              <Route path="/reservas" element={<Reservas />} />
-              <Route path="/reservas/create" element={<RegistrarReserva />} />
-              <Route path="/socios/edit/:id" element={<EditarSocio />} />
-              <Route path="/reservas/edit/:id" element={<EditarReserva />} />
-              <Route path="/seguridad" element={<SeguridadDashboard />} />
-              {userData ? null : <Route path="*" element={<Navigate to="/" />} />}
+              <Route path="/panico" element={userData ? <Panico /> : <Navigate to="/login" />} />
+              <Route path="/administracion" element={userData ? <Administracion /> : <Navigate to="/login" />} />
+              <Route path="/invitados" element={userData ? <Invitados /> : <Navigate to="/login" />} />
+              <Route path="/novedades" element={userData ? <Novedades /> : <Navigate to="/login" />} />
+              <Route path="/mensajeria" element={userData ? <Mensajeria /> : <Navigate to="/login" />} />
+              <Route path="/campanas" element={userData ? <AdminMensajeria /> : <Navigate to="/login" />} />
+              <Route path="/privacidad" element={userData ? <Privacidad /> : <Navigate to="/login" />} />
+              <Route path="/contacto" element={userData ? <Contacto /> : <Navigate to="/login" />} />
+              <Route path="/socios/create" element={userData ? <RegistrarSocio /> : <Navigate to="/login" />} />
+              <Route path="/reservas" element={userData ? <Reservas /> : <Navigate to="/login" />} />
+              <Route path="/reservas/create" element={userData ? <RegistrarReserva /> : <Navigate to="/login" />} />
+              <Route path="/socios/edit/:id" element={userData ? <EditarSocio /> : <Navigate to="/login" />} />
+              <Route path="/reservas/edit/:id" element={userData ? <EditarReserva /> : <Navigate to="/login" />} />
+              <Route path="/seguridad" element={userData ? <SeguridadDashboard /> : <Navigate to="/login" />} />
+              <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </main>
           <Footer />
