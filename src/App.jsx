@@ -111,7 +111,7 @@ export const App = () => {
               <Route path="/campanas" element={userData ? <AdminMensajeria /> : <Navigate to="/login" />} />
               <Route path="/privacidad" element={userData ? <Privacidad /> : <Navigate to="/login" />} />
               <Route path="/contacto" element={userData ? <Contacto /> : <Navigate to="/login" />} />
-              <Route path="/socios/create" element={userData ? <RegistrarSocio /> : <Navigate to="/login" />} />
+              <Route path="/socios/create" element={<RegistrarSocio />} />
               <Route path="/reservas" element={userData ? <Reservas /> : <Navigate to="/login" />} />
               <Route path="/reservas/create" element={userData ? <RegistrarReserva /> : <Navigate to="/login" />} />
               <Route path="/socios/edit/:id" element={userData ? <EditarSocio /> : <Navigate to="/login" />} />
