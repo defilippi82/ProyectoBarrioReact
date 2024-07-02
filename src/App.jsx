@@ -95,8 +95,8 @@ export const App = () => {
   return (
     <div className="App container">
       <Router>
-      <Switch>
         <UserProvider>
+      <Switch>
           <header>
             <NavbarComponent handleLogout={handleLogout} />
           </header>
@@ -123,8 +123,8 @@ export const App = () => {
             </Routes>
           </main>
           <Footer />
-        </UserProvider>
         </Switch>
+        </UserProvider>
       </Router>
     </div>
   );
