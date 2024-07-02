@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { db } from '../../firebaseConfig/firebase'; // Importa tu configuración de Firebase
 
-const iconUrl = 'public/img/house.png'; // Reemplaza con la ruta correcta a tu icono
+const iconUrl = '/img/house.png'; // Reemplaza con la ruta correcta a tu icono
 const customIcon = new L.Icon({
   iconUrl: iconUrl,
   iconSize: [25, 41], // Tamaño del icono
