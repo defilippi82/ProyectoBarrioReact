@@ -5,18 +5,18 @@ import { collection, onSnapshot } from 'firebase/firestore';
 // Diccionario con coordenadas relativas de cada lote por manzana
 const coordenadasLotes = {
   5: {
-    4: { x: 300, y: 462 },
-    5: { x: 305, y: 462 },
-    6: { x: 310, y: 462 },
-    7: { x: 315, y: 462 },
-    8: { x: 320, y: 462 },
-    9: { x: 325, y: 462 },
+    4: { x: 285, y: 462 },
+    5: { x: 295, y: 462 },
+    6: { x: 300, y: 462 },
+    7: { x: 305, y: 462 },
+    8: { x: 315, y: 462 },
+    9: { x: 320, y: 462 },
     10: { x: 330, y: 452 },
     11: { x: 335, y: 452 },
     12: { x: 345, y: 452 },
-    15: { x: 330, y: 472 },
-    14: { x: 335, y: 472 },
-    13: { x: 340, y: 472 },
+    15: { x: 330, y: 500 },
+    14: { x: 335, y: 500 },
+    13: { x: 345, y: 500 },
     // Agrega más lotes aquí
   },
   6: {
@@ -92,10 +92,23 @@ export const MapaSeguridad2 = () => {
       };
     };
 
-    drawMap();
-    window.addEventListener('resize', drawMap);
-    return () => window.removeEventListener('resize', drawMap);
-  }, [unidades]);
+    const handleClick = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left; // Coordenada X relativa al canvas
+        const y = e.clientY - rect.top;  // Coordenada Y relativa al canvas
+        console.log(`Coordenadas del clic - X: ${x}, Y: ${y}`);
+        alert(`Coordenadas del clic - X: ${x}, Y: ${y}`);
+      };
+    
+      canvas.addEventListener('click', handleClick);
+    
+      drawMap();
+      window.addEventListener('resize', drawMap);
+      return () => {
+        window.removeEventListener('resize', drawMap);
+        canvas.removeEventListener('click', handleClick);
+      };
+    }, [unidades]);
 
   const handleMark = () => {
     const { manzana, lote } = selected;
