@@ -49,7 +49,7 @@ export const MapaSeguridad2 = () => {
 
     const drawMap = () => {
       const img = new Image();
-      img.src = '/mnt/data/planoIslas.png'; // Ruta de la imagen
+      img.src = '/img/planoIslas.png'; // Ruta de la imagen
       img.onload = () => {
         canvas.width = containerRef.current.offsetWidth;
         canvas.height = containerRef.current.offsetHeight;
