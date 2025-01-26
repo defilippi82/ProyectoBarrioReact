@@ -1,5 +1,5 @@
 import React from 'react';
-import {MapaSeguridad} from './MapaSeguridad';
+import {MapaSeguridad} from './MapaSeguridad2';
 import  { Mensajeria} from "../Services/Mensajeria";
 
 export const SeguridadDashboard = () => {

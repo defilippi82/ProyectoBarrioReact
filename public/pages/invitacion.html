@@ -54,9 +54,10 @@
       const lote = socio.lote;
       const manzana = socio.manzana;
       const telefono = socio.telefono;
+      const telefonog = "+5491167204232";//telefono de porteria
 
       var msj = `Soy del lote ${manzana}-${lote} y quiero autorizar para su ingreso a ${nombreapellido} D.N.I. ${dni}, patente del automóvil ${patente}. ${mensaje}`;
-      var whatsappUrl = "https://api.whatsapp.com/send?phone=" + telefono + "&text=" + encodeURIComponent(msj);
+      var whatsappUrl = "https://api.whatsapp.com/send?phone=" + telefono + telefonog + "&text=" + encodeURIComponent(msj);
       window.location.href = whatsappUrl;
 
       setTimeout(function () {
