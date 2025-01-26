@@ -5,13 +5,13 @@ import { collection, onSnapshot } from 'firebase/firestore';
 // Diccionario con coordenadas relativas de cada lote por manzana
 const coordenadasLotes = {
   5: {
-    10: { x: 325, y: 420 },
-    11: { x: 330, y: 430 },
+    10: { x: 330, y: 430 },
+    11: { x: 335, y: 430 },
     // Agrega más lotes aquí
   },
   6: {
-    1: { x: 400, y: 600 },
-    2: { x: 520, y: 620 },
+    1: { x: 200, y: 600 },
+    2: { x: 205, y: 600 },
     // Agrega más lotes aquí
   },
   // Agrega más manzanas aquí
