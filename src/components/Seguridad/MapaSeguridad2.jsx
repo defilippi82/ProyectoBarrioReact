@@ -45,7 +45,7 @@ export const MapaSeguridad2 = () => {
           const x = (unidad.position.x / 1000) * canvas.width;
           const y = (unidad.position.y / 1000) * canvas.height;
           ctx.beginPath();
-          ctx.arc(x, y, 10, 0, 2 * Math.PI);
+          ctx.arc(x, y, 5, 0, 2 * Math.PI);
           ctx.fillStyle = 'red';
           ctx.fill();
           ctx.stroke();
@@ -76,7 +76,7 @@ export const MapaSeguridad2 = () => {
 
       setUnidades((prev) => [...prev, nuevaUnidad]);
 
-      console.log(`Guardado - Manzana: ${selected.manzana}, Lote: ${selected.lote}, x: ${x}, y: ${y}`);
+      console.log(` ${selected.manzana}: ${selected.lote}: {x: ${x}, y: ${y}},`);
     };
 
     canvas.addEventListener('click', handleClick);
