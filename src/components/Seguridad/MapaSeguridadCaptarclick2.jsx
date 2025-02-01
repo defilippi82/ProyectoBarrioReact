@@ -50,9 +50,9 @@ export const MapaSeguridad2 = () => {
           ctx.fill();
           ctx.stroke();
 
-          ctx.font = '12px Arial';
+          ctx.font = '8px Arial';
           ctx.fillStyle = 'black';
-          ctx.fillText(`M${unidad.manzana} L${unidad.lote}`, x + 12, y);
+          ctx.fillText(`L${unidad.lote}`, x + 10, y);
         });
       };
     };

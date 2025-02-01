@@ -35,7 +35,7 @@ export const Login = () => {
             //setUserData(userData);// Esperar a que setUserData se complete
               MySwal.fire({
                 title: 'Ingreso exitoso',
-                text: `¡Bienvenido, ${userData.nombre}! Realice su reserva`,
+                text: `¡Bienvenido, ${userData.nombre}!`,
                 icon: 'success',
                 showConfirmButton: true,
                 timer: 3000,
