@@ -78,7 +78,7 @@ export const NavbarComponent = ({ handleLogout }) => {
                   Invitados
                 </Nav.Link>
                 <Nav.Link className="navlinks" href="#/novedades">
-                  Novedades
+                  Novedades y Tel. Útiles
                 </Nav.Link>
                 <Nav.Link className="navlinks" href="#/contacto">
                   Contacto
