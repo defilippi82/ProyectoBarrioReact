@@ -191,7 +191,8 @@ export const Invitados = () => {
   const compartir = {
     enlace: () => {
       if (!userData) return 'Cargando...';
-      return `${window.location.origin}/invitacion.html?lote=${userData.manzana}-${userData.lote}&invitador=${encodeURIComponent(userData.nombre)}`;
+      return `${window.location.origin}/pages/invitacion.html`
+      // `${window.location.origin}/invitacion.html?lote=${userData.manzana}-${userData.lote}&invitador=${encodeURIComponent(userData.nombre)}`;
     },
 
     copiar: () => {
