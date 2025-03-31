@@ -1,202 +1,416 @@
 import React, { useState, useEffect } from 'react';
-import { Tab } from 'react-bootstrap';
-import Table from 'react-bootstrap/Table';
-import { collection, query, getDocs, where } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebaseConfig/firebase';
 import Swal from 'sweetalert2';
-
+import { Table, Button, Form, Modal, Row, Col, InputGroup, Card } from 'react-bootstrap';
+import { FaWhatsapp, FaCopy, FaList, FaPlusCircle } from 'react-icons/fa';
 
 export const Invitados = () => {
+  // Estados
   const [formData, setFormData] = useState({
-    nombreapellido: '',
+    nombre: '',
     dni: '',
     patente: '',
-    mensaje: '',
-    enviarCorreo: false,
+    email: '',
+    telefono: '',
+    mensaje: ''
   });
+  
   const [userData, setUserData] = useState(null);
   const [invitados, setInvitados] = useState([]);
-  const [destino, setDestino] = useState('Puerta');
-  const [contacto, setContacto] = useState({ email: '', telefono: '' });
-  
-   useEffect(() => {
-    const userDataFromStorage = localStorage.getItem('userData');
+  const [mostrarQR, setMostrarQR] = useState(null);
+  const [showListModal, setShowListModal] = useState(false);
+  const [listas, setListas] = useState([]);
+  const [nuevaLista, setNuevaLista] = useState({
+    nombre: '',
+    invitados: []
+  });
 
+  // Cargar datos del usuario al iniciar
+  useEffect(() => {
+    const userDataFromStorage = localStorage.getItem('userData');
     if (userDataFromStorage) {
       setUserData(JSON.parse(userDataFromStorage));
-    } else {
-      // Obtener datos del usuario desde otra fuente (por ejemplo, una API o base de datos)
-      const obtenerDatosUsuario = async () => {
-        // ... (código existente para obtener datos del usuario)
-        const datosUsuario = await obtenerDatosDesdeOtraFuente();
-        setUserData(datosUsuario);
-        localStorage.setItem('userData', JSON.stringify(datosUsuario));
-      };
+    }
+  }, []);
 
-      obtenerDatosUsuario();
-    }
-  }, []); 
-  useEffect(() => {
-    if (destino) {
-        fetchContacto('Puerta');
-    }
-}, [destino]);
-  const fetchContacto = async (destino) => {
-    try {
-        const q = query(collection(db, "usuarios"), where('nombre', '==', destino));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            const userData = querySnapshot.docs[0].data();
-            setContacto({ email: userData.email, telefono: userData.numerotelefono });
-        } else {
-            setContacto({ email: '', telefono: '' });
-        }
-    } catch (error) {
-        console.error("Error fetching contact:", error);
-    }
-};
-
+  // Manejadores de cambios
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData({
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Agregar invitado
+  const agregarInvitado = (e) => {
+    e.preventDefault();
+    const { nombre, dni, patente } = formData;
+    
+    if (!nombre || !dni || !patente) {
+      Swal.fire('Error', 'Nombre, DNI y Patente son obligatorios', 'error');
+      return;
+    }
+
+    const nuevoInvitado = {
       ...formData,
-      [name]: type === 'checkbox' ? checked : value,
+      fecha: new Date().toISOString()
+    };
+
+    setInvitados([...invitados, nuevoInvitado]);
+    setFormData({
+      nombre: '',
+      dni: '',
+      patente: '',
+      email: '',
+      telefono: '',
+      mensaje: ''
     });
   };
 
-  const handleAgregar = (e) => {
-    e.preventDefault();
-    const { nombreapellido, dni, patente } = formData;
-    if (nombreapellido && dni && patente) {
-      setInvitados([...invitados, { nombre: nombreapellido, dni, patente }]);
-      setFormData({ ...formData, nombreapellido: '', dni: '', patente: '' });
-    } else {
-      alert('Por favor complete todos los campos.');
+  // Generar enlace de invitación
+  const generarEnlaceInvitacion = () => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/invitacion.html?lote=${userData.manzana}-${userData.lote}&invitador=${encodeURIComponent(userData.nombre)}`;
+  };
+
+  // Compartir por WhatsApp
+  const compartirPorWhatsapp = () => {
+    const enlace = generarEnlaceInvitacion();
+    const mensaje = `Hola, ${userData.nombre} te está invitando. Por favor completa tus datos aquí: ${enlace}`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(mensaje)}`);
+  };
+
+  // Copiar enlace al portapapeles
+  const copiarEnlace = () => {
+    navigator.clipboard.writeText(generarEnlaceInvitacion());
+    Swal.fire('Copiado', 'El enlace ha sido copiado al portapapeles', 'success');
+  };
+
+  // Agregar invitado a lista temporal
+  const agregarALista = (invitado) => {
+    setNuevaLista(prev => ({
+      ...prev,
+      invitados: [...prev.invitados, invitado]
+    }));
+  };
+
+  // Crear lista definitiva
+  const crearLista = async () => {
+    if (!nuevaLista.nombre || nuevaLista.invitados.length === 0) {
+      Swal.fire('Error', 'Debes ingresar un nombre y al menos un invitado', 'error');
+      return;
+    }
+
+    try {
+      const listaCompleta = {
+        ...nuevaLista,
+        lote: `${userData.manzana}-${userData.lote}`,
+        propietario: userData.nombre,
+        fecha: new Date().toISOString(),
+        estado: 'pendiente'
+      };
+
+      // Guardar en Firestore
+      const docRef = await addDoc(collection(db, 'listasInvitados'), listaCompleta);
+      
+      // Actualizar estado local
+      setListas([...listas, { id: docRef.id, ...listaCompleta }]);
+      setNuevaLista({ nombre: '', invitados: [] });
+      setShowListModal(false);
+      
+      Swal.fire('Éxito', 'Lista creada correctamente', 'success');
+    } catch (error) {
+      console.error("Error al crear lista:", error);
+      Swal.fire('Error', 'No se pudo crear la lista', 'error');
     }
   };
 
-  const handleEnviarGuardia = (e) => {
-    e.preventDefault();
-    const { nombreapellido, dni, patente, mensaje, enviarCorreo } = formData;
-    const msj = `Soy del lote ${userData.manzana}-${userData.lote} y quiero autorizar para su ingreso a ${nombreapellido} D.N.I. ${dni}, patente del automóvil ${patente}. ${mensaje}`;
+  // Enviar lista a guardia
+  const enviarListaGuardia = (lista) => {
+    const telefonoGuardia = "+5491167204232"; // Número de guardia
+    let mensaje = `*LISTA DE INVITADOS - ${lista.nombre}*\n`;
+    mensaje += `Lote: ${userData.manzana}-${userData.lote}\n`;
+    mensaje += `Propietario: ${userData.nombre}\n\n`;
+    mensaje += `*Invitados:*\n`;
+    
+    lista.invitados.forEach((inv, index) => {
+      mensaje += `${index + 1}. ${inv.nombre} - DNI: ${inv.dni} - Patente: ${inv.patente}\n`;
+    });
 
-    if (enviarCorreo) {
-      const emailSubject = `Lista de Invitados del lote ${userData.manzana}-${userData.lote}`;
-      let emailBody = `Soy del lote ${userData.manzana}-${userData.lote} y quiero autorizar para su ingreso a las siguientes personas:\n\nNombre\t\t\tD.N.I.\t\t\tPatente\n`;
-      invitados.forEach(inv => {
-        emailBody += `${inv.nombre}\t\t\t\t${inv.dni}\t\t\t\t${inv.patente}\n`;
-      });
-      var emailLink = `mailto:${contacto.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-      window.open(emailLink);
-    } else {
-      const whatsappUrl = `https://api.whatsapp.com/send?phone=${contacto.numerotelefono}&text=${encodeURIComponent(msj)}`;
-      window.open(whatsappUrl);
-    }
-  };
-
-  const handleEnviarInvitacion = (e) => {
-    e.preventDefault();
-    const urlInvitacion = `${window.location.origin}/pages/invitacion.html`;
-    //const urlInvitacion = 'https://defilippi82.github.io/SOS/invitacion.html'; // Reemplaza con la URL real
-    const mensaje = `Te envío la invitación para autorizar el ingreso: ${urlInvitacion}`;
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensaje)}`;
-    window.open(whatsappUrl);
+    window.open(`https://api.whatsapp.com/send?phone=${telefonoGuardia}&text=${encodeURIComponent(mensaje)}`);
   };
 
   return (
-    <main className="container fluid">
-      <form >
-        <div className='container fluid justify-content-center'>
-
-        <label htmlFor="nombreapellido">Nombre y Apellido</label><br />
-        <input
-          type="text"
-          name="nombreapellido"
-          id="nombreapellido"
-          className="input-padron"
-          value={formData.nombreapellido}
-          onChange={handleChange}
-          /><br />
-
-        <label htmlFor="dni">D.N.I.</label><br />
-        <input
-          type="text"
-          name="dni"
-          id="dni"
-          className="input-padron"
-          placeholder="XX.XXXXXX"
-          value={formData.dni}
-          onChange={handleChange}
-          /><br />
-
-        <label htmlFor="patente">Patente</label><br />
-        <input
-          type="text"
-          name="patente"
-          id="patente"
-          className="input-padron"
-          placeholder="XX-XXX-XX o XXX-XXX"
-          value={formData.patente}
-          onChange={handleChange}
-          /><br />
-
-        <label htmlFor="mensaje">Mensaje</label><br />
-        <textarea
-          cols="auto"
-          rows="auto"
-          name="mensaje"
-          id="mensaje"
-          className="input-padron"
-          placeholder="aclaraciones"
-          value={formData.mensaje}
-          onChange={handleChange}
-          /><br />
-
+    <div className="container mt-4">
+      <h2 className="mb-4">Sistema de Invitaciones</h2>
+      
+      {/* Tarjeta para compartir formulario */}
+      <Card className="mb-4 shadow-sm">
+        <Card.Body>
+          <Card.Title>Compartir formulario de invitación</Card.Title>
+          <Card.Text className="mb-3">
+            Envía este enlace a tus invitados para que completen sus datos:
+          </Card.Text>
+          
+          <InputGroup className="mb-3">
+            <Form.Control 
+              value={generarEnlaceInvitacion()} 
+              readOnly 
+            />
+            <Button 
+              variant="outline-secondary" 
+              onClick={copiarEnlace}
+            >
+              <FaCopy /> Copiar
+            </Button>
+          </InputGroup>
+          
+          <div className="d-grid gap-2">
+            <Button 
+              variant="success" 
+              onClick={compartirPorWhatsapp}
+              className="text-white"
+            >
+              <FaWhatsapp /> Compartir por WhatsApp
+            </Button>
           </div>
-        <section>
-          <h1>Lista de invitados</h1>
-          <Table responsive striped bordered hover size="sm" >
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>D.N.I.</th>
-                <th>Patente</th>
-              </tr>
-            </thead>
-            <tbody id="tabla">
-              {invitados.map((invitado, index) => (
-                <tr key={index}>
-                  <td>{invitado.nombre}</td>
-                  <td>{invitado.dni}</td>
-                  <td>{invitado.patente}</td>
+        </Card.Body>
+      </Card>
+
+      {/* Formulario para agregar invitados */}
+      <Form onSubmit={agregarInvitado}>
+        <Row className="g-3 mb-4">
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>Nombre completo*</Form.Label>
+              <Form.Control
+                type="text"
+                name="nombre"
+                value={formData.nombre}
+                onChange={handleChange}
+                required
+              />
+            </Form.Group>
+          </Col>
+          
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>DNI*</Form.Label>
+              <Form.Control
+                type="text"
+                name="dni"
+                value={formData.dni}
+                onChange={handleChange}
+                placeholder="XX.XXX.XXX"
+                required
+              />
+            </Form.Group>
+          </Col>
+          
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>Patente*</Form.Label>
+              <Form.Control
+                type="text"
+                name="patente"
+                value={formData.patente}
+                onChange={handleChange}
+                placeholder="XXX-XXX"
+                required
+              />
+            </Form.Group>
+          </Col>
+          
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>Email</Form.Label>
+              <Form.Control
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+              />
+            </Form.Group>
+          </Col>
+          
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>Teléfono</Form.Label>
+              <Form.Control
+                type="tel"
+                name="telefono"
+                value={formData.telefono}
+                onChange={handleChange}
+              />
+            </Form.Group>
+          </Col>
+          
+          <Col md={12}>
+            <Form.Group>
+              <Form.Label>Mensaje adicional</Form.Label>
+              <Form.Control
+                as="textarea"
+                name="mensaje"
+                value={formData.mensaje}
+                onChange={handleChange}
+                rows={3}
+              />
+            </Form.Group>
+          </Col>
+          
+          <Col xs={12}>
+            <Button variant="primary" type="submit" className="w-100">
+              Agregar Invitado
+            </Button>
+          </Col>
+        </Row>
+      </Form>
+
+      {/* Tabla de invitados actuales */}
+      {invitados.length > 0 && (
+        <Card className="mb-4 shadow-sm">
+          <Card.Body>
+            <Card.Title>Invitados actuales ({invitados.length})</Card.Title>
+            <Table striped bordered hover responsive>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>DNI</th>
+                  <th>Patente</th>
+                  <th>Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </Table>
-        </section>
+              </thead>
+              <tbody>
+                {invitados.map((inv, index) => (
+                  <tr key={index}>
+                    <td>{inv.nombre}</td>
+                    <td>{inv.dni}</td>
+                    <td>{inv.patente}</td>
+                    <td>
+                      <Button
+                        variant="info"
+                        size="sm"
+                        className="me-2"
+                        onClick={() => agregarALista(inv)}
+                      >
+                        <FaList /> Agregar a lista
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+            
+            <div className="d-grid gap-2 mt-3">
+              <Button 
+                variant="success" 
+                onClick={() => setShowListModal(true)}
+              >
+                <FaPlusCircle /> Crear lista con estos invitados
+              </Button>
+            </div>
+          </Card.Body>
+        </Card>
+      )}
 
-        <div className='container fluid'>
-          <input
-            type="checkbox"
-            id="enviarCorreo"
-            name="enviarCorreo"
-            checked={formData.enviarCorreo}
-            onChange={handleChange}
-          />
-          <label htmlFor="enviarCorreo">Enviar Lista de Invitados</label>
-              </div>
-       <div className='container fluid col col-6 col-4'>
-        <button onClick={handleAgregar} className="btn btn-success enviar">Agregar a la lista</button>
-        <button onClick={handleEnviarGuardia} className="btn btn-primary enviar">Enviar a la Guardia</button><br />
-        </div>
-        <h1>Enviar invitación</h1>
-        <div className='container fluid col col-6'>
+      {/* Listas guardadas */}
+      {listas.length > 0 && (
+        <Card className="mb-4 shadow-sm">
+          <Card.Body>
+            <Card.Title>Tus listas guardadas</Card.Title>
+            <Table striped bordered hover responsive>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Cantidad</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {listas.map((lista, index) => (
+                  <tr key={index}>
+                    <td>{lista.nombre}</td>
+                    <td>{lista.invitados.length}</td>
+                    <td>
+                      <Button
+                        variant="success"
+                        onClick={() => enviarListaGuardia(lista)}
+                      >
+                        <FaWhatsapp /> Enviar a Guardia
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </Card.Body>
+        </Card>
+      )}
 
-        <button onClick={handleEnviarInvitacion} className="btn btn-danger enviar">Enviar Invitacion</button>
-        </div>
-      </form>
-    </main>
+      {/* Modal para crear lista */}
+      <Modal show={showListModal} onHide={() => setShowListModal(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Crear nueva lista de invitados</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form.Group className="mb-3">
+            <Form.Label>Nombre de la lista*</Form.Label>
+            <Form.Control
+              type="text"
+              value={nuevaLista.nombre}
+              onChange={(e) => setNuevaLista({...nuevaLista, nombre: e.target.value})}
+              placeholder="Ej: Fiesta de cumpleaños"
+              required
+            />
+          </Form.Group>
+
+          <h5>Invitados en esta lista ({nuevaLista.invitados.length})</h5>
+          {nuevaLista.invitados.length > 0 ? (
+            <div className="table-responsive">
+              <Table striped bordered hover size="sm">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>DNI</th>
+                    <th>Patente</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {nuevaLista.invitados.map((inv, index) => (
+                    <tr key={index}>
+                      <td>{inv.nombre}</td>
+                      <td>{inv.dni}</td>
+                      <td>{inv.patente}</td>
+                      <td>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => setNuevaLista({
+                            ...nuevaLista,
+                            invitados: nuevaLista.invitados.filter((_, i) => i !== index)
+                          })}
+                        >
+                          Eliminar
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+          ) : (
+            <p className="text-muted">No hay invitados en esta lista</p>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowListModal(false)}>
+            Cancelar
+          </Button>
+          <Button variant="primary" onClick={crearLista}>
+            Guardar Lista
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </div>
   );
 };
-
-

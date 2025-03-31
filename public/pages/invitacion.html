@@ -1,112 +1,121 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    
-  <link rel="stylesheet" href="src/css/index.css">
-  <title> Invitacion by FHD</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formulario de Invitación</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f8f9fa; }
+    .form-container { max-width: 600px; margin: 50px auto; padding: 30px; border-radius: 10px; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+    .header { text-align: center; margin-bottom: 30px; }
+  </style>
 </head>
-<body style="background-color: #1ed4ec;" display="flex" align-items= "center">
-  <main class="container">
-    <form action="https://formsubmit.co/f.defilippi@gmail.com" method="POST">
-        <div class="row">
-    <div class="col-sm-4">
-      <label for="nombreapellido">Nombre y Apellido</label><br>
-      <input type="text" name="nombreapellido" id="nombreapellido" class="input-padron" required><br>
+<body>
+  <div class="container">
+    <div class="form-container">
+      <div class="header">
+        <h2>Formulario de Invitación</h2>
+        <p id="invitador-text" class="text-muted"></p>
+      </div>
+      
+      <form id="invitacionForm">
+        <input type="hidden" id="lote" name="lote">
+        <input type="hidden" id="invitador" name="invitador">
+        
+        <div class="mb-3">
+          <label for="nombre" class="form-label">Nombre completo*</label>
+          <input type="text" class="form-control" id="nombre" name="nombre" required>
+        </div>
+        
+        <div class="mb-3">
+          <label for="dni" class="form-label">DNI*</label>
+          <input type="text" class="form-control" id="dni" name="dni" required placeholder="XX.XXX.XXX">
+        </div>
+        
+        <div class="mb-3">
+          <label for="patente" class="form-label">Patente del vehículo</label>
+          <input type="text" class="form-control" id="patente" name="patente" placeholder="XXX-XXX">
+        </div>
+        
+        <div class="mb-3">
+          <label for="telefono" class="form-label">Teléfono*</label>
+          <input type="tel" class="form-control" id="telefono" name="telefono" required>
+        </div>
+        
+        <div class="mb-3">
+          <label for="email" class="form-label">Email</label>
+          <input type="email" class="form-control" id="email" name="email">
+        </div>
+        
+        <div class="d-grid">
+          <button type="submit" class="btn btn-primary">Enviar Datos</button>
+        </div>
+      </form>
     </div>
-    <div class="col-sm-4">
-      <label for="dni"> D.N.I.</label><br>
-      <input type="text" name="dni" id="dni" class="input-padron" required placeholder="XX.XXXXXX"><br>
-    </div>
-    <div class="col-sm-4 text-center">
-      <label for="patente">Patente</label><br>
-      <input type="text" name="patente" id="patente" class="input-padron" required placeholder="XX-XXX-XX o XXX-XXX"><br>
-    </div>
-    <div class="col-sm-4 text-center" >
-      <label for="mensaje">Mensaje</label><br>
-      <textarea cols="auto" rows="auto" name="mensaje" id="mensaje" class="input-padron" placeholder="aclaraciones"></textarea><br>
-    </div>
-    </div>
-      <input type="submit" value="Enviar" class="enviar" onclick="invitacion()">
-    </form>
-  </main>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js" integrity="<KEY>" crossorigin="anonymous"></script>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
   <script>
-    function invitacion() {
-      const nombreapellido = document.getElementById('nombreapellido').value;
-      const dni = document.getElementById('dni').value;
-      const patente = document.getElementById('patente').value;
-      const mensaje = document.getElementById('mensaje').value;
-
-      if (!nombreapellido || !dni || !patente) {
-        alert('Por favor complete todos los campos.');
-        return;
-      }
-
-      // Datos del socio (simulación de datos obtenidos del localStorage)
-      const socio = JSON.parse(localStorage.getItem('userData'));
-      const lote = socio.lote;
-      const manzana = socio.manzana;
-      const telefono = socio.telefono;
-      const telefonog = "+5491167204232";//telefono de porteria
-
-      var msj = `Soy del lote ${manzana}-${lote} y quiero autorizar para su ingreso a ${nombreapellido} D.N.I. ${dni}, patente del automóvil ${patente}. ${mensaje}`;
-      var whatsappUrl = "https://api.whatsapp.com/send?phone=" + telefono  + "&text=" + encodeURIComponent(msj);
-      window.location.href = whatsappUrl;
-
-      setTimeout(function () {
-        window.close();
-      }, 2000);
-
-      document.getElementById('nombreapellido').value = "";
-      document.getElementById('dni').value = "";
-      document.getElementById('patente').value = "";
-      document.getElementById('mensaje').value = "";
-      document.getElementById('nombreapellido').focus();
+    // Configuración Firebase (usa tu configuración real)
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_DOMAIN.firebaseapp.com",
+      projectId: "TU_PROJECT_ID",
+      storageBucket: "TU_STORAGE_BUCKET.appspot.com",
+      messagingSenderId: "TU_SENDER_ID",
+      appId: "TU_APP_ID"
+    };
+    
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    
+    // Obtener parámetros de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const lote = urlParams.get('lote');
+    const invitador = urlParams.get('invitador');
+    
+    // Mostrar datos del invitador
+    if (invitador) {
+      document.getElementById('invitador-text').textContent = `Invitado por: ${invitador}`;
+      document.getElementById('invitador').value = invitador;
     }
+    if (lote) {
+      document.getElementById('lote').value = lote;
+    }
+    
+    // Manejar envío del formulario
+    document.getElementById('invitacionForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = {
+        nombre: document.getElementById('nombre').value,
+        dni: document.getElementById('dni').value,
+        patente: document.getElementById('patente').value,
+        telefono: document.getElementById('telefono').value,
+        email: document.getElementById('email').value,
+        lote: document.getElementById('lote').value,
+        invitador: document.getElementById('invitador').value,
+        fecha: new Date().toISOString(),
+        estado: 'pendiente'
+      };
+      
+      try {
+        // Guardar en Firestore
+        await db.collection('invitaciones').add(formData);
+        
+        // Mostrar confirmación
+        alert('¡Gracias! Tus datos han sido registrados correctamente.');
+        
+        // Opcional: Redirigir o limpiar el formulario
+        document.getElementById('invitacionForm').reset();
+      } catch (error) {
+        console.error('Error al guardar:', error);
+        alert('Ocurrió un error al enviar tus datos. Por favor intenta nuevamente.');
+      }
+    });
   </script>
-  <footer class="container">
-    <div className="footer">
-        <hr class="sm-4" />
-    
-          
-          <section class="sm-4 text-center">
-           
-                    
-            <a
-               class="btn btn-outline-light btn-floating m-1"
-               href="mailto:federico.filippi@trenesargentinos.gob.ar"
-               role="button"
-               ><i class="fa fa-train "></i
-              ></a>
-    
-            <a
-               class="btn btn-outline-light btn-floating m-1"
-               href="https://www.linkedin.com/in/defilippi/"
-               role="button"
-               ><i class="fab fa-linkedin-in"></i
-              ></a>
-    
-            <a
-               class="btn btn-outline-light btn-floating m-1"
-               href="https://github.com/defilippi82"
-               role="button"
-               ><i class="fab fa-github"></i
-              ></a>
-          </section>
-    <div class="row">
-        <div class="col-lg-4 text-center">
-        <img class="rodapie" src="../img/logo-grisSin-fondo.png" width="75px" height="75px">
-        <p class="eslogan">Navegá más allá de lo esperado</p>
-    </div>
-    </div>
-  </footer>
-  <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
 </body>
 </html>
