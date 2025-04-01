@@ -5,7 +5,8 @@ import Swal from 'sweetalert2';
 import { Table, Button, Form, Modal, Row, Col, InputGroup, Card, Spinner, Alert } from 'react-bootstrap';
 import { FaWhatsapp, FaCopy, FaList, FaPlusCircle, FaEnvelope, FaQrcode } from 'react-icons/fa';
 import QRCode from 'qrcode.react';
-import emailjs from '@emailjs/browser';
+import emailjs from 'emailjs-com';
+//import emailjs from '@emailjs/browser';
 
 // Configuración EmailJS - REEMPLAZA CON TUS DATOS REALES
 const EMAILJS_CONFIG = {
