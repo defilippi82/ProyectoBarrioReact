@@ -54,7 +54,7 @@ export const Invitados = () => {
         }
         
         // Verificar y advertir si no hay teléfono
-        if (!parsedData.telefono) {
+        if (!parsedData.numerotelefono) {
           console.warn('Advertencia: No se encontró teléfono en los datos del usuario');
         }
         
@@ -95,7 +95,7 @@ export const Invitados = () => {
         fecha: new Date().toISOString(),
         lote: `${userData.manzana}-${userData.lote}`,
         invitador: userData.nombre,
-        telefonoInvitador: userData.telefono || '', // Guardar teléfono del invitador
+        telefonoInvitador: userData.numerotelefono || '', // Guardar teléfono del invitador
         estado: 'pendiente'
       };
 
@@ -153,7 +153,7 @@ export const Invitados = () => {
           ...nuevaLista,
           lote: `${userData.manzana}-${userData.lote}`,
           propietario: userData.nombre,
-          telefonoPropietario: userData.telefono || '',
+          telefonoPropietario: userData.numerotelefono || '',
           fecha: new Date().toISOString(),
           estado: 'pendiente'
         };
@@ -175,14 +175,14 @@ export const Invitados = () => {
     },
 
     enviarLista: (lista) => {
-      const telefonoGuardia = "+5491167204232"; // Reemplaza con tu número de guardia
+      const telefonoGuardia = "+5491154939423"; // Reemplaza con tu número de guardia
       let mensaje = `*LISTA DE INVITADOS - ${lista.nombre}*\n`;
       mensaje += `Lote: ${userData.manzana}-${userData.lote}\n`;
       mensaje += `Propietario: ${userData.nombre}\n`;
       
       // Añadir teléfono del propietario si está disponible
       if (userData.telefono) {
-        mensaje += `Teléfono: ${userData.telefono}\n\n`;
+        mensaje += `Teléfono: ${userData.numerotelefono}\n\n`;
       } else {
         mensaje += `Teléfono: No registrado\n\n`;
       }
@@ -206,8 +206,8 @@ export const Invitados = () => {
       params.append('invitador', encodeURIComponent(userData.nombre));
       
       // Añadir teléfono solo si está disponible
-      if (userData.telefono) {
-        params.append('telefono', userData.telefono);
+      if (userData.numerotelefono) {
+        params.append('telefono', userData.numerotelefono);
       }
       
       return `${window.location.origin}/pages/invitacion.html?${params.toString()}`;
@@ -258,7 +258,7 @@ export const Invitados = () => {
         <Card.Body>
           <Card.Title>Compartir formulario de invitación</Card.Title>
           <Card.Text className="mb-3">
-            {userData?.telefono ? (
+            {userData?.numerotelefono ? (
               "El enlace incluye tu número para confirmaciones"
             ) : (
               <span className="text-warning">
