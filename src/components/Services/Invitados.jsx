@@ -6,7 +6,6 @@ import { Table, Button, Form, Modal, Row, Col, InputGroup, Card, Spinner, Alert 
 import { FaWhatsapp, FaCopy, FaList, FaPlusCircle } from 'react-icons/fa';
 
 export const Invitados = () => {
-  // Estados consolidados
   const [state, setState] = useState({
     formData: {
       nombre: '',
@@ -28,7 +27,6 @@ export const Invitados = () => {
     }
   });
 
-  // Destructuración para facilitar el acceso
   const {
     formData,
     userData,
@@ -40,7 +38,6 @@ export const Invitados = () => {
     nuevaLista
   } = state;
 
-  // Cargar datos del usuario - efecto único
   useEffect(() => {
     const loadUserData = async () => {
       try {
@@ -54,6 +51,11 @@ export const Invitados = () => {
         
         if (!parsedData?.manzana || !parsedData?.lote || !parsedData?.nombre) {
           throw new Error('Datos de usuario incompletos');
+        }
+        
+        // Verificar y advertir si no hay teléfono
+        if (!parsedData.telefono) {
+          console.warn('Advertencia: No se encontró teléfono en los datos del usuario');
         }
         
         setState(prev => ({ ...prev, userData: parsedData, error: null }));
@@ -70,7 +72,6 @@ export const Invitados = () => {
     loadUserData();
   }, []);
 
-  // Manejador de cambios genérico
   const handleChange = (e) => {
     const { name, value } = e.target;
     setState(prev => ({
@@ -79,7 +80,6 @@ export const Invitados = () => {
     }));
   };
 
-  // Funciones de invitados
   const agregarInvitado = async (e) => {
     e.preventDefault();
     const { nombre, dni, patente } = formData;
@@ -95,6 +95,7 @@ export const Invitados = () => {
         fecha: new Date().toISOString(),
         lote: `${userData.manzana}-${userData.lote}`,
         invitador: userData.nombre,
+        telefonoInvitador: userData.telefono || '', // Guardar teléfono del invitador
         estado: 'pendiente'
       };
 
@@ -120,7 +121,6 @@ export const Invitados = () => {
     }
   };
 
-  // Funciones de listas
   const manejarLista = {
     agregarInvitado: (invitado) => {
       setState(prev => ({
@@ -153,6 +153,7 @@ export const Invitados = () => {
           ...nuevaLista,
           lote: `${userData.manzana}-${userData.lote}`,
           propietario: userData.nombre,
+          telefonoPropietario: userData.telefono || '',
           fecha: new Date().toISOString(),
           estado: 'pendiente'
         };
@@ -174,10 +175,19 @@ export const Invitados = () => {
     },
 
     enviarLista: (lista) => {
-      const telefonoGuardia = "+5491167204232";
+      const telefonoGuardia = "+5491167204232"; // Reemplaza con tu número de guardia
       let mensaje = `*LISTA DE INVITADOS - ${lista.nombre}*\n`;
       mensaje += `Lote: ${userData.manzana}-${userData.lote}\n`;
-      mensaje += `Propietario: ${userData.nombre}\n\n*Invitados:*\n`;
+      mensaje += `Propietario: ${userData.nombre}\n`;
+      
+      // Añadir teléfono del propietario si está disponible
+      if (userData.telefono) {
+        mensaje += `Teléfono: ${userData.telefono}\n\n`;
+      } else {
+        mensaje += `Teléfono: No registrado\n\n`;
+      }
+      
+      mensaje += `*Invitados:*\n`;
       
       lista.invitados.forEach((inv, index) => {
         mensaje += `${index + 1}. ${inv.nombre} - DNI: ${inv.dni} - Patente: ${inv.patente}\n`;
@@ -187,12 +197,20 @@ export const Invitados = () => {
     }
   };
 
-  // Funciones de compartir
   const compartir = {
     enlace: () => {
       if (!userData) return 'Cargando...';
-      return `${window.location.origin}/pages/invitacion.html`
-      // `${window.location.origin}/invitacion.html?lote=${userData.manzana}-${userData.lote}&invitador=${encodeURIComponent(userData.nombre)}`;
+      
+      const params = new URLSearchParams();
+      params.append('lote', `${userData.manzana}-${userData.lote}`);
+      params.append('invitador', encodeURIComponent(userData.nombre));
+      
+      // Añadir teléfono solo si está disponible
+      if (userData.telefono) {
+        params.append('telefono', userData.telefono);
+      }
+      
+      return `${window.location.origin}/pages/invitacion.html?${params.toString()}`;
     },
 
     copiar: () => {
@@ -206,7 +224,6 @@ export const Invitados = () => {
     }
   };
 
-  // Renderizado condicional
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
@@ -233,16 +250,22 @@ export const Invitados = () => {
     );
   }
 
-  // Renderizado principal
   return (
     <div className="container mt-4">
       <h2 className="mb-4">Sistema de Invitaciones</h2>
       
-      {/* Tarjeta para compartir */}
       <Card className="mb-4 shadow-sm">
         <Card.Body>
           <Card.Title>Compartir formulario de invitación</Card.Title>
-          <Card.Text className="mb-3">Envía este enlace a tus invitados:</Card.Text>
+          <Card.Text className="mb-3">
+            {userData?.telefono ? (
+              "El enlace incluye tu número para confirmaciones"
+            ) : (
+              <span className="text-warning">
+                Advertencia: No tenemos tu teléfono registrado. El enlace no podrá notificarte.
+              </span>
+            )}
+          </Card.Text>
           
           <InputGroup className="mb-3">
             <Form.Control value={compartir.enlace()} readOnly />
@@ -259,7 +282,6 @@ export const Invitados = () => {
         </Card.Body>
       </Card>
 
-      {/* Formulario para agregar invitados */}
       <Form onSubmit={agregarInvitado}>
         <Row className="g-3 mb-4">
           <Col md={6}>
@@ -323,6 +345,7 @@ export const Invitados = () => {
                 name="telefono"
                 value={formData.telefono}
                 onChange={handleChange}
+                placeholder="Ej: 549112345678"
               />
             </Form.Group>
           </Col>
@@ -348,7 +371,6 @@ export const Invitados = () => {
         </Row>
       </Form>
 
-      {/* Lista de invitados actuales */}
       {invitados.length > 0 && (
         <Card className="mb-4 shadow-sm">
           <Card.Body>
@@ -401,7 +423,6 @@ export const Invitados = () => {
         </Card>
       )}
 
-      {/* Listas guardadas */}
       {listas.length > 0 && (
         <Card className="mb-4 shadow-sm">
           <Card.Body>
@@ -436,7 +457,6 @@ export const Invitados = () => {
         </Card>
       )}
 
-      {/* Modal para crear lista */}
       <Modal show={showListModal} onHide={() => setState(prev => ({ ...prev, showListModal: false }))} size="lg">
         <Modal.Header closeButton>
           <Modal.Title>Crear nueva lista</Modal.Title>

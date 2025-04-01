@@ -7,7 +7,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body { background-color: #69acee; }
-    .form-container { max-width: 600px; margin: 50px auto; padding: 30px; border-radius: 10px; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+    .form-container { max-width: 600px; margin: 50px auto; padding: 30px; border-radius: 10px; background: rgb(174, 249, 246); box-shadow: 0 0 20px rgba(0,0,0,0.1); }
     .header { text-align: center; margin-bottom: 30px; }
   </style>
 </head>
@@ -22,6 +22,7 @@
       <form id="invitacionForm">
         <input type="hidden" id="lote" name="lote">
         <input type="hidden" id="invitador" name="invitador">
+        <input type="hidden" id="telefonoInvitador" name="telefonoInvitador">
         
         <div class="mb-3">
           <label for="nombre" class="form-label">Nombre completo*</label>
@@ -48,6 +49,13 @@
           <input type="email" class="form-control" id="email" name="email">
         </div>
         
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" id="privacidad" required>
+          <label class="form-check-label" for="privacidad">
+            Acepto el tratamiento de mis datos según la política de privacidad
+          </label>
+        </div>
+        
         <div class="d-grid">
           <button type="submit" class="btn btn-primary">Enviar Datos</button>
         </div>
@@ -58,24 +66,16 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
   <script>
-    // Configuración Firebase (usa tu configuración real)
+    // Configuración Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyD8lSjoGXYBRo8HDm8fQtmJWT9FQrEVtHg",
-
-  authDomain: "cube-b5537.firebaseapp.com",
-
-  databaseURL: "https://cube-b5537-default-rtdb.firebaseio.com",
-
-  projectId: "cube-b5537",
-
-  storageBucket: "cube-b5537.appspot.com",
-
-  messagingSenderId: "746288096117",
-
-  appId: "1:746288096117:web:4a121eea0fc0e72fb5e93c",
-
-  measurementId: "G-3HVP2KTDDX"
-
+      authDomain: "cube-b5537.firebaseapp.com",
+      databaseURL: "https://cube-b5537-default-rtdb.firebaseio.com",
+      projectId: "cube-b5537",
+      storageBucket: "cube-b5537.appspot.com",
+      messagingSenderId: "746288096117",
+      appId: "1:746288096117:web:4a121eea0fc0e72fb5e93c",
+      measurementId: "G-3HVP2KTDDX"
     };
     
     // Inicializar Firebase
@@ -86,12 +86,22 @@
     const urlParams = new URLSearchParams(window.location.search);
     const lote = urlParams.get('lote');
     const invitador = urlParams.get('invitador');
+    const telefonoInvitadorURL = urlParams.get('telefono');
+    
+    // Número de guardia por defecto (formato internacional sin +)
+    const telefonoGuardia = '5491112345678'; // Reemplaza con tu número real
     
     // Mostrar datos del invitador
     if (invitador) {
       document.getElementById('invitador-text').textContent = `Invitado por: ${invitador}`;
       document.getElementById('invitador').value = invitador;
+      
+      // Si viene teléfono en URL, lo guardamos
+      if (telefonoInvitadorURL) {
+        document.getElementById('telefonoInvitador').value = telefonoInvitadorURL;
+      }
     }
+    
     if (lote) {
       document.getElementById('lote').value = lote;
     }
@@ -100,32 +110,76 @@
     document.getElementById('invitacionForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       
+      // Validar checkbox de privacidad
+      if (!document.getElementById('privacidad').checked) {
+        alert('Debes aceptar la política de privacidad');
+        return;
+      }
+      
       const formData = {
-        nombre: document.getElementById('nombre').value,
-        dni: document.getElementById('dni').value,
-        patente: document.getElementById('patente').value,
-        telefono: document.getElementById('telefono').value,
-        email: document.getElementById('email').value,
+        nombre: document.getElementById('nombre').value.trim(),
+        dni: document.getElementById('dni').value.trim(),
+        patente: document.getElementById('patente').value.trim(),
+        telefono: document.getElementById('telefono').value.trim(),
+        email: document.getElementById('email').value.trim(),
         lote: document.getElementById('lote').value,
         invitador: document.getElementById('invitador').value,
+        telefonoInvitador: document.getElementById('telefonoInvitador').value,
         fecha: new Date().toISOString(),
-        estado: 'pendiente'
+        estado: 'pendiente',
+        ip: await obtenerIP() // Función adicional para registrar IP
       };
       
       try {
-        // Guardar en Firestore
+        // 1. Guardar en Firestore
         await db.collection('invitaciones').add(formData);
         
-        // Mostrar confirmación
-        alert('¡Gracias! Tus datos han sido registrados correctamente.');
+        // 2. Determinar teléfono destino (invitador o guardia)
+        const telefonoDestino = formData.telefonoInvitador || telefonoGuardia;
         
-        // Opcional: Redirigir o limpiar el formulario
+        // 3. Crear mensaje estructurado para WhatsApp
+        const mensajeWhatsApp = `📋 *Nueva Invitación Registrada* 📋
+        
+🔹 *Invitado:* ${formData.nombre}
+🔹 *DNI:* ${formData.dni}
+🔹 *Teléfono:* ${formData.telefono}
+🔹 *Email:* ${formData.email || 'No especificado'}
+
+🚗 *Vehículo:*
+▸ Patente: ${formData.patente || 'No especificada'}
+
+🏠 *Datos de Invitación:*
+▸ Lote: ${formData.lote || 'No especificado'}
+▸ Invitado por: ${formData.invitador || 'Directo'}
+
+📅 Fecha: ${new Date().toLocaleString()}`;
+
+        // 4. Codificar mensaje para URL
+        const mensajeCodificado = encodeURIComponent(mensajeWhatsApp);
+        
+        // 5. Abrir WhatsApp
+        window.open(`https://wa.me/${telefonoDestino}?text=${mensajeCodificado}`, '_blank');
+        
+        // 6. Mostrar confirmación y resetear formulario
+        alert('✅ Datos registrados correctamente. Se abrirá WhatsApp para confirmación.');
         document.getElementById('invitacionForm').reset();
+        
       } catch (error) {
-        console.error('Error al guardar:', error);
-        alert('Ocurrió un error al enviar tus datos. Por favor intenta nuevamente.');
+        console.error('Error:', error);
+        alert('❌ Ocurrió un error. Por favor intenta nuevamente.');
       }
     });
+    
+    // Función adicional para obtener IP (opcional)
+    async function obtenerIP() {
+      try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        return data.ip;
+      } catch {
+        return 'no-disponible';
+      }
+    }
   </script>
 </body>
 </html>
