@@ -5,14 +5,17 @@ import Swal from 'sweetalert2';
 import { Table, Button, Form, Modal, Row, Col, InputGroup, Card, Spinner, Alert } from 'react-bootstrap';
 import { FaWhatsapp, FaCopy, FaList, FaPlusCircle, FaEnvelope, FaQrcode } from 'react-icons/fa';
 import QRCode from 'qrcode.react';
-import emailjs from 'emailjs-com';
+import emailjs from '@emailjs/browser';
 
-emailjs.init("f.defilippi@gmail.com"); // Reemplaza con tu User ID
+// Configuración EmailJS - REEMPLAZA CON TUS DATOS REALES
 const EMAILJS_CONFIG = {
-  SERVICE_ID: "service_invitado",       // Reemplaza con tu Service ID
-  TEMPLATE_ID: "template_listainvitados",     // Reemplaza con tu Template ID
-  USER_ID: "f.defilippi@gmail.com"      // Reemplaza con tu User ID
+  SERVICE_ID: "service_tu_servicio_id", // Ej: "service_abc123"
+  TEMPLATE_ID: "template_tu_template_id", // Ej: "template_xyz456"
+  USER_ID: "tu_user_id_publico" // Ej: "user_123abc" (NO tu email)
 };
+
+// Inicializa EmailJS
+emailjs.init(EMAILJS_CONFIG.USER_ID);
 
 export const Invitados = () => {
   const [state, setState] = useState({
@@ -51,9 +54,7 @@ export const Invitados = () => {
     currentQR
   } = state;
 
-  // Inicializa EmailJS
   useEffect(() => {
-    emailjs.init("service_invitado");
     const loadUserData = async () => {
       try {
         const userDataFromStorage = localStorage.getItem('userData');
@@ -86,15 +87,71 @@ export const Invitados = () => {
     }));
   };
 
+  const generarQRDataURL = async (data) => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      QRCode.toCanvas(canvas, JSON.stringify(data), { width: 200 }, (error) => {
+        if (error) {
+          console.error("Error generando QR:", error);
+          resolve('');
+        } else {
+          resolve(canvas.toDataURL('image/png'));
+        }
+      });
+    });
+  };
+
+  const enviarPorCorreo = async (invitadoData) => {
+    try {
+      const emailDestino = invitadoData.email || userData.email;
+      if (!emailDestino) {
+        Swal.fire('Error', 'No hay dirección de email disponible', 'error');
+        return;
+      }
+
+      const qrImageUrl = await generarQRDataURL(invitadoData);
+
+      const templateParams = {
+        nombre_invitado: invitadoData.nombre,
+        nombre_anfitrion: userData.nombre,
+        lote: invitadoData.lote,
+        fecha: new Date(invitadoData.fecha).toLocaleDateString(),
+        qr_image_url: qrImageUrl,
+        email_invitado: emailDestino
+      };
+
+      await emailjs.send(
+        EMAILJS_CONFIG.SERVICE_ID,
+        EMAILJS_CONFIG.TEMPLATE_ID,
+        templateParams,
+        EMAILJS_CONFIG.USER_ID
+      );
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Invitación enviada',
+        text: `Se ha enviado el QR a ${emailDestino}`,
+        timer: 3000
+      });
+    } catch (error) {
+      console.error("Error al enviar email:", error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo enviar el correo. Por favor intenta nuevamente.',
+      });
+    }
+  };
+
   const agregarInvitado = async (e) => {
     e.preventDefault();
-    const { nombre, dni, patente, email, telefono } = formData;
+    const { nombre, dni, patente, email } = formData;
     
     if (!nombre || !dni || !patente) {
       Swal.fire('Error', 'Nombre, DNI y Patente son obligatorios', 'error');
       return;
     }
-  
+
     try {
       const nuevoInvitado = {
         ...formData,
@@ -104,15 +161,13 @@ export const Invitados = () => {
         telefonoInvitador: userData.telefono || '',
         estado: 'pendiente'
       };
-  
-      // Guarda en Firestore
+
       const docRef = await addDoc(collection(db, 'invitados'), nuevoInvitado);
       
-      // Envía el correo electrónico
       if (email || userData.email) {
         await enviarPorCorreo(nuevoInvitado);
       }
-  
+
       setState(prev => ({
         ...prev,
         invitados: [...prev.invitados, { id: docRef.id, ...nuevoInvitado }],
@@ -132,103 +187,15 @@ export const Invitados = () => {
     }
   };
 
-  const generarDatosQR = (invitado) => {
-    return {
-      nombre: invitado.nombre,
-      dni: invitado.dni,
-      patente: invitado.patente,
-      lote: `${userData.manzana}-${userData.lote}`,
-      invitador: userData.nombre,
-      fecha: new Date().toISOString(),
-      valido: true
-    };
-  };
-  const [qrModal, setQrModal] = useState({
-    show: false,
-    data: null,
-    email: ''
-  });
-  
-  // Función para mostrar el QR
   const mostrarQR = (invitado) => {
-    setQrModal({
-      show: true,
-      data: invitado,
-      email: invitado.email || userData.email || ''
-    });
-  };
-  
-  // Modal para QR
-  const QRModal = () => (
-    <Modal show={qrModal.show} onHide={() => setQrModal({...qrModal, show: false})} centered>
-      <Modal.Header closeButton>
-        <Modal.Title>Invitación para {qrModal.data?.nombre}</Modal.Title>
-      </Modal.Header>
-      <Modal.Body className="text-center">
-        {qrModal.data && (
-          <>
-            <QRCode 
-              value={JSON.stringify(qrModal.data)} 
-              size={200}
-              level="H"
-              includeMargin={true}
-            />
-            <Form.Group className="mt-3">
-              <Form.Label>Email para enviar</Form.Label>
-              <Form.Control
-                type="email"
-                value={qrModal.email}
-                onChange={(e) => setQrModal({...qrModal, email: e.target.value})}
-                placeholder="correo@ejemplo.com"
-              />
-            </Form.Group>
-          </>
-        )}
-      </Modal.Body>
-      <Modal.Footer>
-        <Button 
-          variant="primary" 
-          onClick={async () => {
-            await enviarPorCorreo({
-              ...qrModal.data,
-              email: qrModal.email
-            });
-            setQrModal({...qrModal, show: false});
-          }}
-        >
-          <FaEnvelope /> Enviar por Email
-        </Button>
-        <Button 
-          variant="success"
-          onClick={() => {
-            const mensaje = `Hola ${qrModal.data.nombre}, aquí está tu invitación. Presenta este código QR al llegar:\n\nLote: ${qrModal.data.lote}\nAnfitrión: ${userData.nombre}`;
-            window.open(`https://wa.me/${qrModal.data.telefono}?text=${encodeURIComponent(mensaje)}`);
-          }}
-          disabled={!qrModal.data?.telefono}
-        >
-          <FaWhatsapp /> Enviar por WhatsApp
-        </Button>
-      </Modal.Footer>
-    </Modal>
-  );
-
-  const generarQR = (data) => {
-    return (
-      <div className="text-center my-3 p-2 border rounded">
-        <QRCode 
-          value={JSON.stringify(data)} 
-          size={200}
-          level="H"
-          includeMargin={true}
-        />
-        <p className="mt-2 small text-muted">Válido por 48 horas</p>
-      </div>
-    );
-  };
-
-  const compartirInvitacionQR = (invitado) => {
-    const qrData = invitado.qrData || generarDatosQR(invitado);
-    setState(prev => ({ ...prev, showQRModal: true, currentQR: qrData }));
+    setState(prev => ({
+      ...prev,
+      showQRModal: true,
+      currentQR: {
+        ...invitado,
+        email: invitado.email || userData.email || ''
+      }
+    }));
   };
 
   const enviarPorWhatsApp = () => {
@@ -240,52 +207,8 @@ export const Invitados = () => {
       `🔹 *Anfitrión:* ${currentQR.invitador}\n\n` +
       `*Fecha:* ${new Date(currentQR.fecha).toLocaleString()}`;
     
-    window.open(`https://wa.me/?text=${encodeURIComponent(mensaje)}`);
+    window.open(`https://wa.me/${currentQR.telefono}?text=${encodeURIComponent(mensaje)}`);
     setState(prev => ({ ...prev, showQRModal: false }));
-  };
-
-  const enviarPorCorreo = async (invitadoData) => {
-    try {
-      // Genera el QR como Data URL
-      const canvas = document.createElement('canvas');
-      await QRCode.toCanvas(canvas, JSON.stringify(invitadoData), { 
-        width: 200,
-        margin: 2
-      });
-      const qrImageUrl = canvas.toDataURL();
-  
-      // Prepara los parámetros para el email
-      const templateParams = {
-        nombre_invitado: invitadoData.nombre,
-        nombre_anfitrion: userData.nombre,
-        lote: invitadoData.lote,
-        fecha: new Date(invitadoData.fecha).toLocaleDateString(),
-        qr_image_url: qrImageUrl,
-        email_invitado: invitadoData.email || userData.email // Fallback al email del usuario
-      };
-  
-      // Envía el email
-      await emailjs.send(
-        EMAILJS_CONFIG.SERVICE_ID,
-        EMAILJS_CONFIG.TEMPLATE_ID,
-        templateParams,
-        EMAILJS_CONFIG.USER_ID
-      );
-  
-      Swal.fire({
-        icon: 'success',
-        title: 'Invitación enviada',
-        text: `Se ha enviado el QR a ${templateParams.email_invitado}`,
-        timer: 3000
-      });
-    } catch (error) {
-      console.error("Error al enviar email:", error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'No se pudo enviar el correo. Por favor intenta nuevamente.',
-      });
-    }
   };
 
   const manejarLista = {
@@ -322,8 +245,7 @@ export const Invitados = () => {
           propietario: userData.nombre,
           telefonoPropietario: userData.telefono || '',
           fecha: new Date().toISOString(),
-          estado: 'pendiente',
-          qrData: generarDatosQR({ nombre: 'Lista: ' + nuevaLista.nombre, dni: 'multiple' })
+          estado: 'pendiente'
         };
 
         const docRef = await addDoc(collection(db, 'listasInvitados'), listaCompleta);
@@ -343,39 +265,18 @@ export const Invitados = () => {
     },
 
     enviarLista: (lista) => {
-      Swal.fire({
-        title: 'Enviar lista de invitados',
-        html: `¿Cómo deseas enviar la lista <strong>${lista.nombre}</strong> con ${lista.invitados.length} invitados?`,
-        showDenyButton: true,
-        showCancelButton: true,
-        confirmButtonText: '<FaWhatsapp /> WhatsApp',
-        denyButtonText: '<FaEnvelope /> Email',
-        cancelButtonText: 'Cancelar',
-        icon: 'question',
-        customClass: {
-          confirmButton: 'btn btn-success me-2',
-          denyButton: 'btn btn-primary me-2',
-          cancelButton: 'btn btn-secondary'
-        },
-        buttonsStyling: false
-      }).then((result) => {
-        if (result.isConfirmed) {
-          const telefonoGuardia = "+5491167204232";
-          let mensaje = `*LISTA DE INVITADOS - ${lista.nombre}*\n\n`;
-          mensaje += `🔹 *Lote:* ${userData.manzana}-${userData.lote}\n`;
-          mensaje += `🔹 *Propietario:* ${userData.nombre}\n`;
-          mensaje += `🔹 *Teléfono:* ${userData.telefono || 'No registrado'}\n\n`;
-          mensaje += `*INVITADOS (${lista.invitados.length})*\n`;
-          
-          lista.invitados.forEach((inv, index) => {
-            mensaje += `▸ ${index+1}. ${inv.nombre} | DNI: ${inv.dni} | Patente: ${inv.patente}\n`;
-          });
-
-          window.open(`https://wa.me/${telefonoGuardia}?text=${encodeURIComponent(mensaje)}`);
-        } else if (result.isDenied) {
-          setState(prev => ({ ...prev, currentQR: lista.qrData, showQRModal: true }));
-        }
+      const telefonoGuardia = "+5491167204232"; // Reemplaza con tu número
+      let mensaje = `*LISTA DE INVITADOS - ${lista.nombre}*\n\n`;
+      mensaje += `🔹 *Lote:* ${userData.manzana}-${userData.lote}\n`;
+      mensaje += `🔹 *Propietario:* ${userData.nombre}\n`;
+      mensaje += `🔹 *Teléfono:* ${userData.telefono || 'No registrado'}\n\n`;
+      mensaje += `*INVITADOS (${lista.invitados.length})*\n`;
+      
+      lista.invitados.forEach((inv, index) => {
+        mensaje += `▸ ${index+1}. ${inv.nombre} | DNI: ${inv.dni} | Patente: ${inv.patente}\n`;
       });
+
+      window.open(`https://wa.me/${telefonoGuardia}?text=${encodeURIComponent(mensaje)}`);
     }
   };
 
@@ -552,52 +453,66 @@ export const Invitados = () => {
       </Form>
 
       {invitados.length > 0 && (
-      <Card className="mb-4 shadow-sm">
-        <Card.Body>
-          <Table striped bordered hover responsive>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>DNI</th>
-                <th>Patente</th>
-                <th>Acciones</th> {/* Columna donde irán los botones */}
-              </tr>
-            </thead>
-            <tbody>
-              {invitados.map((inv) => (
-                <tr key={inv.id}>
-                  <td>{inv.nombre}</td>
-                  <td>{inv.dni}</td>
-                  <td>{inv.patente || '-'}</td>
-                  <td>
-                    {/* Botón QR que agregamos */}
-                    <Button 
-                      variant="success" 
-                      size="sm" 
-                      onClick={() => mostrarQR(inv)}
-                      className="me-2"
-                      title="Generar QR"
-                    >
-                      <FaQrcode /> QR
-                    </Button>
-                    
-                    {/* Otros botones que ya tengas */}
-                    <Button
-                      variant="info"
-                      size="sm"
-                      onClick={() => manejarLista.agregarInvitado(inv)}
-                      title="Agregar a lista"
-                    >
-                      <FaList />
-                    </Button>
-                  </td>
+        <Card className="mb-4 shadow-sm">
+          <Card.Body>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <Card.Title>Invitados registrados ({invitados.length})</Card.Title>
+              <Button 
+                variant="success" 
+                onClick={() => setState(prev => ({
+                  ...prev,
+                  nuevaLista: {
+                    nombre: `Lista ${new Date().toLocaleDateString()}`,
+                    invitados: [...prev.invitados]
+                  },
+                  showListModal: true
+                }))}
+              >
+                <FaList className="me-2" /> Crear lista
+              </Button>
+            </div>
+            
+            <Table striped bordered hover responsive>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>DNI</th>
+                  <th>Patente</th>
+                  <th>Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </Table>
-        </Card.Body>
-      </Card>
-    )}
+              </thead>
+              <tbody>
+                {invitados.map((inv) => (
+                  <tr key={inv.id}>
+                    <td>{inv.nombre}</td>
+                    <td>{inv.dni}</td>
+                    <td>{inv.patente || '-'}</td>
+                    <td>
+                      <Button
+                        variant="success"
+                        size="sm"
+                        onClick={() => mostrarQR(inv)}
+                        className="me-2"
+                        title="Generar QR"
+                      >
+                        <FaQrcode />
+                      </Button>
+                      <Button
+                        variant="info"
+                        size="sm"
+                        onClick={() => manejarLista.agregarInvitado(inv)}
+                        title="Agregar a lista"
+                      >
+                        <FaList />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </Card.Body>
+        </Card>
+      )}
 
       {listas.length > 0 && (
         <Card className="mb-4 shadow-sm">
@@ -612,11 +527,11 @@ export const Invitados = () => {
                 </tr>
               </thead>
               <tbody>
-                {listas.map((lista, index) => (
-                  <tr key={index}>
+                {listas.map((lista) => (
+                  <tr key={lista.id}>
                     <td>{lista.nombre}</td>
                     <td>{lista.invitados.length}</td>
-                    <td className="text-nowrap">
+                    <td>
                       <Button
                         variant="success"
                         className="me-2"
@@ -625,20 +540,6 @@ export const Invitados = () => {
                       >
                         <FaWhatsapp />
                       </Button>
-                      <Button
-                        variant="primary"
-                        onClick={() => {
-                          setState(prev => ({ 
-                            ...prev, 
-                            showQRModal: true,
-                            currentQR: lista.qrData 
-                          }));
-                        }}
-                        title="Ver QR"
-                      >
-                        <FaQrcode />
-                      </Button>
-                      
                     </td>
                   </tr>
                 ))}
@@ -648,7 +549,6 @@ export const Invitados = () => {
         </Card>
       )}
 
-      {/* Modal para crear lista */}
       <Modal show={showListModal} onHide={() => setState(prev => ({ ...prev, showListModal: false }))} size="lg">
         <Modal.Header closeButton>
           <Modal.Title>Crear nueva lista</Modal.Title>
@@ -670,36 +570,34 @@ export const Invitados = () => {
 
           <h5>Invitados en esta lista ({nuevaLista.invitados.length})</h5>
           {nuevaLista.invitados.length > 0 ? (
-            <div className="table-responsive">
-              <Table striped bordered hover size="sm">
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>DNI</th>
-                    <th>Patente</th>
-                    <th>Acción</th>
+            <Table striped bordered hover size="sm">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>DNI</th>
+                  <th>Patente</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {nuevaLista.invitados.map((inv, index) => (
+                  <tr key={index}>
+                    <td>{inv.nombre}</td>
+                    <td>{inv.dni}</td>
+                    <td>{inv.patente || '-'}</td>
+                    <td>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => manejarLista.eliminarInvitado(index)}
+                      >
+                        Eliminar
+                      </Button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {nuevaLista.invitados.map((inv, index) => (
-                    <tr key={index}>
-                      <td>{inv.nombre}</td>
-                      <td>{inv.dni}</td>
-                      <td>{inv.patente || '-'}</td>
-                      <td>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => manejarLista.eliminarInvitado(index)}
-                        >
-                          Eliminar
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </div>
+                ))}
+              </tbody>
+            </Table>
           ) : (
             <Alert variant="info">No hay invitados en esta lista</Alert>
           )}
@@ -714,33 +612,53 @@ export const Invitados = () => {
         </Modal.Footer>
       </Modal>
 
-      {/* Modal para QR */}
       <Modal show={showQRModal} onHide={() => setState(prev => ({ ...prev, showQRModal: false }))} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Invitación con QR</Modal.Title>
+          <Modal.Title>Invitación para {currentQR?.nombre}</Modal.Title>
         </Modal.Header>
         <Modal.Body className="text-center">
-          {currentQR && generarQR(currentQR)}
-          <p className="mb-3">Presenta este código para el ingreso</p>
-          
-          <div className="d-flex justify-content-center gap-3">
-            {currentQR?.nombre && (
-              <Button variant="success" onClick={enviarPorWhatsApp}>
-                <FaWhatsapp className="me-2" /> Enviar por WhatsApp
-              </Button>
-            )}
-            <Button variant="primary" onClick={enviarPorCorreo}>
-              <FaEnvelope className="me-2" /> Enviar por Email
-            </Button>
-          </div>
+          {currentQR && (
+            <>
+              <QRCode 
+                value={JSON.stringify(currentQR)} 
+                size={200}
+                level="H"
+                includeMargin={true}
+              />
+              <Form.Group className="mt-3">
+                <Form.Label>Email para enviar</Form.Label>
+                <Form.Control
+                  type="email"
+                  value={currentQR.email || ''}
+                  onChange={(e) => setState(prev => ({
+                    ...prev,
+                    currentQR: { ...prev.currentQR, email: e.target.value }
+                  }))}
+                  placeholder="correo@ejemplo.com"
+                />
+              </Form.Group>
+            </>
+          )}
         </Modal.Body>
         <Modal.Footer>
-          <small className="text-muted">
-            Código válido hasta: {new Date(new Date(currentQR?.fecha).getTime() + 48*60*60*1000).toLocaleString()}
-          </small>
+          <div className="d-flex justify-content-center gap-3 w-100">
+            <Button 
+              variant="primary" 
+              onClick={() => enviarPorCorreo(currentQR)}
+              disabled={!currentQR?.email && !userData.email}
+            >
+              <FaEnvelope className="me-2" /> Enviar por Email
+            </Button>
+            <Button 
+              variant="success"
+              onClick={enviarPorWhatsApp}
+              disabled={!currentQR?.telefono}
+            >
+              <FaWhatsapp className="me-2" /> Enviar por WhatsApp
+            </Button>
+          </div>
         </Modal.Footer>
       </Modal>
-      <QRModal />
     </div>
   );
 };
