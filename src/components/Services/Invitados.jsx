@@ -9,8 +9,8 @@ import emailjs from '@emailjs/browser';
 
 // Configuración EmailJS - REEMPLAZA CON TUS DATOS REALES
 const EMAILJS_CONFIG = {
-  SERVICE_ID: "service_invitados",
-  TEMPLATE_ID: "template_listainviados",
+  SERVICE_ID: "service_invitado",
+  TEMPLATE_ID: "template_listainvitados",
   USER_ID: "F2yt1jfmdvtF48It0"
 };
 
@@ -160,7 +160,7 @@ export const Invitados = () => {
         fecha: new Date().toISOString(),
         lote: `${userData.manzana}-${userData.lote}`,
         invitador: userData.nombre,
-        telefonoInvitador: userData.telefono || '',
+        telefonoInvitador: userData.numerotelefono || '',
         estado: 'pendiente'
       };
 
@@ -245,7 +245,7 @@ export const Invitados = () => {
           ...nuevaLista,
           lote: `${userData.manzana}-${userData.lote}`,
           propietario: userData.nombre,
-          telefonoPropietario: userData.telefono || '',
+          telefonoPropietario: userData.numerotelefono || '',
           fecha: new Date().toISOString(),
           estado: 'pendiente'
         };
@@ -271,7 +271,7 @@ export const Invitados = () => {
       let mensaje = `*LISTA DE INVITADOS - ${lista.nombre}*\n\n`;
       mensaje += `🔹 *Lote:* ${userData.manzana}-${userData.lote}\n`;
       mensaje += `🔹 *Propietario:* ${userData.nombre}\n`;
-      mensaje += `🔹 *Teléfono:* ${userData.telefono || 'No registrado'}\n\n`;
+      mensaje += `🔹 *Teléfono:* ${userData.numerotelefono || 'No registrado'}\n\n`;
       mensaje += `*INVITADOS (${lista.invitados.length})*\n`;
       
       lista.invitados.forEach((inv, index) => {
@@ -289,7 +289,7 @@ export const Invitados = () => {
       const params = new URLSearchParams();
       params.append('lote', `${userData.manzana}-${userData.lote}`);
       params.append('invitador', encodeURIComponent(userData.nombre));
-      if (userData.telefono) params.append('telefono', userData.telefono);
+      if (userData.numerotelefono) params.append('telefono', userData.numerotelefono);
       
       return `${window.location.origin}/pages/invitacion.html?${params.toString()}`;
     },
@@ -342,7 +342,7 @@ export const Invitados = () => {
         <Card.Body>
           <Card.Title>Compartir formulario de invitación</Card.Title>
           <Card.Text className="mb-3">
-            {userData?.telefono ? (
+            {userData?.numerotelefono ? (
               <span className="text-success">El enlace incluye tu contacto para confirmaciones</span>
             ) : (
               <span className="text-warning">
