@@ -322,9 +322,12 @@ export const Invitados = () => {
           <p>{error || 'No se pudieron cargar los datos del usuario'}</p>
           <hr />
           <div className="d-flex justify-content-end">
-            <Button variant="outline-danger" onClick={() => window.location.href = '/login'>
-              Volver a iniciar sesión
-            </Button>
+          <Button 
+  variant="outline-danger" 
+  onClick={() => { window.location.href = '/login'; }}
+>
+  Volver a iniciar sesión
+</Button>
           </div>
         </Alert>
       </div>
