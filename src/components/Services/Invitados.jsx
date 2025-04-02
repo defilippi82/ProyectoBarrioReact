@@ -6,6 +6,7 @@ import { Table, Button, Form, Modal, Row, Col, InputGroup, Card, Spinner, Alert 
 import { FaWhatsapp, FaCopy, FaList, FaPlusCircle, FaEnvelope, FaQrcode } from 'react-icons/fa';
 import { QRCodeSVG } from 'qrcode.react'; // Importación corregida
 import emailjs from '@emailjs/browser';
+//import html2canvas from 'html2canvas'; // Ejemplo de importación
 
 // Configuración EmailJS - REEMPLAZA CON TUS DATOS REALES
 const EMAILJS_CONFIG = {
@@ -94,12 +95,12 @@ export const Invitados = () => {
         size: 200,
         level: 'H'
       });
-      qr.toCanvas(canvas).then(() => {
-        resolve(canvas.toDataURL('image/png'));
-      }).catch(error => {
-        console.error("Error generando QR:", error);
-        resolve('');
-      });
+    //  qr.toCanvas(canvas).then(() => {
+      //  resolve(canvas.toDataURL('image/png'));
+      //}).catch(error => {
+       // console.error("Error generando QR:", error);
+       // resolve('');
+      //});
     });
   };
 
