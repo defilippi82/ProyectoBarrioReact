@@ -4,19 +4,15 @@ import { db } from '/src/firebaseConfig/firebase.js';
 import Swal from 'sweetalert2';
 import { Table, Button, Form, Modal, Row, Col, InputGroup, Card, Spinner, Alert } from 'react-bootstrap';
 import { FaWhatsapp, FaCopy, FaList, FaPlusCircle, FaEnvelope, FaQrcode } from 'react-icons/fa';
-import QRCode from 'qrcode.react';
-import emailjs from 'emailjs';
-//import emailjs from '@emailjs/browser';
+import { QRCodeSVG } from 'qrcode.react'; // Importación corregida
+import emailjs from '@emailjs/browser';
 
 // Configuración EmailJS - REEMPLAZA CON TUS DATOS REALES
 const EMAILJS_CONFIG = {
-  SERVICE_ID: "service_tu_servicio_id", // Ej: "service_abc123"
-  TEMPLATE_ID: "template_tu_template_id", // Ej: "template_xyz456"
-  USER_ID: "tu_user_id_publico" // Ej: "user_123abc" (NO tu email)
+  SERVICE_ID: "service_invitados",
+  TEMPLATE_ID: "template_listainviados",
+  USER_ID: "F2yt1jfmdvtF48It0"
 };
-
-// Inicializa EmailJS
-emailjs.init(EMAILJS_CONFIG.USER_ID);
 
 export const Invitados = () => {
   const [state, setState] = useState({
@@ -55,7 +51,9 @@ export const Invitados = () => {
     currentQR
   } = state;
 
+  // Inicializa EmailJS
   useEffect(() => {
+    emailjs.init(EMAILJS_CONFIG.USER_ID);
     const loadUserData = async () => {
       try {
         const userDataFromStorage = localStorage.getItem('userData');
@@ -91,13 +89,16 @@ export const Invitados = () => {
   const generarQRDataURL = async (data) => {
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas');
-      QRCode.toCanvas(canvas, JSON.stringify(data), { width: 200 }, (error) => {
-        if (error) {
-          console.error("Error generando QR:", error);
-          resolve('');
-        } else {
-          resolve(canvas.toDataURL('image/png'));
-        }
+      const qr = new QRCodeSVG({
+        value: JSON.stringify(data),
+        size: 200,
+        level: 'H'
+      });
+      qr.toCanvas(canvas).then(() => {
+        resolve(canvas.toDataURL('image/png'));
+      }).catch(error => {
+        console.error("Error generando QR:", error);
+        resolve('');
       });
     });
   };
@@ -321,7 +322,7 @@ export const Invitados = () => {
           <p>{error || 'No se pudieron cargar los datos del usuario'}</p>
           <hr />
           <div className="d-flex justify-content-end">
-            <Button variant="outline-danger" onClick={() => window.location.href = '/login'}>
+            <Button variant="outline-danger" onClick={() => window.location.href = '/login'>
               Volver a iniciar sesión
             </Button>
           </div>
@@ -620,8 +621,8 @@ export const Invitados = () => {
         <Modal.Body className="text-center">
           {currentQR && (
             <>
-              <QRCode 
-                value={JSON.stringify(currentQR)} 
+              <QRCodeSVG 
+                value={JSON.stringify(currentQR)}
                 size={200}
                 level="H"
                 includeMargin={true}
