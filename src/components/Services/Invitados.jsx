@@ -4,13 +4,13 @@ import { db } from '/src/firebaseConfig/firebase.js';
 import Swal from 'sweetalert2';
 import { Table, Button, Form, Modal, Row, Col, InputGroup, Card, Spinner, Alert } from 'react-bootstrap';
 import { FaWhatsapp, FaCopy, FaList, FaPlusCircle, FaEnvelope, FaQrcode } from 'react-icons/fa';
-import { QRCodeSVG } from 'qrcode.react'; // Importación corregida
+import QRCode from 'qrcode';
 import emailjs from '@emailjs/browser';
 
-// Configuración EmailJS - REEMPLAZA CON TUS DATOS REALES
+// Configuración EmailJS
 const EMAILJS_CONFIG = {
-  SERVICE_ID: "service_invitados",
-  TEMPLATE_ID: "template_listainviados",
+  SERVICE_ID: "service_invitado",
+  TEMPLATE_ID: "template_listainvitados",
   USER_ID: "F2yt1jfmdvtF48It0"
 };
 
@@ -35,7 +35,8 @@ export const Invitados = () => {
       invitados: []
     },
     showQRModal: false,
-    currentQR: null
+    currentQR: null,
+    qrImageUrl: ''
   });
 
   const {
@@ -48,7 +49,8 @@ export const Invitados = () => {
     listas,
     nuevaLista,
     showQRModal,
-    currentQR
+    currentQR,
+    qrImageUrl
   } = state;
 
   // Inicializa EmailJS
@@ -87,20 +89,16 @@ export const Invitados = () => {
   };
 
   const generarQRDataURL = async (data) => {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas');
-      const qr = new QRCodeSVG({
-        value: JSON.stringify(data),
-        size: 200,
-        level: 'H'
+    try {
+      return await QRCode.toDataURL(JSON.stringify(data), {
+        width: 200,
+        margin: 2,
+        errorCorrectionLevel: 'H'
       });
-      qr.toCanvas(canvas).then(() => {
-        resolve(canvas.toDataURL('image/png'));
-      }).catch(error => {
-        console.error("Error generando QR:", error);
-        resolve('');
-      });
-    });
+    } catch (error) {
+      console.error("Error generando QR:", error);
+      return '';
+    }
   };
 
   const enviarPorCorreo = async (invitadoData) => {
@@ -112,6 +110,9 @@ export const Invitados = () => {
       }
 
       const qrImageUrl = await generarQRDataURL(invitadoData);
+      if (!qrImageUrl) {
+        throw new Error('No se pudo generar el código QR');
+      }
 
       const templateParams = {
         nombre_invitado: invitadoData.nombre,
@@ -140,7 +141,7 @@ export const Invitados = () => {
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'No se pudo enviar el correo. Por favor intenta nuevamente.',
+        text: error.message || 'No se pudo enviar el correo. Por favor intenta nuevamente.',
       });
     }
   };
@@ -160,7 +161,7 @@ export const Invitados = () => {
         fecha: new Date().toISOString(),
         lote: `${userData.manzana}-${userData.lote}`,
         invitador: userData.nombre,
-        telefonoInvitador: userData.telefono || '',
+        telefonoInvitador: userData.numerotelefono || '', // Cambiado a numerotelefono
         estado: 'pendiente'
       };
 
@@ -189,14 +190,16 @@ export const Invitados = () => {
     }
   };
 
-  const mostrarQR = (invitado) => {
+  const mostrarQR = async (invitado) => {
+    const qrImage = await generarQRDataURL(invitado);
     setState(prev => ({
       ...prev,
       showQRModal: true,
       currentQR: {
         ...invitado,
         email: invitado.email || userData.email || ''
-      }
+      },
+      qrImageUrl: qrImage
     }));
   };
 
@@ -245,7 +248,7 @@ export const Invitados = () => {
           ...nuevaLista,
           lote: `${userData.manzana}-${userData.lote}`,
           propietario: userData.nombre,
-          telefonoPropietario: userData.telefono || '',
+          telefonoPropietario: userData.numerotelefono || '', // Cambiado a numerotelefono
           fecha: new Date().toISOString(),
           estado: 'pendiente'
         };
@@ -267,11 +270,11 @@ export const Invitados = () => {
     },
 
     enviarLista: (lista) => {
-      const telefonoGuardia = "+5491167204232"; // Reemplaza con tu número
+      const telefonoGuardia = "+5491167204232";
       let mensaje = `*LISTA DE INVITADOS - ${lista.nombre}*\n\n`;
       mensaje += `🔹 *Lote:* ${userData.manzana}-${userData.lote}\n`;
       mensaje += `🔹 *Propietario:* ${userData.nombre}\n`;
-      mensaje += `🔹 *Teléfono:* ${userData.telefono || 'No registrado'}\n\n`;
+      mensaje += `🔹 *Teléfono:* ${userData.numerotelefono || 'No registrado'}\n\n`; // Cambiado a numerotelefono
       mensaje += `*INVITADOS (${lista.invitados.length})*\n`;
       
       lista.invitados.forEach((inv, index) => {
@@ -289,7 +292,7 @@ export const Invitados = () => {
       const params = new URLSearchParams();
       params.append('lote', `${userData.manzana}-${userData.lote}`);
       params.append('invitador', encodeURIComponent(userData.nombre));
-      if (userData.telefono) params.append('telefono', userData.telefono);
+      if (userData.numerotelefono) params.append('telefono', userData.numerotelefono); // Cambiado a numerotelefono
       
       return `${window.location.origin}/pages/invitacion.html?${params.toString()}`;
     },
@@ -322,12 +325,12 @@ export const Invitados = () => {
           <p>{error || 'No se pudieron cargar los datos del usuario'}</p>
           <hr />
           <div className="d-flex justify-content-end">
-          <Button 
-  variant="outline-danger" 
-  onClick={() => { window.location.href = '/login'; }}
->
-  Volver a iniciar sesión
-</Button>
+            <Button 
+              variant="outline-danger" 
+              onClick={() => { window.location.href = '/login'; }}
+            >
+              Volver a iniciar sesión
+            </Button>
           </div>
         </Alert>
       </div>
@@ -342,7 +345,7 @@ export const Invitados = () => {
         <Card.Body>
           <Card.Title>Compartir formulario de invitación</Card.Title>
           <Card.Text className="mb-3">
-            {userData?.telefono ? (
+            {userData?.numerotelefono ? ( // Cambiado a numerotelefono
               <span className="text-success">El enlace incluye tu contacto para confirmaciones</span>
             ) : (
               <span className="text-warning">
@@ -624,12 +627,7 @@ export const Invitados = () => {
         <Modal.Body className="text-center">
           {currentQR && (
             <>
-              <QRCodeSVG 
-                value={JSON.stringify(currentQR)}
-                size={200}
-                level="H"
-                includeMargin={true}
-              />
+              <img src={qrImageUrl} alt="Código QR de invitación" className="img-fluid" />
               <Form.Group className="mt-3">
                 <Form.Label>Email para enviar</Form.Label>
                 <Form.Control
