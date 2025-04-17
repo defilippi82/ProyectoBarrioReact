@@ -4,7 +4,7 @@ import { db } from '/src/firebaseConfig/firebase.js';
 import Swal from 'sweetalert2';
 import { Button, Card, Table, Form, Modal, Alert, Spinner, Row, Col, Nav } from 'react-bootstrap';
 import { FaQrcode, FaSearch, FaHistory, FaFileExcel, FaChartBar, FaSignOutAlt, FaSignInAlt } from 'react-icons/fa';
-//import QrReader from 'react-qr-reader';
+import { QrScanner } from '@yudiel/react-qr-scanner';
 import * as XLSX from 'xlsx';
 import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
@@ -357,12 +357,13 @@ export const DashboardSeguridad = () => {
                 <Modal.Title>Escanear Código QR para {scanAction === 'ingreso' ? 'Ingreso' : 'Egreso'}</Modal.Title>
               </Modal.Header>
               <Modal.Body className="text-center">
-                <QrReader
-                  delay={300}
-                  onError={handleError}
-                  onScan={handleScan}
-                  style={{ width: '100%' }}
-                />
+              <QrScanner
+  onDecode={(result) => handleScan(result)}
+  onError={(error) => handleError(error)}
+  constraints={{
+    facingMode: 'environment' // Usar cámara trasera
+  }}
+/>
                 <p className="mt-3">Enfoca el código QR del invitado</p>
               </Modal.Body>
             </Modal>
