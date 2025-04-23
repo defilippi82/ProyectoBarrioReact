@@ -10,20 +10,33 @@ export default defineConfig({
       manifest: {
         name: "App CUBE Escobar",
         short_name: "CUBEApp",
-        start_url: "/",
+        description: 'Aplicación para gestión de barrios cerrados',
+        start_url: '/',
         display: "standalone",
         background_color: "#ffffff",
         theme_color: "#000000",
         icons: [
           {
-            src: "/icon-192x192.png",
+            src: "icon-192x192.png",
             sizes: "192x192",
             type: "image/png"
           },
           {
-            src: "/icon-512x512.png",
+            src: "icon-512x512.png",
             sizes: "512x512",
             type: "image/png"
+          }
+        ],
+        screenshots: [
+          {
+            src: 'screenshot1.png',
+            type: 'image/png',
+            sizes: '540x720'
+          },
+          {
+            src: 'screenshot2.png',
+            type: 'image/png',
+            sizes: '540x720'
           }
         ]
       },
