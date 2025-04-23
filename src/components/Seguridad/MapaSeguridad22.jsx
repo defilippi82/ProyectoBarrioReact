@@ -321,7 +321,7 @@ export const DashboardSeguridad = () => {
   }
 
   return (
-    <div className="container mt-4">
+    <div className="container mt-6">
       <h2 className="mb-4">Dashboard de Seguridad</h2>
 
       {error && (
@@ -330,15 +330,15 @@ export const DashboardSeguridad = () => {
         </Alert>
       )}
 
-      <Card className="mb-4 shadow-sm">
+      <Card className="mb-12 shadow-sm">
         <Card.Body>
           <Card.Title>Registro de Ingresos/Egresos</Card.Title>
 
-          <div className="d-flex gap-2 mb-4">
-            <Button variant="primary" size="lg" onClick={() => setState(prev => ({ ...prev, showScanner: true, scanAction: 'ingreso' }))}>
+          <div className="d-flex gap-4 mb-2">
+            <Button variant="primary" size="sm" onClick={() => setState(prev => ({ ...prev, showScanner: true, scanAction: 'ingreso' }))}>
               <FaSignInAlt className="me-2" /> Registrar Ingreso
             </Button>
-            <Button variant="warning" size="lg" onClick={() => setState(prev => ({ ...prev, showScanner: true, scanAction: 'egreso' }))}>
+            <Button variant="warning" size="sm" onClick={() => setState(prev => ({ ...prev, showScanner: true, scanAction: 'egreso' }))}>
               <FaSignOutAlt className="me-2" /> Registrar Egreso
             </Button>
           </div>
