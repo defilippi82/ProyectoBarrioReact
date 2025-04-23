@@ -1,15 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, deleteDoc, doc, orderBy } from 'firebase/firestore';
 import { db } from '/src/firebaseConfig/firebase.js';
 import Swal from 'sweetalert2';
-import { Button, Card, Table, Form, Modal, Alert, Spinner, Row, Col, Nav } from 'react-bootstrap';
-import { FaSearch, FaHistory, FaFileExcel, FaChartBar, FaSignOutAlt, FaSignInAlt } from 'react-icons/fa';
+import { Button, Card, Table, Form, Modal, Alert, Spinner, Row, Col } from 'react-bootstrap';
+import { FaSearch, FaHistory, FaFileExcel, FaSignOutAlt, FaSignInAlt, FaTrash, FaSyncAlt } from 'react-icons/fa';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import * as XLSX from 'xlsx';
-import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
-
-ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 export const DashboardSeguridad = () => {
   const [state, setState] = useState({
@@ -17,30 +12,20 @@ export const DashboardSeguridad = () => {
     error: null,
     showScanner: false,
     scanAction: 'ingreso',
-    scanResult: null,
     registros: [],
-    estadisticas: {
-      ingresosHoy: 0,
-      ingresosSemana: 0,
-      ingresosPorDia: []
-    },
+    invitadosActivos: [],
     filtro: {
-      fechaDesde: '',
-      fechaHasta: '',
       dni: '',
-      patente: '',
-      estado: 'todos'
-    },
-    activeTab: 'registros'
+      nombre: ''
+    }
   });
 
   const scannerRef = useRef(null);
-
-  const { loading, error, showScanner, scanAction, scanResult, registros, estadisticas, filtro, activeTab } = state;
+  const { loading, error, showScanner, scanAction, registros, invitadosActivos, filtro } = state;
 
   useEffect(() => {
     cargarRegistros();
-    cargarEstadisticas();
+    cargarInvitadosActivos();
   }, []);
 
   useEffect(() => {
@@ -58,21 +43,13 @@ export const DashboardSeguridad = () => {
   const startScanner = () => {
     const scanner = new Html5QrcodeScanner(
       'qr-reader',
-      {
-        fps: 10,
-        qrbox: { width: 250, height: 250 }
-      },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
       false
     );
 
     scanner.render(
-      (decodedText) => {
-        handleScan({ text: decodedText });
-        stopScanner();
-      },
-      (errorMessage) => {
-        handleError(errorMessage);
-      }
+      (decodedText) => handleScanSuccess(decodedText),
+      (error) => console.warn(error)
     );
 
     scannerRef.current = scanner;
@@ -80,167 +57,145 @@ export const DashboardSeguridad = () => {
 
   const stopScanner = () => {
     if (scannerRef.current) {
-      scannerRef.current.clear().catch(error => {
-        console.error("Failed to clear html5QrcodeScanner.", error);
-      });
+      scannerRef.current.clear().catch(console.error);
       scannerRef.current = null;
     }
   };
 
-  const cargarRegistros = async (filtros = {}) => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-
+  const handleScanSuccess = async (decodedText) => {
     try {
-      let q = collection(db, 'registrosIngresos');
-      const condiciones = [];
-
-      if (filtros.fechaDesde || filtros.fechaHasta) {
-        const fechaDesde = filtros.fechaDesde ? new Date(filtros.fechaDesde) : new Date(0);
-        const fechaHasta = filtros.fechaHasta ? new Date(filtros.fechaHasta) : new Date();
-
-        fechaDesde.setHours(0, 0, 0, 0);
-        fechaHasta.setHours(23, 59, 59, 999);
-
-        condiciones.push(where('fecha', '>=', fechaDesde.toISOString()));
-        condiciones.push(where('fecha', '<=', fechaHasta.toISOString()));
+      const datosInvitado = JSON.parse(decodedText);
+      if (!datosInvitado.nombre || !datosInvitado.dni) {
+        throw new Error('QR inválido: faltan datos requeridos');
       }
 
-      if (filtros.dni) condiciones.push(where('dni', '==', filtros.dni));
-      if (filtros.patente) condiciones.push(where('patente', '==', filtros.patente));
-      if (filtros.estado && filtros.estado !== 'todos') {
-        condiciones.push(where('estado', '==', filtros.estado));
-      }
-
-      if (condiciones.length > 0) {
-        q = query(q, ...condiciones);
+      if (scanAction === 'ingreso') {
+        await registrarIngreso(datosInvitado);
       } else {
-        const fechaLimite = new Date();
-        fechaLimite.setDate(fechaLimite.getDate() - 7);
-        q = query(q, where('fecha', '>=', fechaLimite.toISOString()));
+        await registrarEgreso(datosInvitado);
       }
 
-      const querySnapshot = await getDocs(q);
-      const datos = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        fechaFormateada: new Date(doc.data().fecha).toLocaleDateString()
-      }));
-
-      setState(prev => ({ ...prev, registros: datos, loading: false }));
-    } catch (err) {
-      console.error("Error al cargar registros:", err);
-      setState(prev => ({ ...prev, error: 'Error al cargar registros', loading: false }));
+      stopScanner();
+      setState(prev => ({ ...prev, showScanner: false }));
+      
+    } catch (error) {
+      console.error("Error al procesar QR:", error);
+      setState(prev => ({ ...prev, error: error.message, showScanner: false }));
     }
   };
 
-  const cargarEstadisticas = async () => {
-    try {
-      const hoy = new Date();
-      hoy.setHours(0, 0, 0, 0);
-      const qHoy = query(collection(db, 'registrosIngresos'), where('fecha', '>=', hoy.toISOString()), where('estado', '==', 'ingresado'));
-      const hoySnapshot = await getDocs(qHoy);
-
-      const semanaPasada = new Date();
-      semanaPasada.setDate(semanaPasada.getDate() - 7);
-      const qSemana = query(collection(db, 'registrosIngresos'), where('fecha', '>=', semanaPasada.toISOString()), where('estado', '==', 'ingresado'));
-      const semanaSnapshot = await getDocs(qSemana);
-
-      const ingresosPorDia = Array(7).fill(0);
-      const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-
-      semanaSnapshot.forEach(doc => {
-        const fecha = new Date(doc.data().fecha);
-        ingresosPorDia[fecha.getDay()]++;
-      });
-
-      const datosPorDia = diasSemana.map((dia, index) => ({
-        dia,
-        cantidad: ingresosPorDia[index]
-      }));
-
-      setState(prev => ({
-        ...prev,
-        estadisticas: {
-          ingresosHoy: hoySnapshot.size,
-          ingresosSemana: semanaSnapshot.size,
-          ingresosPorDia: datosPorDia
-        }
-      }));
-    } catch (err) {
-      console.error("Error al cargar estadísticas:", err);
-    }
-  };
-
-  const registrarAccion = async (accion, invitado) => {
+  const registrarIngreso = async (invitado) => {
     try {
       const registro = {
         ...invitado,
-        fecha: new Date().toISOString(),
+        fechaIngreso: new Date().toISOString(),
         hora: new Date().toLocaleTimeString(),
-        registradoPor: 'Guardia',
-        estado: accion === 'ingreso' ? 'ingresado' : 'egresado'
+        estado: 'presente'
       };
 
       await addDoc(collection(db, 'registrosIngresos'), registro);
 
-      setState(prev => ({
-        ...prev,
-        registros: [{
-          ...registro,
-          id: Math.random().toString(36).substring(7),
-          fechaFormateada: new Date().toLocaleDateString()
-        }, ...prev.registros]
-      }));
+      Swal.fire({
+        icon: 'success',
+        title: 'Ingreso registrado',
+        text: `${invitado.nombre} ha ingresado correctamente`,
+        timer: 2000
+      });
+
+      cargarInvitadosActivos();
+      cargarRegistros();
+
     } catch (error) {
-      console.error("Error al registrar acción:", error);
+      console.error("Error al registrar ingreso:", error);
       throw error;
     }
   };
 
-  const handleScan = async (result) => {
-    if (result?.text) {
-      try {
-        const datosInvitado = JSON.parse(result.text);
+  const registrarEgreso = async (invitado) => {
+    try {
+      const q = query(
+        collection(db, 'registrosIngresos'),
+        where('dni', '==', invitado.dni),
+        where('estado', '==', 'presente')
+      );
 
-        if (!datosInvitado.nombre || !datosInvitado.dni || !datosInvitado.lote) {
-          throw new Error('QR inválido');
-        }
+      const querySnapshot = await getDocs(q);
 
-        setState(prev => ({
-          ...prev,
-          scanResult: datosInvitado,
-          showScanner: false
-        }));
-
-        await registrarAccion(scanAction, datosInvitado);
-
-        Swal.fire({
-          icon: 'success',
-          title: `${scanAction === 'ingreso' ? 'Ingreso' : 'Egreso'} registrado`,
-          text: `${datosInvitado.nombre} ha ${scanAction === 'ingreso' ? 'ingresado' : 'egresado'} correctamente`,
-          timer: 3000
-        });
-
-        cargarRegistros();
-        cargarEstadisticas();
-      } catch (error) {
-        console.error("Error al leer QR:", error);
-        setState(prev => ({
-          ...prev,
-          error: error.message || 'Error al leer QR. Intente nuevamente.',
-          showScanner: false
-        }));
+      if (querySnapshot.empty) {
+        throw new Error('No se encontró al invitado o ya egresó');
       }
+
+      const docRef = querySnapshot.docs[0].ref;
+      await deleteDoc(docRef);
+
+      await addDoc(collection(db, 'historialIngresos'), {
+        ...querySnapshot.docs[0].data(),
+        fechaEgreso: new Date().toISOString(),
+        estado: 'egresado'
+      });
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Egreso registrado',
+        text: `${invitado.nombre} ha egresado correctamente`,
+        timer: 2000
+      });
+
+      cargarInvitadosActivos();
+      cargarRegistros();
+
+    } catch (error) {
+      console.error("Error al registrar egreso:", error);
+      throw error;
     }
   };
 
-  const handleError = (err) => {
-    console.error("Error del scanner:", err);
-    setState(prev => ({
-      ...prev,
-      error: 'Error en el scanner de QR',
-      showScanner: false
-    }));
+  const cargarInvitadosActivos = async () => {
+    try {
+      const q = query(
+        collection(db, 'registrosIngresos'),
+        where('estado', '==', 'presente')
+      );
+
+      const querySnapshot = await getDocs(q);
+      const datos = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      setState(prev => ({ ...prev, invitadosActivos: datos }));
+    } catch (error) {
+      console.error("Error al cargar invitados activos:", error);
+      setState(prev => ({ ...prev, error: 'Error al cargar invitados' }));
+    }
+  };
+
+  const cargarRegistros = async () => {
+    setState(prev => ({ ...prev, loading: true }));
+    try {
+      const q = query(collection(db, 'historialIngresos'), orderBy('fechaIngreso', 'desc'));
+      const querySnapshot = await getDocs(q);
+
+      const datos = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        fechaFormateada: new Date(doc.data().fechaIngreso).toLocaleDateString()
+      }));
+
+      setState(prev => ({ ...prev, registros: datos, loading: false }));
+    } catch (error) {
+      console.error("Error al cargar registros:", error);
+      setState(prev => ({ ...prev, error: 'Error al cargar registros', loading: false }));
+    }
+  };
+
+  const filtrarInvitados = () => {
+    return invitadosActivos.filter(invitado => {
+      const matchDni = filtro.dni ? invitado.dni.includes(filtro.dni) : true;
+      const matchNombre = filtro.nombre ? 
+        invitado.nombre.toLowerCase().includes(filtro.nombre.toLowerCase()) : true;
+      return matchDni && matchNombre;
+    });
   };
 
   const handleFiltroChange = (e) => {
@@ -254,110 +209,149 @@ export const DashboardSeguridad = () => {
     }));
   };
 
-  const aplicarFiltros = () => cargarRegistros(filtro);
-
-  const limpiarFiltros = () => {
-    setState(prev => ({
-      ...prev,
-      filtro: {
-        fechaDesde: '',
-        fechaHasta: '',
-        dni: '',
-        patente: '',
-        estado: 'todos'
-      }
-    }));
-    cargarRegistros();
-  };
-
-  const exportarAExcel = () => {
-    const datosExportar = registros.map(reg => ({
-      'Fecha': reg.fechaFormateada,
-      'Hora': reg.hora,
-      'Nombre': reg.nombre,
-      'DNI': reg.dni,
-      'Patente': reg.patente || 'N/A',
-      'Lote': reg.lote,
-      'Invitado por': reg.invitador,
-      'Estado': reg.estado === 'ingresado' ? 'Ingresado' : 'Egresado',
-      'Registrado por': reg.registradoPor
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(datosExportar);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Registros');
-    XLSX.writeFile(workbook, 'registros_ingresos.xlsx');
-  };
-
-  const chartData = {
-    labels: estadisticas.ingresosPorDia.map(item => item.dia),
-    datasets: [{
-      label: 'Ingresos en los últimos 7 días',
-      data: estadisticas.ingresosPorDia.map(item => item.cantidad),
-      backgroundColor: 'rgba(54, 162, 235, 0.5)',
-      borderColor: 'rgba(54, 162, 235, 1)',
-      borderWidth: 1
-    }]
-  };
-
-  const chartOptions = {
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          stepSize: 1
-        }
-      }
-    }
-  };
-
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
         <Spinner animation="border" variant="primary" />
-        <span className="ms-3">Cargando registros...</span>
       </div>
     );
   }
 
   return (
-    <div className="container mt-6">
-      <h2 className="mb-4">Dashboard de Seguridad</h2>
+    <div className="container mt-4">
+      <h2 className="mb-4">Control de Accesos</h2>
 
       {error && (
-        <Alert variant="danger" className="mb-4" onClose={() => setState(prev => ({ ...prev, error: null }))} dismissible>
+        <Alert variant="danger" onClose={() => setState(prev => ({ ...prev, error: null }))} dismissible>
           {error}
         </Alert>
       )}
 
-      <Card className="mb-12 shadow-sm">
+      <Card className="mb-4 shadow-sm">
         <Card.Body>
-          <Card.Title>Registro de Ingresos/Egresos</Card.Title>
-
-          <div className="d-flex gap-4 mb-2">
-            <Button variant="primary" size="sm" onClick={() => setState(prev => ({ ...prev, showScanner: true, scanAction: 'ingreso' }))}>
+          <Card.Title>Registro QR</Card.Title>
+          <div className="d-flex gap-2 mb-3">
+            <Button variant="primary" onClick={() => setState(prev => ({ ...prev, showScanner: true, scanAction: 'ingreso' }))}>
               <FaSignInAlt className="me-2" /> Registrar Ingreso
             </Button>
-            <Button variant="warning" size="sm" onClick={() => setState(prev => ({ ...prev, showScanner: true, scanAction: 'egreso' }))}>
+            <Button variant="warning" onClick={() => setState(prev => ({ ...prev, showScanner: true, scanAction: 'egreso' }))}>
               <FaSignOutAlt className="me-2" /> Registrar Egreso
             </Button>
           </div>
 
           {showScanner && (
-            <Modal show={showScanner} onHide={() => setState(prev => ({ ...prev, showScanner: false }))} centered size="lg">
+            <Modal show={showScanner} onHide={() => setState(prev => ({ ...prev, showScanner: false }))} centered>
               <Modal.Header closeButton>
-                <Modal.Title>Escanear Código QR para {scanAction === 'ingreso' ? 'Ingreso' : 'Egreso'}</Modal.Title>
+                <Modal.Title>Escanear QR - {scanAction === 'ingreso' ? 'Ingreso' : 'Egreso'}</Modal.Title>
               </Modal.Header>
-              <Modal.Body className="text-center">
+              <Modal.Body>
                 <div id="qr-reader" style={{ width: '100%' }}></div>
-                <p className="mt-3">Enfoca el código QR del invitado</p>
               </Modal.Body>
             </Modal>
           )}
         </Card.Body>
       </Card>
 
-      {/* Aquí continúa el historial y las estadísticas sin cambios */}
+      <Card className="mb-4 shadow-sm">
+        <Card.Body>
+          <Card.Title>Invitados Presentes ({filtrarInvitados().length})</Card.Title>
+
+          <Form className="mb-3">
+            <Row>
+              <Col md={6}>
+                <Form.Control
+                  type="text"
+                  name="nombre"
+                  placeholder="Filtrar por nombre"
+                  value={filtro.nombre}
+                  onChange={handleFiltroChange}
+                />
+              </Col>
+              <Col md={6}>
+                <Form.Control
+                  type="text"
+                  name="dni"
+                  placeholder="Filtrar por DNI"
+                  value={filtro.dni}
+                  onChange={handleFiltroChange}
+                />
+              </Col>
+            </Row>
+          </Form>
+
+          <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+            <Table striped bordered hover>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>DNI</th>
+                  <th>Hora Ingreso</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtrarInvitados().length > 0 ? (
+                  filtrarInvitados().map(invitado => (
+                    <tr key={invitado.id}>
+                      <td>{invitado.nombre}</td>
+                      <td>{invitado.dni}</td>
+                      <td>{new Date(invitado.fechaIngreso).toLocaleTimeString()}</td>
+                      <td>
+                        <Button 
+                          variant="danger" 
+                          size="sm"
+                          onClick={() => registrarEgreso(invitado)}
+                        >
+                          <FaTrash /> Marcar Egreso
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" className="text-center">No hay invitados presentes</td>
+                  </tr>
+                )}
+              </tbody>
+            </Table>
+          </div>
+        </Card.Body>
+      </Card>
+
+      <Card className="shadow-sm">
+        <Card.Body>
+          <Card.Title>Historial de Accesos</Card.Title>
+          <Button variant="secondary" className="mb-3" onClick={cargarRegistros}>
+            <FaSyncAlt className="me-2" /> Actualizar
+          </Button>
+
+          <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+            <Table striped bordered hover>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Nombre</th>
+                  <th>DNI</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {registros.map(registro => (
+                  <tr key={registro.id}>
+                    <td>{registro.fechaFormateada}</td>
+                    <td>{registro.nombre}</td>
+                    <td>{registro.dni}</td>
+                    <td>{registro.estado === 'presente' ? 
+                      <span className="text-success">Presente</span> : 
+                      <span className="text-secondary">Egresado</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </div>
+        </Card.Body>
+      </Card>
     </div>
   );
 };
