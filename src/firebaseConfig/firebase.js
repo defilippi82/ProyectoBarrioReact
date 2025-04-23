@@ -1,7 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, collection, addDoc, onSnapshot } from "firebase/firestore";
+import { getFirestore, collection, addDoc, onSnapshot, enableIndexedDbPersistence } from "firebase/firestore";
 import { getMessaging, getToken } from "firebase/messaging";
 import { getAnalytics } from "firebase/analytics";
 
@@ -43,6 +43,16 @@ export const auth = getAuth(app);
 export const analytics = getAnalytics(app);
 // Initialize Firebase Cloud Messaging and get a reference to the service
 export const messaging = getMessaging(app);
+
+enableIndexedDbPersistence(db).catch((err) => {
+  if (err.code === 'failed-precondition') {
+    console.log("Persistencia no disponible (múltiples pestañas abiertas)");
+  } else if (err.code === 'unimplemented') {
+    console.log("Persistencia no soportada en este navegador");
+  } else {
+    console.log("Error al activar persistencia offline: ", err);
+  }
+});
 
 export const obtenerTokenFCM = async () => {
   try {

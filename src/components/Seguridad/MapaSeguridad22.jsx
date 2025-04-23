@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { db } from '/src/firebaseConfig/firebase.js';
 import Swal from 'sweetalert2';
 import { Button, Card, Table, Form, Modal, Alert, Spinner, Row, Col, Nav } from 'react-bootstrap';
 import { FaSearch, FaHistory, FaFileExcel, FaChartBar, FaSignOutAlt, FaSignInAlt } from 'react-icons/fa';
-import  {QrReader}  from 'react-qr-reader';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 import * as XLSX from 'xlsx';
 import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
@@ -34,12 +34,58 @@ export const DashboardSeguridad = () => {
     activeTab: 'registros'
   });
 
+  const scannerRef = useRef(null);
+
   const { loading, error, showScanner, scanAction, scanResult, registros, estadisticas, filtro, activeTab } = state;
 
   useEffect(() => {
     cargarRegistros();
     cargarEstadisticas();
   }, []);
+
+  useEffect(() => {
+    if (showScanner) {
+      startScanner();
+    } else {
+      stopScanner();
+    }
+
+    return () => {
+      stopScanner();
+    };
+  }, [showScanner]);
+
+  const startScanner = () => {
+    const scanner = new Html5QrcodeScanner(
+      'qr-reader',
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 }
+      },
+      false
+    );
+
+    scanner.render(
+      (decodedText) => {
+        handleScan({ text: decodedText });
+        stopScanner();
+      },
+      (errorMessage) => {
+        handleError(errorMessage);
+      }
+    );
+
+    scannerRef.current = scanner;
+  };
+
+  const stopScanner = () => {
+    if (scannerRef.current) {
+      scannerRef.current.clear().catch(error => {
+        console.error("Failed to clear html5QrcodeScanner.", error);
+      });
+      scannerRef.current = null;
+    }
+  };
 
   const cargarRegistros = async (filtros = {}) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
@@ -303,16 +349,7 @@ export const DashboardSeguridad = () => {
                 <Modal.Title>Escanear Código QR para {scanAction === 'ingreso' ? 'Ingreso' : 'Egreso'}</Modal.Title>
               </Modal.Header>
               <Modal.Body className="text-center">
-                <div style={{ width: '100%' }}>
-                  <QrReader
-                    onResult={(result, error) => {
-                      if (result) handleScan(result);
-                      if (error) handleError(error);
-                    }}
-                    constraints={{ facingMode: 'environment' }}
-                    style={{ width: '100%' }}
-                  />
-                </div>
+                <div id="qr-reader" style={{ width: '100%' }}></div>
                 <p className="mt-3">Enfoca el código QR del invitado</p>
               </Modal.Body>
             </Modal>
