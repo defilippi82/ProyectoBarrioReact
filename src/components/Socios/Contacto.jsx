@@ -1,158 +1,328 @@
 import React, { useState, useEffect } from 'react';
+import { 
+  Container, 
+  Form, 
+  Button, 
+  Row, 
+  Col, 
+  Card, 
+  Alert,
+  Spinner,
+  FormCheck 
+} from 'react-bootstrap';
+import { 
+  FaWhatsapp, 
+  FaEnvelope, 
+  FaPaperPlane,
+  FaUserCircle,
+  FaHome,
+  FaComment,
+  FaUsersCog
+} from 'react-icons/fa';
 import { collection, query, getDocs, where } from 'firebase/firestore';
 import { db } from '../../firebaseConfig/firebase';
-import Form from 'react-bootstrap/Form';
-import Button from 'react-bootstrap/Button';
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
 import Swal from 'sweetalert2';
+import { useMediaQuery } from 'react-responsive';
 
 export const Contacto = () => {
-    const [nombre, setNombre] = useState('');
-    const [lote, setLote] = useState('');
-    const [consulta, setConsulta] = useState('');
-    const [destino, setDestino] = useState('');
-    const [contacto, setContacto] = useState({ email: '', telefono: '' });
-    const [whatsapp, setWhatsapp] = useState(false);
-    const [correo, setCorreo] = useState(false);
-    
-    useEffect(() => {
-        if (destino) {
-            fetchContacto(destino);
-        }
-    }, [destino]);
-   
-    const fetchContacto = async (destino) => {
-        try {
-            const q = query(collection(db, "usuarios"), where('nombre', '==', destino));
-            const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) {
-                const userData = querySnapshot.docs[0].data();
-                setContacto({ email: userData.email, telefono: userData.numerotelefono });
-            } else {
-                setContacto({ email: '', telefono: '' });
-            }
-        } catch (error) {
-            console.error("Error fetching contact:", error);
-        }
-    };
+  const [formData, setFormData] = useState({
+    nombre: '',
+    lote: '',
+    consulta: '',
+    destino: 'Administracion'
+  });
+  const [contacto, setContacto] = useState({ email: '', telefono: '' });
+  const [metodosContacto, setMetodosContacto] = useState({
+    whatsapp: false,
+    correo: false
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        Swal.fire({
-            title: 'Confirmar envío',
-            text: `¿Deseas enviar el mensaje para ${destino}?`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Sí, enviar',
-            cancelButtonText: 'No, cancelar'
-          }).then((result) => {
-            if (result.isConfirmed) {
-                let msj = `Soy del ${lote}, quiero ${consulta}. Desde ya, muchas gracias, ${nombre}`;
+  const destinos = [
+    { value: 'Administracion', label: 'Administración', icon: <FaUsersCog className="me-2" /> },
+    { value: 'Facturacion', label: 'Facturación', icon: <FaUsersCog className="me-2" /> },
+    { value: 'ControlDeObras', label: 'Control de Obras', icon: <FaUsersCog className="me-2" /> }
+  ];
 
-                if (whatsapp) {
-                    var whatsappUrl = `https://api.whatsapp.com/send?phone=${contacto.numerotelefono}&text=${encodeURIComponent(msj)}`;
-                    window.open(whatsappUrl);
-                }
-                if (correo) {
-                    var emailSubject = `Consulta del lote ${lote}`;
-                    var emailLink = `mailto:${contacto.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(msj)}`;
-                    window.open(emailLink);
-                }
+  useEffect(() => {
+    if (formData.destino) {
+      fetchContacto(formData.destino);
+    }
+  }, [formData.destino]);
 
-                Swal.fire(
-                    'Enviado!',
-                    `Tu mensaje ha sido enviado a ${destino}.`,
-                    'success'
-                );
-
-                setNombre('');
-                setLote('');
-                setConsulta('');
-            }
+  const fetchContacto = async (destino) => {
+    setLoading(true);
+    try {
+      const q = query(collection(db, "usuarios"), where('nombre', '==', destino));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const userData = querySnapshot.docs[0].data();
+        setContacto({ 
+          email: userData.email || '', 
+          telefono: userData.numerotelefono || '' 
         });
-    };
+        setError(null);
+      } else {
+        setContacto({ email: '', telefono: '' });
+        setError('No se encontraron datos de contacto para el destino seleccionado');
+      }
+    } catch (error) {
+      console.error("Error fetching contact:", error);
+      setError('Error al cargar información de contacto');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return (
-        <main className="container col col-auto">
-            <a href="https://api.whatsapp.com/send?phone=+5491154939423&text=hola%20hebert" target="_blank" rel="noopener noreferrer"></a>
-            <form onSubmit={handleSubmit}>
-                <br />
-                <Col sm="auto">
-                <label htmlFor="nombre">Nombre y Apellido</label><br />
-                <input
-                    cols="auto"
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleCheckboxChange = (e) => {
+    const { name, checked } = e.target;
+    setMetodosContacto(prev => ({
+      ...prev,
+      [name]: checked
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!metodosContacto.whatsapp && !metodosContacto.correo) {
+      setError('Selecciona al menos un método de contacto');
+      return;
+    }
+
+    if (!contacto.email && !contacto.telefono) {
+      setError('No hay información de contacto disponible para el destino seleccionado');
+      return;
+    }
+
+    try {
+      const result = await Swal.fire({
+        title: 'Confirmar envío',
+        html: `¿Deseas enviar el mensaje a <strong>${formData.destino}</strong>?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, enviar',
+        cancelButtonText: 'No, cancelar',
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33'
+      });
+
+      if (result.isConfirmed) {
+        const mensaje = `Soy del lote ${formData.lote}, quiero ${formData.consulta}. Desde ya, muchas gracias, ${formData.nombre}`;
+
+        if (metodosContacto.whatsapp && contacto.telefono) {
+          const whatsappUrl = `https://api.whatsapp.com/send?phone=${contacto.telefono}&text=${encodeURIComponent(mensaje)}`;
+          window.open(whatsappUrl, '_blank');
+        }
+
+        if (metodosContacto.correo && contacto.email) {
+          const emailSubject = `Consulta del lote ${formData.lote}`;
+          const emailLink = `mailto:${contacto.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(mensaje)}`;
+          window.open(emailLink, '_blank');
+        }
+
+        // Reset form after successful submission
+        setFormData({
+          nombre: '',
+          lote: '',
+          consulta: '',
+          destino: 'Administracion'
+        });
+        setMetodosContacto({
+          whatsapp: false,
+          correo: false
+        });
+
+        Swal.fire(
+          '¡Enviado!',
+          `Tu mensaje ha sido enviado a ${formData.destino}`,
+          'success'
+        );
+      }
+    } catch (error) {
+      console.error("Error al enviar mensaje:", error);
+      setError('Ocurrió un error al enviar el mensaje');
+    }
+  };
+
+  return (
+    <Container className="py-4 px-3 px-md-5">
+      <Row className="justify-content-center">
+        <Col xs={12} mg={8}>
+          <Card className="shadow-sm">
+            <Card.Header className="bg-primary text-white">
+              <h2 className="mb-0 text-center">Formulario de Contacto</h2>
+            </Card.Header>
+            <Card.Body>
+              {error && (
+                <Alert variant="danger" onClose={() => setError(null)} dismissible>
+                  {error}
+                </Alert>
+              )}
+
+              <Form onSubmit={handleSubmit}>
+                {/* Nombre */}
+                <Form.Group className="mb-3">
+                  <Form.Label>
+                    <FaUserCircle className="me-2" />
+                    Nombre y Apellido
+                  </Form.Label>
+                  <Form.Control
                     type="text"
-                    id="nombre"
                     name="nombre"
-                    className="input-padron"
-                    value={nombre}
-                    onChange={(e) => setNombre(e.target.value)}
+                    value={formData.nombre}
+                    onChange={handleChange}
                     required
-                    /><br />
+                    placeholder="Ingresa tu nombre completo"
+                  />
+                </Form.Group>
 
-                <label htmlFor="lote">Lote</label><br />
-                <input
-                    cols="auto"
+                {/* Lote */}
+                <Form.Group className="mb-3">
+                  <Form.Label>
+                    <FaHome className="me-2" />
+                    Lote
+                  </Form.Label>
+                  <Form.Control
                     type="text"
-                    id="lote"
                     name="lote"
-                    className="input-padron"
-                    value={lote}
-                    onChange={(e) => setLote(e.target.value)}
+                    value={formData.lote}
+                    onChange={handleChange}
                     required
-                    placeholder="ej. XX-XXX"
-                    /><br />
+                    placeholder="Ej: XX-XXX"
+                  />
+                </Form.Group>
 
-                <label htmlFor="consulta">Mensaje</label><br />
-                <textarea
-                    cols="auto"
-                    rows="2"
-                    id="consulta"
+                {/* Consulta */}
+                <Form.Group className="mb-3">
+                  <Form.Label>
+                    <FaComment className="me-2" />
+                    Mensaje
+                  </Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={4}
                     name="consulta"
-                    className="input-padron"
-                    value={consulta}
-                    onChange={(e) => setConsulta(e.target.value)}
+                    value={formData.consulta}
+                    onChange={handleChange}
                     required
-                    >
+                    placeholder="Describe tu consulta aquí..."
+                  />
+                </Form.Group>
 
-                </textarea>
-                    </Col>
-                <fieldset>
-                    <legend> ¿A quien le gustaría que lo enviemos?</legend>
-                    <select
-                        className="form-select"
-                        aria-label="Default select example"
-                        value={destino}
-                        onChange={(e) => setDestino(e.target.value)}
-                    >
-                        <option value="Administracion">Administración</option>
-                        <option value="Administracion">Facturación</option>
-                        <option value="ControlDeObras">Control de Obras</option>
-                    </select>
-                </fieldset>
-                <br />
-                <input
-                    type="checkbox"
-                    id="whatsapp"
-                    name="whatsapp"
-                    checked={whatsapp}
-                    onChange={() => setWhatsapp(!whatsapp)}
-                />
-                <label htmlFor="whatsapp">Contactar por Whatsapp</label><br />
-                <input
-                    type="checkbox"
-                    id="correo"
-                    name="correo"
-                    checked={correo}
-                    onChange={() => setCorreo(!correo)}
-                />
-                <label htmlFor="correo">Consultar por correo electrónico</label><br />
+                {/* Destino */}
+                <Form.Group className="mb-4">
+                  <Form.Label>Destinatario</Form.Label>
+                  <Form.Select
+                    name="destino"
+                    value={formData.destino}
+                    onChange={handleChange}
+                    disabled={loading}
+                  >
+                    {destinos.map((destino) => (
+                      <option key={destino.value} value={destino.value}>
+                        {isMobile ? destino.label : `${destino.icon} ${destino.label}`}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
 
-                <input type="submit" value="Enviar consulta" id="enviarConsulta" className="btn btn-secondary "  />
-            </form>
-        </main>
-    );
+                {/* Métodos de contacto */}
+                <Form.Group className="mb-4">
+                  <Form.Label>Método de contacto:</Form.Label>
+                  <div className="d-flex flex-wrap gap-3">
+                    <FormCheck
+                      type="checkbox"
+                      id="whatsapp"
+                      name="whatsapp"
+                      label={
+                        <span className="d-flex align-items-center">
+                          <FaWhatsapp className="me-2 text-success" />
+                          WhatsApp
+                        </span>
+                      }
+                      checked={metodosContacto.whatsapp}
+                      onChange={handleCheckboxChange}
+                      disabled={!contacto.telefono}
+                    />
+                    <FormCheck
+                      type="checkbox"
+                      id="correo"
+                      name="correo"
+                      label={
+                        <span className="d-flex align-items-center">
+                          <FaEnvelope className="me-2 text-primary" />
+                          Correo electrónico
+                        </span>
+                      }
+                      checked={metodosContacto.correo}
+                      onChange={handleCheckboxChange}
+                      disabled={!contacto.email}
+                    />
+                  </div>
+                  {loading && (
+                    <div className="mt-2 text-muted">
+                      <Spinner animation="border" size="sm" className="me-2" />
+                      Cargando información de contacto...
+                    </div>
+                  )}
+                </Form.Group>
+
+                {/* Información de contacto */}
+                {contacto.email || contacto.telefono ? (
+                  <Alert variant="info" className="mb-4">
+                    <strong>Contacto disponible:</strong>
+                    <div className="mt-2">
+                      {contacto.telefono && (
+                        <div>
+                          <FaWhatsapp className="me-2 text-success" />
+                          {contacto.telefono}
+                        </div>
+                      )}
+                      {contacto.email && (
+                        <div>
+                          <FaEnvelope className="me-2 text-primary" />
+                          {contacto.email}
+                        </div>
+                      )}
+                    </div>
+                  </Alert>
+                ) : (
+                  !loading && (
+                    <Alert variant="warning" className="mb-4">
+                      No hay información de contacto disponible para el destino seleccionado
+                    </Alert>
+                  )
+                )}
+
+                {/* Botón de enviar */}
+                <div className="d-flex align-items-center justify-content-center">
+                  <Button 
+                    variant="primary" 
+                    type="submit"
+                    size={isMobile ? "sm" : "mg"}
+                    disabled={loading || (!contacto.email && !contacto.telefono)}
+                  >
+                    <FaPaperPlane className="me-2" />
+                    Enviar consulta
+                  </Button>
+                </div>
+              </Form>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    </Container>
+  );
 };
-

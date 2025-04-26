@@ -1,9 +1,27 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
+import { 
+  Image, 
+  Button, 
+  Container, 
+  Row, 
+  Col, 
+  Card, 
+  Spinner,
+  Alert,
+  Modal
+} from 'react-bootstrap';
+import { 
+  FaExclamationTriangle, 
+  FaBell, 
+  FaPhoneAlt,
+  FaMapMarkerAlt,
+  FaInfoCircle
+} from 'react-icons/fa';
 import { getFirestore, collection, getDocs, query, where, addDoc } from 'firebase/firestore';
-import Image from 'react-bootstrap/Image';
 import { UserContext } from "../Services/UserContext";
 import { obtenerTokenFCM } from '../../firebaseConfig/firebase';
 import { getMessaging, onMessage } from 'firebase/messaging';
+import { useMediaQuery } from 'react-responsive';
 
 const messaging = getMessaging();
 
@@ -12,7 +30,13 @@ export const Panico = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [fcmToken, setFcmToken] = useState(null);
   const [location, setLocation] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [actionType, setActionType] = useState(null);
+  const [error, setError] = useState(null);
+  const isMobile = useMediaQuery({ maxWidth: 768 });
+  const isSmallMobile = useMediaQuery({ maxWidth: 576 });
 
+  // Inicialización y obtención de token FCM
   useEffect(() => {
     const inicializar = async () => {
       try {
@@ -20,59 +44,84 @@ export const Panico = () => {
         setFcmToken(token);
       } catch (error) {
         console.error("Error obteniendo el token FCM: ", error);
+        setError("Error al configurar notificaciones");
       } finally {
         setIsLoading(false);
       }
     };
     inicializar();
+
+    // Escuchar mensajes entrantes
+    const unsubscribe = onMessage(messaging, payload => {
+      console.log('Mensaje recibido: ', payload);
+    });
+
+    return () => unsubscribe();
   }, []);
-  
-  useEffect(() => {
-    onMessage(messaging, payload => {
-      console.log('Message received in Panico component. ', payload);
+
+  // Obtener ubicación del usuario
+  const obtenerUbicacion = useCallback(() => {
+    return new Promise((resolve, reject) => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            const loc = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            setLocation(loc);
+            resolve(loc);
+          },
+          error => {
+            console.error("Error obteniendo ubicación: ", error);
+            setError("No se pudo obtener la ubicación");
+            reject(error);
+          },
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      } else {
+        const error = "Geolocalización no soportada";
+        console.error(error);
+        setError(error);
+        reject(error);
+      }
     });
   }, []);
 
-  const obtenerUbicacion = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        position => {
-          setLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        error => {
-          console.error("Error obteniendo la ubicación: ", error);
-        }
-      );
-    } else {
-      console.error("Geolocalización no es soportada por este navegador.");
+  // Enviar mensajes a múltiples usuarios
+  const enviarMensaje = useCallback(async (usuarios, mensaje, prioridad) => {
+    if (!location) {
+      await obtenerUbicacion();
     }
-  };
 
-  const enviarMensaje = async (usuarios, mensaje, prioridad) => {
     const db = getFirestore();
-    const promesasMensajes = usuarios.map(async (usuario) => {
-      await addDoc(collection(db, 'mensajes'), {
-        sender: `${userData.manzana}-${userData.lote}`,
-        receiver: `${usuario.manzana}-${usuario.lote}`,
-        content: mensaje,
-        prioridad: prioridad,
-        ubicacion: location,
-        timestamp: new Date(),
-        read: false,
-        source: 'alerta'
+    try {
+      const promesasMensajes = usuarios.map(async (usuario) => {
+        await addDoc(collection(db, 'mensajes'), {
+          sender: `${userData.manzana}-${userData.lote}`,
+          receiver: `${usuario.manzana}-${usuario.lote}`,
+          content: mensaje,
+          prioridad: prioridad,
+          ubicacion: location,
+          timestamp: new Date(),
+          read: false,
+          source: 'alerta'
+        });
       });
-    });
-    await Promise.all(promesasMensajes);
-  };
+      await Promise.all(promesasMensajes);
+      return true;
+    } catch (error) {
+      console.error("Error enviando mensajes: ", error);
+      setError("Error al enviar alertas");
+      return false;
+    }
+  }, [location, userData, obtenerUbicacion]);
 
-  const ruidos = async () => {
-    obtenerUbicacion();
-    if (!userData || !userData.manzana || !userData.lote) {
-      console.error("El usuario no tiene asignada una manzana o userData es null.");
-      return;
+  // Manejar alerta de ruidos
+  const manejarRuidos = useCallback(async () => {
+    if (!userData?.manzana) {
+      setError("Datos de usuario incompletos");
+      return false;
     }
 
     try {
@@ -84,151 +133,235 @@ export const Panico = () => {
       const usuariosSnapshot = await getDocs(usuariosManzanaQuery);
       const usuariosManzana = usuariosSnapshot.docs.map(doc => doc.data());
 
-      const mensaje = `Soy del lote ${userData.manzana}-${userData.lote} y escucho ruidos sospechosos por mi lote`;
-      await enviarMensaje(usuariosManzana, mensaje, 'media');
-
-      console.log('Mensajes enviados a todos los usuarios en la misma manzana');
+      const mensaje = `Soy del lote ${userData.manzana}-${userData.lote} y escucho ruidos sospechosos`;
+      return await enviarMensaje(usuariosManzana, mensaje, 'media');
     } catch (error) {
-      console.error("Error enviando mensajes: ", error);
+      console.error("Error en manejarRuidos: ", error);
+      setError("Error al notificar ruidos");
+      return false;
     }
-  };
+  }, [userData, enviarMensaje]);
 
-  const alerta = async () => {
-    if (isLoading) {
-      return <div>Cargando...</div>;
-    }
-    if (!userData || !userData.manzana || !userData.isla) {
-      console.error("El usuario no tiene asignada una isla o userData es null.");
-      return;
+  // Manejar alerta de emergencia
+  const manejarAlerta = useCallback(async () => {
+    if (!userData?.manzana || !userData?.isla) {
+      setError("Datos de usuario incompletos");
+      return false;
     }
 
     try {
       const db = getFirestore();
-      const usuariosIslaQuery = query(
-        collection(db, 'usuarios'),
-        where('isla', '==', userData.isla)
-      );
-      const usuariosGuardiaQuery = query(
-        collection(db, 'usuarios'),
-        where('rol', '==', 'guardia')
-      );
-
       const [usuariosIslaSnapshot, usuariosGuardiaSnapshot] = await Promise.all([
-        getDocs(usuariosIslaQuery),
-        getDocs(usuariosGuardiaQuery)
+        getDocs(query(collection(db, 'usuarios'), where('isla', '==', userData.isla))),
+        getDocs(query(collection(db, 'usuarios'), where('rol.guardia', '==', true)))
       ]);
 
-      const usuariosIsla = usuariosIslaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const usuariosGuardia = usuariosGuardiaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const usuariosIsla = usuariosIslaSnapshot.docs.map(doc => doc.data());
+      const usuariosGuardia = usuariosGuardiaSnapshot.docs.map(doc => doc.data());
+      const todosUsuarios = [...usuariosIsla, ...usuariosGuardia];
 
-      const todosUsuarios = [...usuariosIsla];
-      usuariosGuardia.forEach(guardia => {
-        if (!todosUsuarios.some(user => user.id === guardia.id)) {
-          todosUsuarios.push(guardia);
-        }
-      });
-
-      const mensaje = `Soy del lote ${userData.manzana}-${userData.lote} y necesito ayuda por mi lote`;
-      await enviarMensaje(todosUsuarios, mensaje, 'alta');
-
-      console.log('Mensajes enviados a todos los usuarios en la misma isla y a la guardia');
+      const mensaje = `EMERGENCIA en ${userData.manzana}-${userData.lote}, necesito ayuda inmediata`;
+      return await enviarMensaje(todosUsuarios, mensaje, 'alta');
     } catch (error) {
-      console.error("Error enviando mensajes: ", error);
+      console.error("Error en manejarAlerta: ", error);
+      setError("Error al enviar alerta de emergencia");
+      return false;
+    }
+  }, [userData, enviarMensaje]);
+
+  // Confirmar acción antes de ejecutarla
+  const confirmarAccion = (tipo) => {
+    setActionType(tipo);
+    setShowConfirm(true);
+  };
+
+  // Ejecutar la acción confirmada
+  const ejecutarAccion = async () => {
+    setShowConfirm(false);
+    let success = false;
+    
+    if (actionType === 'alerta') {
+      success = await manejarAlerta();
+    } else if (actionType === 'ruidos') {
+      success = await manejarRuidos();
+    }
+
+    if (success) {
+      Swal.fire({
+        icon: 'success',
+        title: '¡Alerta enviada!',
+        text: actionType === 'alerta' 
+          ? 'La guardia y vecinos han sido notificados' 
+          : 'Los vecinos de tu manzana han sido notificados',
+        timer: 3000
+      });
     }
   };
 
+  // Llamar al 911
   const llamar911 = () => {
-    const numeroEmergencia = '911';
-    const llamadaUrl = `tel:${numeroEmergencia}`;
-    window.open(llamadaUrl);
+    window.open('tel:911');
   };
 
   if (isLoading) {
-    return <div>Cargando...</div>;
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
+        <Spinner animation="border" variant="primary" />
+        <span className="ms-3">Cargando sistema de alertas...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container className="mt-5">
+        <Alert variant="danger">
+          <Alert.Heading>Error en el sistema de alertas</Alert.Heading>
+          <p>{error}</p>
+          <hr />
+          <div className="d-flex justify-content-end">
+            <Button variant="outline-danger" onClick={() => setError(null)}>
+              Reintentar
+            </Button>
+          </div>
+        </Alert>
+      </Container>
+    );
   }
 
   return (
-    <main className="container fluid">
-      <div className="container alertas">
-        <div className="row justify-content-center">
-          <div className="col col-12 col-sm-4 gx-4">
-            <div className="card">
-              <Image
-                src={"/img/seguridadAlerta.png"}
-                height="0.5%"
-                className="card-img-top"
-                alt="imagen de la guardia"
-                onClick={alerta}
-                roundedCircle
-                fluid={true}
-              />
-              <div className="card-body">
-                <h5 className="card-title">ALERTA</h5>
-                <p className="card-text">Avisar a la guardia</p>
-                <button
-                  type="button"
-                  value="alerta"
-                  className="btn btn-danger"
-                  onClick={alerta}
-                >
-                  ALERTA
-                </button>
+    <Container fluid className="py-4 px-3 px-md-5">
+      <h2 className="text-center mb-4">Sistema de Emergencias</h2>
+      
+      <Row className="g-4 justify-content-center">
+        {/* Tarjeta de Alerta */}
+        <Col xs={12} md={6} lg={4}>
+          <Card className="h-100 shadow-sm border-danger">
+            <Card.Body className="text-center">
+              <div className="icon-container mb-3">
+                <FaExclamationTriangle size={isMobile ? 40 : 60} className="text-danger" />
               </div>
-            </div>
-          </div>
+              <Card.Title className="fw-bold">ALERTA DE EMERGENCIA</Card.Title>
+              <Button 
+                variant="danger" 
+                size={isSmallMobile ? "sm" : "lg"}
+                onClick={() => confirmarAccion('alerta')}
+                className="w-100 py-2"
+              >
+                <FaBell className="me-2" />
+                ACTIVAR ALERTA
+              </Button>
+              <Card.Text>
+                Notifica a la guardia y vecinos de tu isla sobre una emergencia inmediata
+              </Card.Text>
+            </Card.Body>
+          </Card>
+        </Col>
 
-          <div className="col col-12 col-sm-4 gx-4">
-            <div className="card">
-              <Image
-                src={"/img/vecinosAlerta.png"}
-                height="0.5%"
-                sizes='mg'
-                className="card-img-top"
-                alt="imagen de los vecinos de la isla"
-                onClick={ruidos}
-                roundedCircle
-              />
-              <div className="card-body">
-                <h5 className="card-title">RUIDOS</h5>
-                <p className="card-text">Avisar a los vecinos de la isla</p>
-                <button
-                  type="button"
-                  value="ruidos"
-                  className="btn btn-warning"
-                  onClick={ruidos}
-                >
-                  RUIDOS
-                </button>
+        {/* Tarjeta de Ruidos */}
+        <Col xs={12} md={6} lg={4}>
+          <Card className="h-100 shadow-sm border-warning">
+            <Card.Body className="text-center">
+              <div className="icon-container mb-3">
+                <FaBell size={isMobile ? 40 : 60} className="text-warning" />
               </div>
-            </div>
-          </div>
+              <Card.Title className="fw-bold">RUIDOS SOSPECHOSOS</Card.Title>
+              <Button 
+                variant="warning" 
+                size={isSmallMobile ? "sm" : "lg"}
+                onClick={() => confirmarAccion('ruidos')}
+                className="w-100 py-2 text-white"
+              >
+                <FaBell className="me-2" />
+                REPORTAR RUIDOS
+              </Button>
+              <Card.Text>
+                Avisa a los vecinos de tu manzana sobre actividades sospechosas
+              </Card.Text>
+            </Card.Body>
+          </Card>
+        </Col>
 
-          <div className="col col-12 col-sm-4  gx-4">
-            <div className="card">
-              <Image
-                src={"/img/911.png"}
-                height="0.5%"
-                className="card-img-top"
-                alt="imagen de la guardia"
+        {/* Tarjeta de 911 */}
+        <Col xs={12} md={6} lg={4}>
+          <Card className="h-100 shadow-sm border-primary">
+            <Card.Body className="text-center">
+              <div className="icon-container mb-3">
+                <FaPhoneAlt size={isMobile ? 40 : 60} className="text-primary" />
+              </div>
+              <Card.Title className="fw-bold">LLAMADA DE EMERGENCIA</Card.Title>
+              <Button 
+                variant="primary" 
+                size={isSmallMobile ? "sm" : "lg"}
                 onClick={llamar911}
-                roundedCircle
-              />
-              <div className="card-body">
-                <h5 className="card-title">EMERGENCIA</h5>
-                <p className="card-text">Llamar al 911</p>
-                <button
-                  type="button"
-                  value="ayuda"
-                  className="btn btn-primary"
-                  onClick={llamar911}
-                >
-                  911
-                </button>
+                className="w-100 py-2"
+              >
+                <FaPhoneAlt className="me-2" />
+                911
+              </Button>
+              <Card.Text>
+                Realiza una llamada directa al servicio de emergencias 911
+              </Card.Text>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Información de ubicación */}
+      {location && (
+        <Row className="mt-4">
+          <Col>
+            <Alert variant="info" className="d-flex align-items-center">
+              <FaMapMarkerAlt size={24} className="me-3" />
+              <div>
+                <Alert.Heading>Tu ubicación ha sido compartida</Alert.Heading>
+                <p className="mb-0">
+                  Lat: {location.lat.toFixed(6)}, Lng: {location.lng.toFixed(6)}
+                </p>
               </div>
-            </div>
+            </Alert>
+          </Col>
+        </Row>
+      )}
+
+      {/* Modal de confirmación */}
+      <Modal show={showConfirm} onHide={() => setShowConfirm(false)} centered>
+        <Modal.Header closeButton className="border-0">
+          <Modal.Title className="w-100 text-center">
+            <FaExclamationTriangle className="text-warning me-2" />
+            Confirmar acción
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="text-center">
+          {actionType === 'alerta' ? (
+            <>
+              <p className="fw-bold">¿Estás seguro que deseas activar la ALERTA DE EMERGENCIA?</p>
+              <p>Se notificará a la guardia y vecinos de tu isla.</p>
+            </>
+          ) : (
+            <>
+              <p className="fw-bold">¿Reportar ruidos sospechosos?</p>
+              <p>Se notificará a los vecinos de tu manzana.</p>
+            </>
+          )}
+          <div className="d-flex justify-content-center gap-3 mt-3">
+            <Button 
+              variant="outline-secondary" 
+              onClick={() => setShowConfirm(false)}
+              className="px-4"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              variant={actionType === 'alerta' ? 'danger' : 'warning'}
+              onClick={ejecutarAccion}
+              className="px-4 text-white"
+            >
+              {actionType === 'alerta' ? 'CONFIRMAR ALERTA' : 'REPORTAR RUIDOS'}
+            </Button>
           </div>
-        </div>
-      </div>
-    </main>
+        </Modal.Body>
+      </Modal>
+    </Container>
   );
 };

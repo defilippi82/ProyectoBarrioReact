@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '/src/firebaseConfig/firebase.js';
 import Swal from 'sweetalert2';
 import { Table, Button, Form, Modal, Row, Col, InputGroup, Card, Spinner, Alert } from 'react-bootstrap';
-import { FaWhatsapp, FaCopy, FaList, FaPlusCircle, FaEnvelope, FaQrcode } from 'react-icons/fa';
+import { FaWhatsapp, FaCopy, FaList, FaPlusCircle, FaEnvelope, FaQrcode, FaTrash, FaShare } from 'react-icons/fa';
 import QRCode from 'qrcode';
 import emailjs from '@emailjs/browser';
+import { useMediaQuery } from 'react-responsive';
 
 // Configuración EmailJS
 const EMAILJS_CONFIG = {
@@ -14,7 +15,19 @@ const EMAILJS_CONFIG = {
   USER_ID: "F2yt1jfmdvtF48It0"
 };
 
+// Componente de botón responsive
+const ResponsiveButton = ({ icon, label, ...props }) => {
+  const isMobile = useMediaQuery({ maxWidth: 768 });
+  return (
+    <Button {...props}>
+      {icon && React.cloneElement(icon, { className: `${icon.props.className || ''} ${!isMobile ? 'me-2' : ''}` })}
+      {!isMobile && label}
+    </Button>
+  );
+};
+
 export const Invitados = () => {
+  const isMobile = useMediaQuery({ maxWidth: 768 });
   const [state, setState] = useState({
     formData: {
       nombre: '',
@@ -53,32 +66,33 @@ export const Invitados = () => {
     qrImageUrl
   } = state;
 
-  // Inicializa EmailJS
+  // Cargar datos del usuario
+  const loadUserData = useCallback(async () => {
+    try {
+      const userDataFromStorage = localStorage.getItem('userData');
+      if (!userDataFromStorage) throw new Error('No se encontraron datos de usuario');
+      
+      const parsedData = JSON.parse(userDataFromStorage);
+      if (!parsedData?.manzana || !parsedData?.lote || !parsedData?.nombre) {
+        throw new Error('Datos de usuario incompletos');
+      }
+      
+      setState(prev => ({ ...prev, userData: parsedData, error: null }));
+    } catch (err) {
+      console.error('Error al cargar userData:', err);
+      setState(prev => ({ ...prev, error: err.message }));
+      Swal.fire('Error', 'No se pudieron cargar tus datos. Serás redirigido.', 'error')
+        .then(() => window.location.href = '/login');
+    } finally {
+      setState(prev => ({ ...prev, loading: false }));
+    }
+  }, []);
+
+  // Inicializa EmailJS y carga datos del usuario
   useEffect(() => {
     emailjs.init(EMAILJS_CONFIG.USER_ID);
-    const loadUserData = async () => {
-      try {
-        const userDataFromStorage = localStorage.getItem('userData');
-        if (!userDataFromStorage) throw new Error('No se encontraron datos de usuario');
-        
-        const parsedData = JSON.parse(userDataFromStorage);
-        if (!parsedData?.manzana || !parsedData?.lote || !parsedData?.nombre) {
-          throw new Error('Datos de usuario incompletos');
-        }
-        
-        setState(prev => ({ ...prev, userData: parsedData, error: null }));
-      } catch (err) {
-        console.error('Error al cargar userData:', err);
-        setState(prev => ({ ...prev, error: err.message }));
-        Swal.fire('Error', 'No se pudieron cargar tus datos. Serás redirigido.', 'error')
-          .then(() => window.location.href = '/login');
-      } finally {
-        setState(prev => ({ ...prev, loading: false }));
-      }
-    };
-
     loadUserData();
-  }, []);
+  }, [loadUserData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -88,10 +102,10 @@ export const Invitados = () => {
     }));
   };
 
-  const generarQRDataURL = async (data) => {
+  const generarQRDataURL = useCallback(async (data) => {
     try {
       return await QRCode.toDataURL(JSON.stringify(data), {
-        width: 200,
+        width: isMobile ? 150 : 200,
         margin: 2,
         errorCorrectionLevel: 'H'
       });
@@ -99,11 +113,11 @@ export const Invitados = () => {
       console.error("Error generando QR:", error);
       return '';
     }
-  };
+  }, [isMobile]);
 
-  const enviarPorCorreo = async (invitadoData) => {
+  const enviarPorCorreo = useCallback(async (invitadoData) => {
     try {
-      const emailDestino = invitadoData.email || userData.email;
+      const emailDestino = invitadoData.email || userData?.email;
       if (!emailDestino) {
         Swal.fire('Error', 'No hay dirección de email disponible', 'error');
         return;
@@ -144,7 +158,7 @@ export const Invitados = () => {
         text: error.message || 'No se pudo enviar el correo. Por favor intenta nuevamente.',
       });
     }
-  };
+  }, [generarQRDataURL, userData]);
 
   const agregarInvitado = async (e) => {
     e.preventDefault();
@@ -161,7 +175,7 @@ export const Invitados = () => {
         fecha: new Date().toISOString(),
         lote: `${userData.manzana}-${userData.lote}`,
         invitador: userData.nombre,
-        telefonoInvitador: userData.numerotelefono || '', // Cambiado a numerotelefono
+        telefonoInvitador: userData.numerotelefono || '',
         estado: 'pendiente'
       };
 
@@ -184,6 +198,7 @@ export const Invitados = () => {
         }
       }));
       
+      Swal.fire('Éxito', 'Invitado agregado correctamente', 'success');
     } catch (error) {
       console.error("Error al agregar invitado:", error);
       Swal.fire('Error', 'No se pudo agregar el invitado', 'error');
@@ -197,13 +212,15 @@ export const Invitados = () => {
       showQRModal: true,
       currentQR: {
         ...invitado,
-        email: invitado.email || userData.email || ''
+        email: invitado.email || userData?.email || ''
       },
       qrImageUrl: qrImage
     }));
   };
 
-  const enviarPorWhatsApp = () => {
+  const enviarPorWhatsApp = useCallback(() => {
+    if (!currentQR) return;
+    
     const mensaje = `✅ *Invitación Verificada* ✅\n\n` +
       `🔹 *Invitado:* ${currentQR.nombre}\n` +
       `🔹 *DNI:* ${currentQR.dni}\n` +
@@ -214,7 +231,7 @@ export const Invitados = () => {
     
     window.open(`https://wa.me/${currentQR.telefono}?text=${encodeURIComponent(mensaje)}`);
     setState(prev => ({ ...prev, showQRModal: false }));
-  };
+  }, [currentQR]);
 
   const manejarLista = {
     agregarInvitado: (invitado) => {
@@ -248,7 +265,7 @@ export const Invitados = () => {
           ...nuevaLista,
           lote: `${userData.manzana}-${userData.lote}`,
           propietario: userData.nombre,
-          telefonoPropietario: userData.numerotelefono || '', // Cambiado a numerotelefono
+          telefonoPropietario: userData.numerotelefono || '',
           fecha: new Date().toISOString(),
           estado: 'pendiente'
         };
@@ -274,7 +291,7 @@ export const Invitados = () => {
       let mensaje = `*LISTA DE INVITADOS - ${lista.nombre}*\n\n`;
       mensaje += `🔹 *Lote:* ${userData.manzana}-${userData.lote}\n`;
       mensaje += `🔹 *Propietario:* ${userData.nombre}\n`;
-      mensaje += `🔹 *Teléfono:* ${userData.numerotelefono || 'No registrado'}\n\n`; // Cambiado a numerotelefono
+      mensaje += `🔹 *Teléfono:* ${userData.numerotelefono || 'No registrado'}\n\n`;
       mensaje += `*INVITADOS (${lista.invitados.length})*\n`;
       
       lista.invitados.forEach((inv, index) => {
@@ -292,7 +309,7 @@ export const Invitados = () => {
       const params = new URLSearchParams();
       params.append('lote', `${userData.manzana}-${userData.lote}`);
       params.append('invitador', encodeURIComponent(userData.nombre));
-      if (userData.numerotelefono) params.append('telefono', userData.numerotelefono); // Cambiado a numerotelefono
+      if (userData.numerotelefono) params.append('telefono', userData.numerotelefono);
       
       return `${window.location.origin}/pages/invitacion.html?${params.toString()}`;
     },
@@ -338,134 +355,159 @@ export const Invitados = () => {
   }
 
   return (
-    <div className="container mt-4">
-      <h2 className="mb-4">Sistema de Invitaciones</h2>
+    <div className="container mt-3 mb-5">
+      <h2 className="mb-4 text-center">Sistema de Invitaciones</h2>
       
+      {/* Tarjeta de compartir enlace */}
       <Card className="mb-4 shadow-sm">
         <Card.Body>
-          <Card.Title>Compartir formulario de invitación</Card.Title>
-          <Card.Text className="mb-3">
-            {userData?.numerotelefono ? ( // Cambiado a numerotelefono
-              <span className="text-success">El enlace incluye tu contacto para confirmaciones</span>
+          <Card.Title className="text-center">Compartir formulario de invitación</Card.Title>
+          <Card.Text className={`text-center mb-3 ${userData?.numerotelefono ? 'text-success' : 'text-warning'}`}>
+            {userData?.numerotelefono ? (
+              'El enlace incluye tu contacto para confirmaciones'
             ) : (
-              <span className="text-warning">
+              <>
                 <FaQrcode className="me-1" /> Advertencia: Registra tu teléfono para recibir notificaciones
-              </span>
+              </>
             )}
           </Card.Text>
           
           <InputGroup className="mb-3">
-            <Form.Control value={compartir.enlace()} readOnly />
-            <Button variant="outline-secondary" onClick={compartir.copiar}>
-              <FaCopy /> Copiar
+            <Form.Control 
+              value={compartir.enlace()} 
+              readOnly 
+              className="border-end-0"
+            />
+            <Button 
+              variant="outline-primary" 
+              onClick={compartir.copiar}
+              className="border-start-2"
+            >
+              <FaCopy /> {!isMobile && 'Copiar'}
             </Button>
           </InputGroup>
           
           <div className="d-grid gap-2">
-            <Button variant="success" onClick={compartir.porWhatsapp} className="text-white">
-              <FaWhatsapp /> Compartir por WhatsApp
-            </Button>
+            <ResponsiveButton 
+              variant="success" 
+              onClick={compartir.porWhatsapp} 
+              className="text-white"
+              icon={<FaWhatsapp />}
+              label="Compartir por WhatsApp"
+            />
           </div>
         </Card.Body>
       </Card>
 
-      <Form onSubmit={agregarInvitado}>
-        <Row className="g-3 mb-4">
-          <Col md={6}>
-            <Form.Group>
-              <Form.Label>Nombre completo*</Form.Label>
-              <Form.Control
-                type="text"
-                name="nombre"
-                value={formData.nombre}
-                onChange={handleChange}
-                required
-              />
-            </Form.Group>
-          </Col>
-          
-          <Col md={6}>
-            <Form.Group>
-              <Form.Label>DNI*</Form.Label>
-              <Form.Control
-                type="text"
-                name="dni"
-                value={formData.dni}
-                onChange={handleChange}
-                placeholder="XX.XXX.XXX"
-                required
-              />
-            </Form.Group>
-          </Col>
-          
-          <Col md={6}>
-            <Form.Group>
-              <Form.Label>Patente*</Form.Label>
-              <Form.Control
-                type="text"
-                name="patente"
-                value={formData.patente}
-                onChange={handleChange}
-                placeholder="XXX-XXX"
-                required
-              />
-            </Form.Group>
-          </Col>
-          
-          <Col md={6}>
-            <Form.Group>
-              <Form.Label>Email</Form.Label>
-              <Form.Control
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Para envío de QR"
-              />
-            </Form.Group>
-          </Col>
-          
-          <Col md={6}>
-            <Form.Group>
-              <Form.Label>Teléfono</Form.Label>
-              <Form.Control
-                type="tel"
-                name="telefono"
-                value={formData.telefono}
-                onChange={handleChange}
-                placeholder="Ej: 549112345678"
-              />
-            </Form.Group>
-          </Col>
-          
-          <Col md={12}>
-            <Form.Group>
-              <Form.Label>Mensaje adicional</Form.Label>
-              <Form.Control
-                as="textarea"
-                name="mensaje"
-                value={formData.mensaje}
-                onChange={handleChange}
-                rows={3}
-                placeholder="Instrucciones especiales para tu invitado"
-              />
-            </Form.Group>
-          </Col>
-          
-          <Col xs={12}>
-            <Button variant="primary" type="submit" className="w-100">
-              <FaPlusCircle className="me-2" /> Agregar Invitado
-            </Button>
-          </Col>
-        </Row>
-      </Form>
+      {/* Formulario de invitado */}
+      <Card className="mb-4 shadow-sm">
+        <Card.Body>
+          <Card.Title className="text-center mb-4">Agregar nuevo invitado</Card.Title>
+          <Form onSubmit={agregarInvitado}>
+            <Row className="g-3">
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Nombre completo*</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="nombre"
+                    value={formData.nombre}
+                    onChange={handleChange}
+                    required
+                    placeholder="Ej: Juan Pérez"
+                  />
+                </Form.Group>
+              </Col>
+              
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>DNI*</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="dni"
+                    value={formData.dni}
+                    onChange={handleChange}
+                    placeholder="XX.XXX.XXX"
+                    required
+                  />
+                </Form.Group>
+              </Col>
+              
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Patente*</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="patente"
+                    value={formData.patente}
+                    onChange={handleChange}
+                    placeholder="XX-XXX-XX"
+                    required
+                  />
+                </Form.Group>
+              </Col>
+              
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Email</Form.Label>
+                  <Form.Control
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="Para envío de QR"
+                  />
+                </Form.Group>
+              </Col>
+              
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Teléfono</Form.Label>
+                  <Form.Control
+                    type="tel"
+                    name="telefono"
+                    value={formData.telefono}
+                    onChange={handleChange}
+                    placeholder="Ej: 549112345678"
+                  />
+                </Form.Group>
+              </Col>
+              
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Mensaje adicional</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    name="mensaje"
+                    value={formData.mensaje}
+                    onChange={handleChange}
+                    rows={isMobile ? 2 : 3}
+                    placeholder="Instrucciones especiales para tu invitado"
+                  />
+                </Form.Group>
+              </Col>
+              
+              <Col xs={12} className="mt-2">
+                <ResponsiveButton 
+                  variant="primary" 
+                  type="submit" 
+                  className="w-100"
+                  icon={<FaPlusCircle />}
+                  label="Agregar Invitado"
+                />
+              </Col>
+            </Row>
+          </Form>
+        </Card.Body>
+      </Card>
 
+      {/* Lista de invitados */}
       {invitados.length > 0 && (
         <Card className="mb-4 shadow-sm">
           <Card.Body>
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <Card.Title>Invitados registrados ({invitados.length})</Card.Title>
-              <Button 
+            <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+              <Card.Title className="mb-2">Invitados registrados ({invitados.length})</Card.Title>
+              <ResponsiveButton 
                 variant="success" 
                 onClick={() => setState(prev => ({
                   ...prev,
@@ -475,94 +517,102 @@ export const Invitados = () => {
                   },
                   showListModal: true
                 }))}
-              >
-                <FaList className="me-2" /> Crear lista
-              </Button>
+                icon={<FaList />}
+                label="Crear lista"
+              />
             </div>
             
-            <Table striped bordered hover responsive>
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>DNI</th>
-                  <th>Patente</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invitados.map((inv) => (
-                  <tr key={inv.id}>
-                    <td>{inv.nombre}</td>
-                    <td>{inv.dni}</td>
-                    <td>{inv.patente || '-'}</td>
-                    <td>
-                      <Button
-                        variant="success"
-                        size="sm"
-                        onClick={() => mostrarQR(inv)}
-                        className="me-2"
-                        title="Generar QR"
-                      >
-                        <FaQrcode />
-                      </Button>
-                      <Button
-                        variant="info"
-                        size="sm"
-                        onClick={() => manejarLista.agregarInvitado(inv)}
-                        title="Agregar a lista"
-                      >
-                        <FaList />
-                      </Button>
-                    </td>
+            <div className="table-responsive">
+              <Table striped bordered hover className="mb-0">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    {!isMobile && <th>DNI</th>}
+                    <th>Patente</th>
+                    <th>Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </Table>
+                </thead>
+                <tbody>
+                  {invitados.map((inv) => (
+                    <tr key={inv.id}>
+                      <td>{inv.nombre}</td>
+                      {!isMobile && <td>{inv.dni}</td>}
+                      <td>{inv.patente || '-'}</td>
+                      <td className="text-nowrap">
+                        <ResponsiveButton
+                          variant="success"
+                          size="sm"
+                          onClick={() => mostrarQR(inv)}
+                          className="me-2"
+                          icon={<FaQrcode />}
+                          title="Generar QR"
+                        />
+                        <ResponsiveButton
+                          variant="info"
+                          size="sm"
+                          onClick={() => manejarLista.agregarInvitado(inv)}
+                          icon={<FaList />}
+                          title="Agregar a lista"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
           </Card.Body>
         </Card>
       )}
 
+      {/* Listas guardadas */}
       {listas.length > 0 && (
         <Card className="mb-4 shadow-sm">
           <Card.Body>
-            <Card.Title>Tus listas guardadas</Card.Title>
-            <Table striped bordered hover responsive>
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Invitados</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {listas.map((lista) => (
-                  <tr key={lista.id}>
-                    <td>{lista.nombre}</td>
-                    <td>{lista.invitados.length}</td>
-                    <td>
-                      <Button
-                        variant="success"
-                        className="me-2"
-                        onClick={() => manejarLista.enviarLista(lista)}
-                        title="Enviar lista"
-                      >
-                        <FaWhatsapp />
-                      </Button>
-                    </td>
+            <Card.Title className="text-center mb-3">Tus listas guardadas</Card.Title>
+            <div className="table-responsive">
+              <Table striped bordered hover>
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    {!isMobile && <th>Invitados</th>}
+                    <th>Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </Table>
+                </thead>
+                <tbody>
+                  {listas.map((lista) => (
+                    <tr key={lista.id}>
+                      <td>{lista.nombre}</td>
+                      {!isMobile && <td>{lista.invitados.length}</td>}
+                      <td>
+                        <ResponsiveButton
+                          variant="success"
+                          className="me-2"
+                          onClick={() => manejarLista.enviarLista(lista)}
+                          icon={<FaWhatsapp />}
+                          title="Enviar lista"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
           </Card.Body>
         </Card>
       )}
 
-      <Modal show={showListModal} onHide={() => setState(prev => ({ ...prev, showListModal: false }))} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>Crear nueva lista</Modal.Title>
+      {/* Modal para crear lista */}
+      <Modal 
+        show={showListModal} 
+        onHide={() => setState(prev => ({ ...prev, showListModal: false }))} 
+        size="lg"
+        centered
+      >
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title className="w-100 text-center">Crear nueva lista</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-4">
             <Form.Label>Nombre de la lista*</Form.Label>
             <Form.Control
               type="text"
@@ -573,62 +623,92 @@ export const Invitados = () => {
               }))}
               required
               placeholder="Ej: Fiesta cumpleaños 15/08"
+              className="py-2"
             />
           </Form.Group>
 
-          <h5>Invitados en esta lista ({nuevaLista.invitados.length})</h5>
+          <h5 className="mb-3 text-center">
+            Invitados en esta lista ({nuevaLista.invitados.length})
+          </h5>
+          
           {nuevaLista.invitados.length > 0 ? (
-            <Table striped bordered hover size="sm">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>DNI</th>
-                  <th>Patente</th>
-                  <th>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {nuevaLista.invitados.map((inv, index) => (
-                  <tr key={index}>
-                    <td>{inv.nombre}</td>
-                    <td>{inv.dni}</td>
-                    <td>{inv.patente || '-'}</td>
-                    <td>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => manejarLista.eliminarInvitado(index)}
-                      >
-                        Eliminar
-                      </Button>
-                    </td>
+            <div className="table-responsive">
+              <Table striped bordered hover size="sm">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    {!isMobile && <th>DNI</th>}
+                    <th>Patente</th>
+                    <th>Acción</th>
                   </tr>
-                ))}
-              </tbody>
-            </Table>
+                </thead>
+                <tbody>
+                  {nuevaLista.invitados.map((inv, index) => (
+                    <tr key={index}>
+                      <td>{inv.nombre}</td>
+                      {!isMobile && <td>{inv.dni}</td>}
+                      <td>{inv.patente || '-'}</td>
+                      <td>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => manejarLista.eliminarInvitado(index)}
+                          title="Eliminar"
+                        >
+                          <FaTrash />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
           ) : (
-            <Alert variant="info">No hay invitados en esta lista</Alert>
+            <Alert variant="info" className="text-center">
+              No hay invitados en esta lista
+            </Alert>
           )}
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setState(prev => ({ ...prev, showListModal: false }))}>
+        <Modal.Footer className="border-0 pt-0 justify-content-center">
+          <Button 
+            variant="secondary" 
+            onClick={() => setState(prev => ({ ...prev, showListModal: false }))}
+            className="me-3"
+          >
             Cancelar
           </Button>
-          <Button variant="primary" onClick={manejarLista.crearLista}>
-            Guardar Lista
+          <Button 
+            variant="primary" 
+            onClick={manejarLista.crearLista}
+            disabled={!nuevaLista.nombre || nuevaLista.invitados.length === 0}
+          >
+            <FaShare className="me-2" /> Guardar Lista
           </Button>
         </Modal.Footer>
       </Modal>
 
-      <Modal show={showQRModal} onHide={() => setState(prev => ({ ...prev, showQRModal: false }))} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Invitación para {currentQR?.nombre}</Modal.Title>
+      {/* Modal para QR */}
+      <Modal 
+        show={showQRModal} 
+        onHide={() => setState(prev => ({ ...prev, showQRModal: false }))} 
+        centered
+        size={isMobile ? 'sm' : 'md'}
+      >
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title className="w-100 text-center">
+            Invitación para {currentQR?.nombre}
+          </Modal.Title>
         </Modal.Header>
-        <Modal.Body className="text-center">
+        <Modal.Body className="text-center pt-0">
           {currentQR && (
             <>
-              <img src={qrImageUrl} alt="Código QR de invitación" className="img-fluid" />
-              <Form.Group className="mt-3">
+              <img 
+                src={qrImageUrl} 
+                alt="Código QR de invitación" 
+                className="img-fluid mb-3" 
+                style={{ maxWidth: isMobile ? '200px' : '250px' }}
+              />
+              <Form.Group>
                 <Form.Label>Email para enviar</Form.Label>
                 <Form.Control
                   type="email"
@@ -638,27 +718,30 @@ export const Invitados = () => {
                     currentQR: { ...prev.currentQR, email: e.target.value }
                   }))}
                   placeholder="correo@ejemplo.com"
+                  className="mb-3"
                 />
               </Form.Group>
             </>
           )}
         </Modal.Body>
-        <Modal.Footer>
-          <div className="d-flex justify-content-center gap-3 w-100">
-            <Button 
+        <Modal.Footer className="border-0 pt-0 justify-content-center">
+          <div className="d-flex flex-wrap justify-content-center gap-2 w-100">
+            <ResponsiveButton 
               variant="primary" 
               onClick={() => enviarPorCorreo(currentQR)}
               disabled={!currentQR?.email && !userData.email}
-            >
-              <FaEnvelope className="me-2" /> Enviar por Email
-            </Button>
-            <Button 
+              icon={<FaEnvelope />}
+              label="Enviar por Email"
+              className="flex-grow-1"
+            />
+            <ResponsiveButton
               variant="success"
               onClick={enviarPorWhatsApp}
               disabled={!currentQR?.telefono}
-            >
-              <FaWhatsapp className="me-2" /> Enviar por WhatsApp
-            </Button>
+              icon={<FaWhatsapp />}
+              label="Enviar por WhatsApp"
+              className="flex-grow-1"
+            />
           </div>
         </Modal.Footer>
       </Modal>
