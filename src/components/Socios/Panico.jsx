@@ -230,83 +230,89 @@ export const Panico = () => {
   }
 
   return (
-    <Container fluid className="py-4 px-3 px-md-5">
+    <Container fluid className="py-4 px-2">
       <h2 className="text-center mb-4">Sistema de Emergencias</h2>
       
-      <Row className="g-4 justify-content-center">
+      <Row className="g-4">
         {/* Tarjeta de Alerta */}
-        <Col xs={12} md={6} lg={4}>
-          <Card className="h-100 shadow-sm border-danger">
+        <Col xs={12} sm={12} md={6} lg={4}>
+          <Card className="h-100 shadow-sm w-100 border-danger">
             <Card.Body className="text-center">
               <div className="icon-container mb-3">
-                <FaExclamationTriangle size={isMobile ? 40 : 60} className="text-danger" />
+                <FaExclamationTriangle size={isSmallMobile ? 70 : isMobile ? 80 : 90} className="text-danger" />
               </div>
-              <Card.Title className="fw-bold">ALERTA DE EMERGENCIA</Card.Title>
+              <Card.Title className={`fw-bold ${isSmallMobile ? 'fs-5' : isMobile ? 'fs-4' : 'fs-3'}`}>
+                ALERTA DE EMERGENCIA
+              </Card.Title>
               <Button 
                 variant="danger" 
-                size={isSmallMobile ? "sm" : "lg"}
+                size={isSmallMobile ? "md" : "lg"}
                 onClick={() => confirmarAccion('alerta')}
-                className="w-100 py-2"
+                className="w-100 py-3 mt-3"
               >
                 <FaBell className="me-2" />
                 ACTIVAR ALERTA
               </Button>
-              <Card.Text>
+              <Card.Text className="mt-3">
                 Notifica a la guardia y vecinos de tu isla sobre una emergencia inmediata
               </Card.Text>
             </Card.Body>
           </Card>
         </Col>
-
+  
         {/* Tarjeta de Ruidos */}
-        <Col xs={12} md={6} lg={4}>
-          <Card className="h-100 shadow-sm border-warning">
+        <Col xs={12} sm={12} md={6} lg={4}>
+          <Card className="h-100 shadow-sm w-100 border-warning">
             <Card.Body className="text-center">
               <div className="icon-container mb-3">
-                <FaBell size={isMobile ? 40 : 60} className="text-warning" />
+                <FaBell size={isSmallMobile ? 70 : isMobile ? 80 : 90} className="text-warning" />
               </div>
-              <Card.Title className="fw-bold">RUIDOS SOSPECHOSOS</Card.Title>
+              <Card.Title className={`fw-bold ${isSmallMobile ? 'fs-5' : isMobile ? 'fs-4' : 'fs-3'}`}>
+                RUIDOS SOSPECHOSOS
+              </Card.Title>
               <Button 
                 variant="warning" 
-                size={isSmallMobile ? "sm" : "lg"}
+                size={isSmallMobile ? "md" : "lg"}
                 onClick={() => confirmarAccion('ruidos')}
-                className="w-100 py-2 text-white"
+                className="w-100 py-3 mt-3 text-white"
               >
                 <FaBell className="me-2" />
                 REPORTAR RUIDOS
               </Button>
-              <Card.Text>
+              <Card.Text className="mt-3">
                 Avisa a los vecinos de tu manzana sobre actividades sospechosas
               </Card.Text>
             </Card.Body>
           </Card>
         </Col>
-
+  
         {/* Tarjeta de 911 */}
-        <Col xs={12} md={6} lg={4}>
-          <Card className="h-100 shadow-sm border-primary">
+        <Col xs={12} sm={12} md={6} lg={4}>
+          <Card className="h-100 shadow-sm w-100 border-primary">
             <Card.Body className="text-center">
               <div className="icon-container mb-3">
-                <FaPhoneAlt size={isMobile ? 40 : 60} className="text-primary" />
+                <FaPhoneAlt size={isSmallMobile ? 70 : isMobile ? 80 : 90} className="text-primary" />
               </div>
-              <Card.Title className="fw-bold">LLAMADA DE EMERGENCIA</Card.Title>
+              <Card.Title className={`fw-bold ${isSmallMobile ? 'fs-5' : isMobile ? 'fs-4' : 'fs-3'}`}>
+                LLAMADA DE EMERGENCIA
+              </Card.Title>
               <Button 
                 variant="primary" 
-                size={isSmallMobile ? "sm" : "lg"}
+                size={isSmallMobile ? "md" : "lg"}
                 onClick={llamar911}
-                className="w-100 py-2"
+                className="w-100 py-3 mt-3"
               >
                 <FaPhoneAlt className="me-2" />
                 911
               </Button>
-              <Card.Text>
+              <Card.Text className="mt-3">
                 Realiza una llamada directa al servicio de emergencias 911
               </Card.Text>
             </Card.Body>
           </Card>
         </Col>
       </Row>
-
+  
       {/* Información de ubicación */}
       {location && (
         <Row className="mt-4">
@@ -323,7 +329,7 @@ export const Panico = () => {
           </Col>
         </Row>
       )}
-
+  
       {/* Modal de confirmación */}
       <Modal show={showConfirm} onHide={() => setShowConfirm(false)} centered>
         <Modal.Header closeButton className="border-0">
@@ -364,4 +370,5 @@ export const Panico = () => {
       </Modal>
     </Container>
   );
+  
 };
