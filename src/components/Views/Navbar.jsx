@@ -121,7 +121,9 @@ export const NavbarComponent = ({ handleLogout }) => {
           </Navbar.Toggle>
 
           {/* Desktop menu */}
-          <Navbar.Collapse id="navbar-desktop" className="justify-content-between">
+          {!isMobile && (
+            <Navbar.Collapse id="navbar-desktop" className="justify-content-between">
+
             <Nav className="flex-grow-1">
               {userData?.rol && (
                 <>
@@ -173,6 +175,7 @@ export const NavbarComponent = ({ handleLogout }) => {
               )}
             </Nav>
           </Navbar.Collapse>
+          )}
         </Container>
       </Navbar>
 
