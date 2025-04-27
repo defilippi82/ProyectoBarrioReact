@@ -2,6 +2,7 @@ import {useState,useEffect} from "react";
 import {Link} from "react-router-dom";
 import {collection,getDocs,deleteDoc,doc} from "firebase/firestore";
 import {db} from "../../firebaseConfig/firebase";
+import Table from 'react-bootstrap/Table';
 
 
 /* SWEET ALERT*/
@@ -58,7 +59,7 @@ export const Socios = ()=>{
                         <Link to ="/socios/create" className="btn btn-secondary mt-2 mb-2"> CREAR </Link>
 
                     </div>
-                    <table className="table table-dark table-hover">
+                    <Table responsive bordered striped hover size="sm" variant="warning">
                         <thead>
                             <tr>
                                 <td>Nombre</td>
@@ -90,7 +91,7 @@ export const Socios = ()=>{
                                 </tr>
                                )) }
                         </tbody>
-                    </table>
+                    </Table>
                 </div>
             </div>
         </div>

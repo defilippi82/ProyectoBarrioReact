@@ -280,7 +280,7 @@ export const DashboardSeguridad = () => {
           </Form>
 
           <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-            <Table striped bordered hover>
+            <Table responsive bordered striped hover size="sm" variant="warning">
               <thead>
                 <tr>
                   <th>Nombre</th>
@@ -326,7 +326,7 @@ export const DashboardSeguridad = () => {
           </Button>
 
           <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-            <Table striped bordered hover>
+            <Table responsive bordered striped hover size="sm" variant="warning">
               <thead>
                 <tr>
                   <th>Fecha</th>

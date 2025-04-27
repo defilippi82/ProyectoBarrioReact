@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { collection, getDocs, addDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc, writeBatch, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '/src/firebaseConfig/firebase.js';
 import { UserContext } from '../Services/UserContext';
-import { Card, Button, Tabs, Tab, Row, Col, Form } from 'react-bootstrap';
+import { Card, Button, Tabs, Tab, Row, Col, Form, Container } from 'react-bootstrap';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { FaStar } from 'react-icons/fa';
+import './Novedades.css'; // Archivo CSS adicional para estilos personalizados
 
 const MySwal = withReactContent(Swal);
 
@@ -19,9 +20,9 @@ export const Novedades = () => {
     const [novedades, setNovedades] = useState([]);
     const [telefonosUtiles, setTelefonosUtiles] = useState([]);
     const [key, setKey] = useState('novedades');
-    const [rating, setRating] = useState({});
     const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('');
     const [categorias, setCategorias] = useState([]);
+    const [ratings, setRatings] = useState({}); // { telefonoId: { promedio: number, count: number } }
 
     useEffect(() => {
         const fetchData = async () => {
@@ -34,12 +35,18 @@ export const Novedades = () => {
                     ...doc.data() 
                 })));
                 
-                // Cargar teléfonos útiles
+                // Cargar teléfonos útiles con sus ratings
                 const telefonosSnapshot = await getDocs(collection(db, 'telefonosUtiles'));
-                setTelefonosUtiles(telefonosSnapshot.docs.map(doc => ({ 
-                    id: doc.id, 
-                    ...doc.data() 
-                })));
+                const telefonosData = telefonosSnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return { 
+                        id: doc.id, 
+                        ...data,
+                        promedioRating: data.ratings ? (data.ratings.reduce((a, b) => a + b, 0) / data.ratings.length) : 0,
+                        totalRatings: data.ratings ? data.ratings.length : 0
+                    };
+                });
+                setTelefonosUtiles(telefonosData);
                 
                 // Cargar categorías
                 const categoriasSnapshot = await getDocs(collection(db, 'categoriasTelefonos'));
@@ -175,7 +182,10 @@ export const Novedades = () => {
                     categoria: categoriaFinal,
                     nombre: nombre,
                     telefono: telefono,
-                    email: document.getElementById('swal-email').value || ''
+                    email: document.getElementById('swal-email').value || '',
+                    ratings: [], // Inicializar array de ratings vacío
+                    promedioRating: 0,
+                    totalRatings: 0
                 };
             }
         });
@@ -192,6 +202,45 @@ export const Novedades = () => {
                     icon: 'error'
                 });
             }
+        }
+    };
+
+    const handleRateTelefono = async (telefonoId, ratingValue) => {
+        try {
+            // Actualizar en Firestore
+            const telefonoRef = doc(db, 'telefonosUtiles', telefonoId);
+            await updateDoc(telefonoRef, {
+                ratings: arrayUnion(ratingValue)
+            });
+            
+            // Actualizar el estado local
+            setTelefonosUtiles(prev => prev.map(telefono => {
+                if (telefono.id === telefonoId) {
+                    const newRatings = [...(telefono.ratings || []), ratingValue];
+                    const promedio = newRatings.reduce((a, b) => a + b, 0) / newRatings.length;
+                    return {
+                        ...telefono,
+                        ratings: newRatings,
+                        promedioRating: promedio,
+                        totalRatings: newRatings.length
+                    };
+                }
+                return telefono;
+            }));
+            
+            MySwal.fire({
+                title: '¡Gracias!',
+                text: `Has valorado con ${ratingValue} estrellas`,
+                icon: 'success',
+                timer: 1500
+            });
+        } catch (error) {
+            console.error("Error al guardar la valoración:", error);
+            MySwal.fire({
+                title: 'Error',
+                text: 'No se pudo guardar tu valoración',
+                icon: 'error'
+            });
         }
     };
 
@@ -227,61 +276,96 @@ export const Novedades = () => {
     };
 
     return (
-        <div className="container mt-4">
-            <h2>Tablero de Información</h2>
-            <Tabs activeKey={key} onSelect={(k) => setKey(k)} className="mb-3">
-                <Tab eventKey="novedades" title="Novedades">
-                    <Button variant="success" className="mb-3" onClick={handleAddNovedad}>Agregar Novedad</Button>
-                    <Row xs={1} md={4} className="g-4">
+        <Container fluid="md" className="mt-4 novedades-container">
+            <h2 className="text-center mb-4">Tablero de Información</h2>
+            <Tabs activeKey={key} onSelect={(k) => setKey(k)} className="mb-3" id="novedades-tabs">
+                <Tab eventKey="novedades" title="Novedades" className="p-2">
+                    <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                        <Button variant="success" onClick={handleAddNovedad} className="mb-2">
+                            Agregar Novedad
+                        </Button>
+                    </div>
+                    <Row xs={1} sm={2} md={3} lg={4} className="g-4">
                         {novedades.map(({ id, nombre, lote, novedad, color }) => (
                             <Col key={id}>
-                                <Card className="shadow-sm" style={{ backgroundColor: color }}>
-                                    <Card.Body>
+                                <Card className="shadow-sm h-100" style={{ backgroundColor: color }}>
+                                    <Card.Body className="d-flex flex-column">
                                         <Card.Title>{nombre} - Lote: {lote}</Card.Title>
-                                        <Card.Text>{novedad}</Card.Text>
-                                        <Button variant="danger" size="sm" onClick={() => handleDelete(id, 'novedades')}>Eliminar</Button>
+                                        <Card.Text className="flex-grow-1">{novedad}</Card.Text>
+                                        {userData && (
+                                            <Button 
+                                                variant="danger" 
+                                                size="sm" 
+                                                onClick={() => handleDelete(id, 'novedades')}
+                                                className="align-self-start"
+                                            >
+                                                Eliminar
+                                            </Button>
+                                        )}
                                     </Card.Body>
                                 </Card>
                             </Col>
                         ))}
                     </Row>
                 </Tab>
-                <Tab eventKey="telefonos" title="Teléfonos Útiles">
-                    <Button variant="success" className="mb-3" onClick={handleAddTelefono}>Agregar Teléfono</Button>
-                    <Form.Select 
-                        className="mb-3" 
-                        value={categoriaSeleccionada}
-                        onChange={(e) => setCategoriaSeleccionada(e.target.value)}
-                    >
-                        {categorias.map(categoria => (
-                            <option key={categoria} value={categoria}>{categoria}</option>
-                        ))}
-                    </Form.Select>
-                    <Row xs={1} md={4} className="g-4">
+                <Tab eventKey="telefonos" title="Teléfonos Útiles" className="p-2">
+                    <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                        <Button variant="success" onClick={handleAddTelefono} className="mb-2">
+                            Agregar Teléfono
+                        </Button>
+                        <Form.Select 
+                            className="mb-2 telefonos-select" 
+                            value={categoriaSeleccionada}
+                            onChange={(e) => setCategoriaSeleccionada(e.target.value)}
+                            style={{ maxWidth: '300px' }}
+                        >
+                            {categorias.map(categoria => (
+                                <option key={categoria} value={categoria}>{categoria}</option>
+                            ))}
+                        </Form.Select>
+                    </div>
+                    <Row xs={1} sm={2} md={3} lg={4} className="g-4">
                         {telefonosUtiles
                             .filter(t => t.categoria === categoriaSeleccionada)
-                            .map(({ id, nombre, telefono, email }) => (
+                            .map(({ id, nombre, telefono, email, promedioRating, totalRatings }) => (
                                 <Col key={id}>
-                                    <Card className="shadow-sm">
-                                        <Card.Body>
+                                    <Card className="shadow-sm h-100">
+                                        <Card.Body className="d-flex flex-column">
                                             <Card.Title>{nombre}</Card.Title>
                                             <Card.Text>
-                                                Teléfono: {telefono}
-                                                {email && <><br />Email: {email}</>}
+                                                <strong>Teléfono:</strong> {telefono}
+                                                {email && <><br /><strong>Email:</strong> {email}</>}
                                             </Card.Text>
-                                            <div className="mb-2">
-                                                {[1, 2, 3, 4, 5].map(star => (
-                                                    <FaStar 
-                                                        key={star} 
-                                                        color={rating[id] >= star ? "gold" : "gray"} 
-                                                        onClick={() => setRating({ ...rating, [id]: star })} 
-                                                        style={{ cursor: 'pointer', marginRight: '2px' }}
-                                                    />
-                                                ))}
+                                            
+                                            <div className="mt-auto">
+                                                <div className="mb-2 rating-container">
+                                                    <div className="stars">
+                                                        {[1, 2, 3, 4, 5].map(star => (
+                                                            <FaStar 
+                                                                key={star} 
+                                                                color={promedioRating >= star ? "gold" : "gray"} 
+                                                                onClick={() => handleRateTelefono(id, star)} 
+                                                                style={{ cursor: 'pointer', marginRight: '2px' }}
+                                                                size={window.innerWidth < 768 ? 16 : 20}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                    <small className="text-muted">
+                                                        {promedioRating ? promedioRating.toFixed(1) : '0.0'} ({totalRatings || 0})
+                                                    </small>
+                                                </div>
+                                                
+                                                {userData && (
+                                                    <Button 
+                                                        variant="danger" 
+                                                        size="sm" 
+                                                        onClick={() => handleDelete(id, 'telefonosUtiles')}
+                                                        className="align-self-start"
+                                                    >
+                                                        Eliminar
+                                                    </Button>
+                                                )}
                                             </div>
-                                            <Button variant="danger" size="sm" onClick={() => handleDelete(id, 'telefonosUtiles')}>
-                                                Eliminar
-                                            </Button>
                                         </Card.Body>
                                     </Card>
                                 </Col>
@@ -289,6 +373,6 @@ export const Novedades = () => {
                     </Row>
                 </Tab>
             </Tabs>
-        </div>
+        </Container>
     );
 };

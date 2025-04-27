@@ -522,8 +522,8 @@ export const Invitados = () => {
               />
             </div>
             
-            <div className="table-responsive">
-              <Table striped bordered hover className="mb-0">
+            <div className="table-responsive d-grid gap-2 col-6 mx-auto">
+              <Table responsive striped bordered hover size="sm" variant="warning">
                 <thead>
                   <tr>
                     <th>Nombre</th>
@@ -570,7 +570,7 @@ export const Invitados = () => {
           <Card.Body>
             <Card.Title className="text-center mb-3">Tus listas guardadas</Card.Title>
             <div className="table-responsive">
-              <Table striped bordered hover>
+              <Table responsive bordered striped hover size="sm" variant="warning">
                 <thead>
                   <tr>
                     <th>Nombre</th>
