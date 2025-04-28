@@ -100,7 +100,7 @@ export const App = () => {
           </header>
           <main style={{ marginBottom: '100px' }}>
             <Routes>
-              <Route path="/" element={userData ? <Navigate to="/panico" /> : <Login />} />
+              <Route path="/" element={userData ? <Login />:< Navigate to="/panico" /> } />
               <Route path="/login" element={<Login />} />
               <Route path="/panico" element={userData ? <Panico /> : <Navigate to="/login" />} />
               <Route path="/administracion" element={userData ? <Administracion /> : <Navigate to="/login" />} />

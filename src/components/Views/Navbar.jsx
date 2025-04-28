@@ -103,7 +103,7 @@ export const NavbarComponent = ({ handleLogout }) => {
                 </Badge>
               )}
             </div>
-            <span className={`${isSmallMobile ? 'fs-6' : 'fs-5'} fw-bold`}>S.N. App</span>
+            <span className={`${isSmallMobile ? 'fs-6' : 'fs-5'} fw-bold`}>CUBE</span>
             {userData?.nombre && !isMobile && (
               <span className="ms-2 d-none d-lg-inline">
                 | ¡Hola <em>{userData.nombre}</em>!
