@@ -130,14 +130,14 @@ export const RegistrarReserva = () => {
   
  
   return (
-    <div className="container fluid">
-      <div className='card text-bg-primary mb-3 shadow-lg style="max-width: 18rem;'>
+    <div className="container fluid bg-transparent">
+      <div className='card  text-bg-primary mb-3 shadow-lg style="max-width: 18rem;'>
         <h1 className='card-header'>Registrar Nueva Reserva</h1>
       </div>
-      <form onSubmit={crearReserva} className="card text-bg-primary card-body shadow-lg">
+      <form onSubmit={crearReserva} className="card bg-transparent card-body shadow-lg">
         <div className="elem-group">
           
-          <div className='form-floating mb-3'>
+          <div className='form-floating mb-3 '>
             <select className="form-select text-bg-primary"
             id="cancha"
             value={cancha}

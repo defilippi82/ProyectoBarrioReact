@@ -1,24 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Container, 
-  Form, 
-  Button, 
-  Row, 
-  Col, 
-  Card, 
-  Alert,
-  Spinner,
-  FormCheck 
-} from 'react-bootstrap';
-import { 
-  FaWhatsapp, 
-  FaEnvelope, 
-  FaPaperPlane,
-  FaUserCircle,
-  FaHome,
-  FaComment,
-  FaUsersCog
-} from 'react-icons/fa';
+import {  Container,  Form,  Button,  Row,  Col,  Card,  Alert, Spinner, FormCheck} from 'react-bootstrap';
+import {  FaWhatsapp,  FaEnvelope,  FaPaperPlane, FaUserCircle, FaHome, FaComment, FaUsersCog }from 'react-icons/fa';
 import { collection, query, getDocs, where } from 'firebase/firestore';
 import { db } from '../../firebaseConfig/firebase';
 import Swal from 'sweetalert2';
@@ -157,11 +139,11 @@ export const Contacto = () => {
   };
 
   return (
-    <Container className="py-4 px-3 px-md-5">
+    <Container className="container fluid py-4 px-3 px-md-5">
       <Row className="justify-content-center">
         <Col xs={12} mg={8}>
-          <Card className="shadow-sm">
-            <Card.Header className="bg-primary text-white">
+          <Card className="shadow-sm bg-primary">
+            <Card.Header className="bg-info ">
               <h2 className="mb-0 text-center">Formulario de Contacto</h2>
             </Card.Header>
             <Card.Body>
@@ -171,11 +153,11 @@ export const Contacto = () => {
                 </Alert>
               )}
 
-              <Form onSubmit={handleSubmit}>
+              <Form onSubmit={handleSubmit} className="bg-info  p-4 ">
                 {/* Nombre */}
-                <Form.Group className="mb-3">
+                <Form.Group className="shadow-sm mb-3">
                   <Form.Label>
-                    <FaUserCircle className="me-2" />
+                    <FaUserCircle className=" me-2" />
                     Nombre y Apellido
                   </Form.Label>
                   <Form.Control
@@ -292,7 +274,7 @@ export const Contacto = () => {
                       )}
                       {contacto.email && (
                         <div>
-                          <FaEnvelope className="me-2 text-primary" />
+                          <FaEnvelope className="me-2 text-warning" />
                           {contacto.email}
                         </div>
                       )}
@@ -309,7 +291,7 @@ export const Contacto = () => {
                 {/* Botón de enviar */}
                 <div className="d-flex align-items-center justify-content-center">
                   <Button 
-                    variant="primary" 
+                    variant="success" 
                     type="submit"
                     size={isMobile ? "sm" : "mg"}
                     disabled={loading || (!contacto.email && !contacto.telefono)}

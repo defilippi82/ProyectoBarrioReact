@@ -7,8 +7,11 @@ export const SeguridadDashboard = () => {
   return (
     <div>
       <DashboardSeguridad/>
-      <h1>Panel de Seguridad</h1>
+              
       <MapaSeguridad2/>
+      <h3>Unidad Funcionales</h3>
+      <h3>.</h3>
+      
       <Mensajeria/>
       </div>
   );

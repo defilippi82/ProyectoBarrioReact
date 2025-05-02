@@ -359,7 +359,7 @@ export const Invitados = () => {
       <h2 className="mb-4 text-center">Sistema de Invitaciones</h2>
       
       {/* Tarjeta de compartir enlace */}
-      <Card className="mb-4 shadow-sm">
+      <Card className="mb-4 shadow-sm bg-info">
         <Card.Body>
           <Card.Title className="text-center">Compartir formulario de invitación</Card.Title>
           <Card.Text className={`text-center mb-3 ${userData?.numerotelefono ? 'text-success' : 'text-warning'}`}>
@@ -400,7 +400,7 @@ export const Invitados = () => {
       </Card>
 
       {/* Formulario de invitado */}
-      <Card className="mb-4 shadow-sm">
+      <Card className="mb-4 shadow-sm bg-transparent">
         <Card.Body>
           <Card.Title className="text-center mb-4">Agregar nuevo invitado</Card.Title>
           <Form onSubmit={agregarInvitado}>
@@ -522,7 +522,7 @@ export const Invitados = () => {
               />
             </div>
             
-            <div className="table-responsive d-grid gap-2 col-6 mx-auto">
+            <div className="table grid gap-4 col-6 mx-auto">
               <Table responsive striped bordered hover size="sm" variant="warning">
                 <thead>
                   <tr>

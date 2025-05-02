@@ -1,29 +1,21 @@
 import React, { useContext, useEffect, useState, useCallback } from 'react';
-import { Container, Button, Nav, Navbar, Badge, Offcanvas } from 'react-bootstrap';
+import { 
+  Container,  Button,  Nav,  Navbar,  Badge,  Offcanvas, Stack} from 'react-bootstrap';
 import { UserContext } from '../Services/UserContext';
 import { db } from '/src/firebaseConfig/firebase.js';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faEnvelope, 
-  faHome, 
-  faCalendarAlt, 
-  faUserFriends, 
-  faBell, 
-  faPhoneAlt, 
-  faShieldAlt,
-  faUsersCog,
-  faBullhorn,
-  faSignOutAlt
-} from '@fortawesome/free-solid-svg-icons';
+import {
+  faEnvelope, faHome, faCalendarAlt, faUserFriends, faBell, faPhoneAlt, faShieldAlt, faUsersCog, faBullhorn, faSignOutAlt, faBars} from '@fortawesome/free-solid-svg-icons';
 import { useMediaQuery } from 'react-responsive';
 
 export const NavbarComponent = ({ handleLogout }) => {
   const { userData } = useContext(UserContext);
   const [newMessages, setNewMessages] = useState(0);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const isMobile = useMediaQuery({ maxWidth: 992 });
-  const isSmallMobile = useMediaQuery({ maxWidth: 576 });
+  const [showOffcanvas, setShowOffcanvas] = useState(false);
+  const isWideScreen = useMediaQuery({ minWidth: 1200 });
+  const isMediumScreen = useMediaQuery({ minWidth: 992, maxWidth: 1199 });
+  const isMobile = useMediaQuery({ maxWidth: 991 });
 
   const playSound = useCallback((source) => {
     const audioSrc = source === 'alerta' ? '/public/Sound/siren.mp3' : '/public/Sound/mensaje.mp3';
@@ -55,16 +47,15 @@ export const NavbarComponent = ({ handleLogout }) => {
     }
   }, [userData, playSound]);
 
-  const handleCloseMobileMenu = () => setShowMobileMenu(false);
-  const handleShowMobileMenu = () => setShowMobileMenu(true);
+  const toggleOffcanvas = () => setShowOffcanvas(!showOffcanvas);
 
-  const NavItem = ({ href, icon, text, showBadge = false, badgeCount = 0 }) => (
+  const NavItem = ({ href, icon, text, showBadge = false, badgeCount = 0, onClick }) => (
     <Nav.Link 
       href={href} 
-      className="d-flex align-items-center py-2 px-3"
-      onClick={handleCloseMobileMenu}
+      className="d-flex align-items-center py-2 px-2 mx-1"
+      onClick={onClick}
     >
-      <FontAwesomeIcon icon={icon} className="me-2" style={{ width: '1.25rem' }} />
+      <FontAwesomeIcon icon={icon} className="me-2" />
       <span>{text}</span>
       {showBadge && badgeCount > 0 && (
         <Badge pill bg="danger" className="ms-2">
@@ -74,184 +65,150 @@ export const NavbarComponent = ({ handleLogout }) => {
     </Nav.Link>
   );
 
-  return (
-    <>
-      <Navbar 
-        bg="primary" 
-        variant="dark" 
-        expand="lg" 
-        fixed="top" 
-        className="shadow-sm"
-        collapseOnSelect
-      >
-        <Container fluid>
-          {/* Logo section */}
-          <Navbar.Brand href="#/panico" className="d-flex align-items-center">
-            <div className="d-flex align-items-center me-2">
-              <FontAwesomeIcon 
-                icon={faEnvelope} 
-                className={`${isSmallMobile ? 'fs-5' : 'fs-4'} position-relative`}
-              />
-              {newMessages > 0 && (
-                <Badge 
-                  pill 
-                  bg="danger" 
-                  className="position-absolute translate-middle"
-                  style={{ top: '5px', left: '15px', fontSize: '0.6rem' }}
-                >
-                  {newMessages}
-                </Badge>
-              )}
-            </div>
-            <span className={`${isSmallMobile ? 'fs-6' : 'fs-5'} fw-bold`}>CUBE</span>
-            {userData?.nombre && !isMobile && (
-              <span className="ms-2 d-none d-lg-inline">
-                | ¡Hola <em>{userData.nombre}</em>!
-              </span>
-            )}
-          </Navbar.Brand>
+  const renderNavItems = (onItemClick = () => {}) => {
+    if (!userData?.rol) return null;
 
-          {/* Mobile menu toggle */}
-          <Navbar.Toggle 
-            aria-controls="offcanvas-navbar" 
-            onClick={handleShowMobileMenu}
-            className="border-0"
+    return (
+      <>
+        {(userData.rol.administrador || userData.rol.guardia) && (
+          <NavItem 
+            href="#/seguridad" 
+            icon={faShieldAlt} 
+            text="Seguridad" 
+            onClick={onItemClick}
+          />
+        )}
+
+        {(userData.rol.propietario || userData.rol.inquilino || userData.rol.administrador) && (
+          <>
+            <NavItem href="#/panico" icon={faHome} text="Inicio" onClick={onItemClick} />
+            <NavItem href="#/reservas/create" icon={faCalendarAlt} text="Reservar" onClick={onItemClick} />
+            <NavItem href="#/invitados" icon={faUserFriends} text="Invitados" onClick={onItemClick} />
+            <NavItem 
+              href="#/mensajeria" 
+              icon={faEnvelope} 
+              text="Mensajes" 
+              showBadge 
+              badgeCount={newMessages}
+              onClick={onItemClick}
+            />
+            <NavItem href="#/novedades" icon={faBell} text="Novedades" onClick={onItemClick} />
+            <NavItem href="#/contacto" icon={faPhoneAlt} text="Contacto" onClick={onItemClick} />
+          </>
+        )}
+
+        {userData.rol.administrador && (
+          <>
+            <NavItem href="#/administracion" icon={faUsersCog} text="Administración" onClick={onItemClick} />
+            <NavItem href="#/campanas" icon={faBullhorn} text="Campañas" onClick={onItemClick} />
+          </>
+        )}
+      </>
+    );
+  };
+
+  const renderDesktopNavbar = () => (
+    <Navbar.Collapse id="navbar-desktop">
+      <Nav className="me-auto">
+        <Stack direction="horizontal" gap={1}>
+          {renderNavItems()}
+        </Stack>
+      </Nav>
+      <Nav>
+        {userData?.nombre && (
+          <Button 
+            variant="outline-light" 
+            onClick={handleLogout}
+            className="d-flex align-items-center ms-2"
           >
-            <span className="navbar-toggler-icon"></span>
-          </Navbar.Toggle>
+            <FontAwesomeIcon icon={faSignOutAlt} className="me-2" />
+            Salir
+          </Button>
+        )}
+      </Nav>
+    </Navbar.Collapse>
+  );
 
-          {/* Desktop menu */}
-          {!isMobile && (
-            <Navbar.Collapse id="navbar-desktop" className="justify-content-between">
+  const renderMobileNavbar = () => (
+    <>
+      <Navbar.Toggle 
+        aria-controls="offcanvas-navbar" 
+        onClick={toggleOffcanvas}
+        className="border-0"
+      >
+        <FontAwesomeIcon icon={faBars} />
+        {newMessages > 0 && (
+          <Badge pill bg="danger" className="ms-1">
+            {newMessages}
+          </Badge>
+        )}
+      </Navbar.Toggle>
 
-            <Nav className="flex-grow-1">
-              {userData?.rol && (
-                <>
-                  {(userData.rol.administrador || userData.rol.guardia) && (
-                    <NavItem 
-                      href="#/seguridad" 
-                      icon={faShieldAlt} 
-                      text="Seguridad" 
-                    />
-                  )}
-
-                  {(userData.rol.propietario || userData.rol.inquilino || userData.rol.administrador) && (
-                    <>
-                      <NavItem href="#/panico" icon={faHome} text="Inicio" />
-                      <NavItem href="#/reservas/create" icon={faCalendarAlt} text="Reservar" />
-                      <NavItem href="#/invitados" icon={faUserFriends} text="Invitados" />
-                      <NavItem 
-                        href="#/mensajeria" 
-                        icon={faEnvelope} 
-                        text="Mensajes" 
-                        showBadge 
-                        badgeCount={newMessages}
-                      />
-                      <NavItem href="#/novedades" icon={faBell} text="Novedades" />
-                      <NavItem href="#/contacto" icon={faPhoneAlt} text="Contacto" />
-                    </>
-                  )}
-
-                  {userData.rol.administrador && (
-                    <>
-                      <NavItem href="#/administracion" icon={faUsersCog} text="Administración" />
-                      <NavItem href="#/campanas" icon={faBullhorn} text="Campañas" />
-                    </>
-                  )}
-                </>
-              )}
-            </Nav>
-
-            <Nav>
-              {userData?.nombre && (
-                <Button 
-                  variant="outline-light" 
-                  onClick={handleLogout}
-                  className="d-flex align-items-center ms-lg-3"
-                >
-                  <FontAwesomeIcon icon={faSignOutAlt} className="me-2" />
-                  <span>Salir</span>
-                </Button>
-              )}
-            </Nav>
-          </Navbar.Collapse>
-          )}
-        </Container>
-      </Navbar>
-
-      {/* Mobile menu offcanvas */}
       <Offcanvas 
-        show={showMobileMenu} 
-        onHide={handleCloseMobileMenu} 
+        show={showOffcanvas} 
+        onHide={toggleOffcanvas} 
         placement="end"
         className="w-75"
       >
         <Offcanvas.Header closeButton className="border-bottom">
           <Offcanvas.Title>
-            {userData?.nombre ? (
-              <div className="d-flex align-items-center">
-                <FontAwesomeIcon icon={faEnvelope} className="me-2" />
-                {newMessages > 0 && (
-                  <Badge pill bg="danger" className="ms-1">
-                    {newMessages}
-                  </Badge>
-                )}
-                <span className="ms-2">¡Hola {userData.nombre}!</span>
-              </div>
-            ) : (
-              'Menú'
-            )}
+            {userData?.nombre ? `¡Hola ${userData.nombre}!` : 'Menú'}
           </Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body className="p-0">
           <Nav className="flex-column">
-            {userData?.rol && (
-              <>
-                {(userData.rol.administrador || userData.rol.guardia) && (
-                  <NavItem 
-                    href="#/seguridad" 
-                    icon={faShieldAlt} 
-                    text="Seguridad" 
-                  />
-                )}
-
-                {(userData.rol.propietario || userData.rol.inquilino || userData.rol.administrador) && (
-                  <>
-                    <NavItem href="#/panico" icon={faHome} text="Inicio" />
-                    <NavItem href="#/reservas/create" icon={faCalendarAlt} text="Reservar" />
-                    <NavItem href="#/invitados" icon={faUserFriends} text="Invitados" />
-                    <NavItem 
-                      href="#/mensajeria" 
-                      icon={faEnvelope} 
-                      text="Mensajes" 
-                      showBadge 
-                      badgeCount={newMessages}
-                    />
-                    <NavItem href="#/novedades" icon={faBell} text="Novedades" />
-                    <NavItem href="#/contacto" icon={faPhoneAlt} text="Contacto" />
-                  </>
-                )}
-
-                {userData.rol.administrador && (
-                  <>
-                    <NavItem href="#/administracion" icon={faUsersCog} text="Administración" />
-                    <NavItem href="#/campanas" icon={faBullhorn} text="Campañas" />
-                  </>
-                )}
-
-                <div className="border-top mt-2 pt-2">
-                  <NavItem 
-                    href="/" 
-                    icon={faSignOutAlt} 
-                    text="Cerrar sesión" 
-                    onClick={handleLogout}
-                  />
-                </div>
-              </>
+            {renderNavItems(toggleOffcanvas)}
+            {userData?.nombre && (
+              <div className="border-top mt-2 pt-2">
+                <NavItem 
+                  href="/" 
+                  icon={faSignOutAlt} 
+                  text="Cerrar sesión" 
+                  onClick={() => {
+                    toggleOffcanvas();
+                    handleLogout();
+                  }}
+                />
+              </div>
             )}
           </Nav>
         </Offcanvas.Body>
       </Offcanvas>
     </>
+  );
+
+  return (
+    <Navbar 
+      bg="primary" 
+      variant="dark" 
+      expand="lg" 
+      fixed="top" 
+      className="shadow-sm"
+      collapseOnSelect
+    >
+      <Container fluid>
+        <Navbar.Brand href="#/panico" className="responsive d-flex align-items-center me-3">
+          <div className="position-relative">
+            <FontAwesomeIcon icon={faEnvelope} />
+            {newMessages > 0 && (
+              <Badge 
+                pill 
+                bg="danger" 
+                className="position-absolute top-0 start-100 translate-middle"
+                style={{ fontSize: '0.6rem' }}
+              >
+                {newMessages}
+              </Badge>
+            )}
+          </div>
+          <span className="fw-bold ms-2">CUBE</span>
+          {userData?.nombre && isWideScreen && (
+            <span className="ms-2">| ¡Hola {userData.nombre}!</span>
+          )}
+        </Navbar.Brand>
+
+        {isMobile ? renderMobileNavbar() : renderDesktopNavbar()}
+      </Container>
+    </Navbar>
   );
 };

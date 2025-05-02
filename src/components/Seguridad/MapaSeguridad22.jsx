@@ -218,7 +218,7 @@ export const DashboardSeguridad = () => {
   }
 
   return (
-    <div className="container mt-4">
+    <div className="container mt-4 bg-transparent">
       <h2 className="mb-4">Control de Accesos</h2>
 
       {error && (
@@ -227,7 +227,7 @@ export const DashboardSeguridad = () => {
         </Alert>
       )}
 
-      <Card className="mb-4 shadow-sm">
+      <Card className="mb-4 shadow-sm bg-transparent">
         <Card.Body>
           <Card.Title>Registro QR</Card.Title>
           <div className="d-flex gap-2 mb-3">
@@ -252,7 +252,7 @@ export const DashboardSeguridad = () => {
         </Card.Body>
       </Card>
 
-      <Card className="mb-4 shadow-sm">
+      <Card className="mb-4 shadow-sm bg-transparent">
         <Card.Body>
           <Card.Title>Invitados Presentes ({filtrarInvitados().length})</Card.Title>
 
@@ -318,7 +318,7 @@ export const DashboardSeguridad = () => {
         </Card.Body>
       </Card>
 
-      <Card className="shadow-sm">
+      <Card className="shadow-sm bg-info">
         <Card.Body>
           <Card.Title>Historial de Accesos</Card.Title>
           <Button variant="secondary" className="mb-3" onClick={cargarRegistros}>
