@@ -211,7 +211,7 @@ export const Mensajeria = () => {
   return (
     <Container fluid className="justify-content-center align-items-center py-4 px-3 px-md-5">
       <Row className="justify-content-center align-items-center mb-4 text-center text-white">
-        <Col>
+        <Col md="auto">
           <Card className="shadow-sm bg-transparent justify-content-center align-items-center">
             <Card.Header className="bg-primary ">
               <h2 className="mb-0 d-flex align-items-center">
@@ -222,22 +222,22 @@ export const Mensajeria = () => {
             <Card.Body>
               <Form onSubmit={handleSendMessage}>
                 <Row className="g-3 ">
-                <Col md={2}>
-      <Form.Group controlId="formManzana">
-        <Form.Label className="fw-bold">Manzana N°</Form.Label>
-        <Form.Control
-          type="number"
-          min="1"
-          value={receiverManzana}
-          onChange={(e) => setReceiverManzana(e.target.value)}
-          required
-          placeholder="Ej: 1"
-        />
+      <Col md="auto">
+                 <Form.Group controlId="formManzana">
+                <Form.Label className="fw-bold">Manzana N°</Form.Label>
+                <Form.Control
+                type="number"
+                min="1"
+                value={receiverManzana}
+                onChange={(e) => setReceiverManzana(e.target.value)}
+                required
+                placeholder="Ej: 1"
+              />
        
-      </Form.Group>
+            </Form.Group>
     </Col>
     
-    <Col md={2}>
+    <Col md="auto">
       <Form.Group controlId="formLote">
         <Form.Label className="fw-bold">Lote N°</Form.Label>
         <Form.Control
@@ -252,7 +252,7 @@ export const Mensajeria = () => {
     </Col>
                   </Row>
                   <Row className="g-3 mb-3">
-                  <Col md={6}>
+                  <Col md="auto">
                     <FloatingLabel controlId="floatingMessage" label="Mensaje">
                       <Form.Control
                         as="textarea"
@@ -264,7 +264,7 @@ export const Mensajeria = () => {
                       />
                     </FloatingLabel>
                   </Col>
-                  <Col md={2} className="d-flex align-items-end">
+                  <Col md="auto" className="d-flex align-items-end">
                     <Button 
                       variant="success" 
                       type="submit"

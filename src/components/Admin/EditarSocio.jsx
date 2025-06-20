@@ -20,6 +20,7 @@ export const EditarSocio = () => {
         lote: "",
         isla: "",
         numerotelefono: "",
+        idPublico: "",
         rol: { valor: 'propietario', administrador: false, propietario: true, inquilino: false, guardia: false }
     });
     const roles = new Map([
@@ -165,6 +166,12 @@ export const EditarSocio = () => {
                 <div className="form-group">
                     <label htmlFor="numerotelefono">Número de teléfono</label>
                     <input type="text" className="form-control" id="numerotelefono" name="numerotelefono" value={socio.numerotelefono} onChange={actualizarSocio} required />
+                </div>
+                </Col>
+                <Col xs="auto">
+                <div className="form-group">
+                    <label htmlFor="idPublico">idPúblico</label>
+                    <input type="text" className="form-control" id="idPublico" name="idPublico" value={socio.idPublico} onChange={actualizarSocio} required />
                 </div>
                 </Col>
                 <Col xs="auto">

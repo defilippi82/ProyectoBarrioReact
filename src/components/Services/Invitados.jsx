@@ -303,16 +303,24 @@ export const Invitados = () => {
   };
 
   const compartir = {
+    //enlace: () => {
+      //if (!userData) return 'Cargando...';
+      
+     // const params = new URLSearchParams();
+     // params.append('lote', `${userData.manzana}-${userData.lote}`);
+      //params.append('invitador', encodeURIComponent(userData.nombre));
+      //if (userData.numerotelefono) params.append('telefono', userData.numerotelefono);
+      
+    //  return `${window.location.origin}/pages/invitacion.html?${params.toString()}`;
+    //}
     enlace: () => {
-      if (!userData) return 'Cargando...';
-      
-      const params = new URLSearchParams();
-      params.append('lote', `${userData.manzana}-${userData.lote}`);
-      params.append('invitador', encodeURIComponent(userData.nombre));
-      if (userData.numerotelefono) params.append('telefono', userData.numerotelefono);
-      
-      return `${window.location.origin}/pages/invitacion.html?${params.toString()}`;
-    },
+  if (!userData) return 'Cargando...';
+
+ // return `${window.location.origin}/pages/invitacion.html?id=${userData.idPublico}`;
+  const loteID = `${userData.idPublico}`;
+  return `${window.location.origin}/pages/invitacion.html?idPublico=${encodeURIComponent(loteID)}`;
+}
+,
 
     copiar: () => {
       navigator.clipboard.writeText(compartir.enlace());

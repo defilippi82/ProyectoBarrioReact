@@ -69,6 +69,10 @@ export const RegistrarSocio = () => {
     // Crear usuario en Firebase Authentication
     const { user } = await createUserWithEmailAndPassword(auth, email, contrasena);
 
+     //  Generar idPublico automáticamente
+    const idPublico = `${nombre.trim()}-${manzana.trim()}-${lote.trim()}`.replace(/\s+/g, '-');
+
+
     // Agregar datos del usuario a la colección 'usuarios' en Firestore
     await addDoc(sociosCollection, {
       nombre,
@@ -80,6 +84,7 @@ export const RegistrarSocio = () => {
       rol: rol.valor,
       numerotelefono,
       contrasena,
+      idPublico,
       
     });
 

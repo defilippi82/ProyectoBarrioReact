@@ -84,17 +84,106 @@
     
     // Obtener parámetros de la URL
     const urlParams = new URLSearchParams(window.location.search);
-    const lote = urlParams.get('lote');
-    const invitador = urlParams.get('invitador');
-    const telefonoInvitadorURL = urlParams.get('telefono');
+    const idPublico = urlParams.get('idPublico'); // <- nuevo parámetro único por usuario
+    //const lote = urlParams.get('lote');
+    //const invitador = urlParams.get('invitador');
+    //const telefonoInvitadorURL = urlParams.get('telefono');
     
     // Número de guardia por defecto (formato internacional sin +)
     const telefonoGuardia = '5491112345678'; // Reemplaza con tu número real
     
+      if (idPublico) {
+    db.collection("usuarios")
+      .where("idPublico", "==", idPublico)
+      .limit(1)
+      .get()
+      .then(querySnapshot => {
+        if (!querySnapshot.empty) {
+          const data = querySnapshot.docs[0].data();
+          document.getElementById('lote').value = `${data.manzana}-${data.lote}`;
+          document.getElementById('invitador').value = data.nombre;
+          document.getElementById('telefonoInvitador').value = data.numerotelefono || '';
+          document.getElementById('invitador-text').textContent = `Invitado por: ${data.nombre}`;
+        } else {
+          alert("❌ Enlace inválido o expirado.");
+        }
+      })
+      .catch(error => {
+        console.error("Error buscando al invitador:", error);
+        alert("❌ No se pudo cargar el invitador. Intenta más tarde.");
+      });
+  } else {
+    alert("❌ No se encontró ID de invitador en el enlace.");
+  }
+
+  document.getElementById('invitacionForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!document.getElementById('privacidad').checked) {
+      alert('Debes aceptar la política de privacidad');
+      return;
+    }
+
+    const formData = {
+      nombre: document.getElementById('nombre').value.trim(),
+      dni: document.getElementById('dni').value.trim(),
+      patente: document.getElementById('patente').value.trim(),
+      telefono: document.getElementById('telefono').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      lote: document.getElementById('lote').value,
+      invitador: document.getElementById('invitador').value,
+      telefonoInvitador: document.getElementById('telefonoInvitador').value,
+      fecha: new Date().toISOString(),
+      estado: 'pendiente',
+      ip: await obtenerIP()
+    };
+
+    try {
+      await db.collection('invitaciones').add(formData);
+      const telefonoDestino = formData.telefonoInvitador || telefonoGuardia;
+
+      const mensajeWhatsApp = `📋 *Nueva Invitación Registrada* 📋
+
+🔹 *Invitado:* ${formData.nombre}
+🔹 *DNI:* ${formData.dni}
+🔹 *Teléfono:* ${formData.telefono}
+🔹 *Email:* ${formData.email || 'No especificado'}
+
+🚗 *Vehículo:*
+▸ Patente: ${formData.patente || 'No especificada'}
+
+🏠 *Datos de Invitación:*
+▸ Lote: ${formData.lote || 'No especificado'}
+▸ Invitado por: ${formData.invitador || 'Directo'}
+
+📅 Fecha: ${new Date().toLocaleString()}`;
+
+      const mensajeCodificado = encodeURIComponent(mensajeWhatsApp);
+      window.open(`https://wa.me/${telefonoDestino}?text=${mensajeCodificado}`, '_blank');
+
+      alert('✅ Datos registrados correctamente. Se abrirá WhatsApp para confirmación.');
+      document.getElementById('invitacionForm').reset();
+    } catch (error) {
+      console.error('Error:', error);
+      alert('❌ Ocurrió un error. Por favor intenta nuevamente.');
+    }
+  });
+
+  async function obtenerIP() {
+    try {
+      const response = await fetch('https://api.ipify.org?format=json');
+      const data = await response.json();
+      return data.ip;
+    } catch {
+      return 'no-disponible';
+    }
+  }
+    /*
     // Mostrar datos del invitador
-    if (invitador) {
+     if (invitador) {
       document.getElementById('invitador-text').textContent = `Invitado por: ${invitador}`;
       document.getElementById('invitador').value = invitador;
+      
       
       // Si viene teléfono en URL, lo guardamos
       if (telefonoInvitadorURL) {
@@ -179,7 +268,8 @@
       } catch {
         return 'no-disponible';
       }
-    }
-  </script>
+    }*/
+  
+</script>
 </body>
 </html>

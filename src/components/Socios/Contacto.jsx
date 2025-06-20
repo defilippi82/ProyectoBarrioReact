@@ -141,7 +141,7 @@ export const Contacto = () => {
   return (
     <Container className="container fluid py-4 px-3 px-md-5">
       <Row className="justify-content-center">
-        <Col xs={12} mg={8}>
+        <Col xs="auto" mg="auto">
           <Card className="shadow-sm bg-primary">
             <Card.Header className="bg-info ">
               <h2 className="mb-0 text-center">Formulario de Contacto</h2>
@@ -156,10 +156,13 @@ export const Contacto = () => {
               <Form onSubmit={handleSubmit} className="bg-info  p-4 ">
                 {/* Nombre */}
                 <Form.Group className="shadow-sm mb-3">
+                  <Col xs="auto" mg="auto">
                   <Form.Label>
                     <FaUserCircle className=" me-2" />
                     Nombre y Apellido
                   </Form.Label>
+                  </Col>
+                  
                   <Form.Control
                     type="text"
                     name="nombre"
@@ -167,9 +170,11 @@ export const Contacto = () => {
                     onChange={handleChange}
                     required
                     placeholder="Ingresa tu nombre completo"
-                  />
+                    />
+                   
                 </Form.Group>
 
+                <Col xs="auto" mg="auto">
                 {/* Lote */}
                 <Form.Group className="mb-3">
                   <Form.Label>
@@ -183,9 +188,10 @@ export const Contacto = () => {
                     onChange={handleChange}
                     required
                     placeholder="Ej: XX-XXX"
-                  />
+                    />
                 </Form.Group>
-
+                    </Col>
+                  <Col xs="auto" mg="auto">
                 {/* Consulta */}
                 <Form.Group className="mb-3">
                   <Form.Label>
@@ -200,8 +206,9 @@ export const Contacto = () => {
                     onChange={handleChange}
                     required
                     placeholder="Describe tu consulta aquí..."
-                  />
+                    />
                 </Form.Group>
+                    </Col>
 
                 {/* Destino */}
                 <Form.Group className="mb-4">
