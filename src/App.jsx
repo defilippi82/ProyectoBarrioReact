@@ -15,6 +15,7 @@ import { RegistrarReserva } from "./components/Services/RegistrarReservas";
 import { RegistrarSocio } from "./components/Services/RegistrarSocios";
 import { Invitados } from "./components/Services/Invitados";
 import { Novedades } from "./components/Services/Novedades";
+import { Alquileres } from "./components/Services/Alquileres";
 import { Mensajeria } from "./components/Services/Mensajeria";
 import { AdminMensajeria } from "./components/Services/AdminMensajeria.jsx";
 import { UserProvider } from './components/Services/UserContext';
@@ -106,6 +107,7 @@ export const App = () => {
               <Route path="/administracion" element={userData ? <Administracion /> : <Navigate to="/login" />} />
               <Route path="/invitados" element={userData ? <Invitados /> : <Navigate to="/login" />} />
               <Route path="/novedades" element={userData ? <Novedades /> : <Navigate to="/login" />} />
+              <Route path="/alquileres" element={userData ? <Alquileres /> : <Navigate to="/login" />} />
               <Route path="/mensajeria" element={userData ? <Mensajeria /> : <Navigate to="/login" />} />
               <Route path="/campanas" element={userData ? <AdminMensajeria /> : <Navigate to="/login" />} />
               <Route path="/privacidad" element={userData ? <Privacidad /> : <Navigate to="/login" />} />

@@ -1,7 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { auth } from "/src/firebaseConfig/firebase.js";
-import { onAuthStateChanged } from "firebase/auth";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 export const UserContext = createContext();
 
@@ -9,11 +6,21 @@ export const useUser = () => useContext(UserContext);
 
 export const UserProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
-  const [user, setUser] = useState(null);
 
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userData");
+    if (storedUser) {
+      setUserData(JSON.parse(storedUser));
+    }
+  }, []);
+
+  const logout = () => {
+    localStorage.removeItem("userData");
+    setUserData(null);
+  };
 
   return (
-    <UserContext.Provider value={{ user, userData, setUserData }}>
+    <UserContext.Provider value={{ userData, setUserData, logout }}>
       {children}
     </UserContext.Provider>
   );

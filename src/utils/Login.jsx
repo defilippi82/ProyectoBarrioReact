@@ -26,9 +26,11 @@ export const Login = () => {
       const querySnapshot = await getDocs(q);
       // Query Firestore para credenciales del usuario
       if (!querySnapshot.empty) {
-        querySnapshot.forEach((doc) => {
-          const userData = doc.data();
-          console.log(userData)
+       querySnapshot.forEach((docSnap) => {
+  const userData = {
+    id: docSnap.id,
+    ...docSnap.data()
+  };
           if (userData.contrasena === password) {
             setUserData(userData); // Actualizar userData en el contexto
             localStorage.setItem('userData', JSON.stringify(userData));

@@ -1,12 +1,10 @@
 import React, { useContext, useEffect, useState, useCallback } from 'react';
-import { 
-  Container,  Button,  Nav,  Navbar,  Badge,  Offcanvas, Stack} from 'react-bootstrap';
+import {Container,  Button,  Nav,  Navbar,  Badge,  Offcanvas, Stack} from 'react-bootstrap';
 import { UserContext } from '../Services/UserContext';
 import { db } from '/src/firebaseConfig/firebase.js';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faEnvelope, faHome, faCalendarAlt, faUserFriends, faBell, faPhoneAlt, faShieldAlt, faUsersCog, faBullhorn, faSignOutAlt, faBars} from '@fortawesome/free-solid-svg-icons';
+import {faEnvelope, faHome, faCalendarAlt, faUserFriends, faBell, faPhoneAlt, faShieldAlt, faUsersCog, faBullhorn, faSignOutAlt, faBars} from '@fortawesome/free-solid-svg-icons';
 import { useMediaQuery } from 'react-responsive';
 
 export const NavbarComponent = ({ handleLogout }) => {
@@ -93,6 +91,7 @@ export const NavbarComponent = ({ handleLogout }) => {
               onClick={onItemClick}
             />
             <NavItem href="#/novedades" icon={faBell} text="Novedades" onClick={onItemClick} />
+            <NavItem href="#/alquileres" icon={faHome} text="Alquileres" onClick={onItemClick} />
             <NavItem href="#/contacto" icon={faPhoneAlt} text="Contacto" onClick={onItemClick} />
           </>
         )}
