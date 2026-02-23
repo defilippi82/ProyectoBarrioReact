@@ -12,7 +12,7 @@ export const Alquileres = () => {
       <h2 className="text-center mb-4">Alquileres Internos</h2>
 
       <Tabs activeKey={key} onSelect={(k) => setKey(k)}>
-        <Tab eventKey="explorar" title="Explorar">
+        <Tab eventKey="explorar" title="Avisos">
           <ExplorarAlquileres />
         </Tab>
 

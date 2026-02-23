@@ -1,5 +1,5 @@
 import React, { useState, useContext } from "react";
-import { Form, Button, Card, Row, Col, Alert } from "react-bootstrap";
+import { Form, Button, Card, Row, Col, Badge } from "react-bootstrap";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "/src/firebaseConfig/firebase";
 import { UserContext } from "./UserContext";
@@ -7,209 +7,231 @@ import { UserContext } from "./UserContext";
 export const CrearAlquiler = () => {
   const { userData } = useContext(UserContext);
 
-  const [error, setError] = useState("");
+  const [nuevaAmenity, setNuevaAmenity] = useState("");
 
   const [form, setForm] = useState({
     titulo: "",
     descripcion: "",
     valor: "",
-    tipo: "dia",
+    moneda: "ARS",
+    tipoPrecio: "dia",
     capacidad: "",
     mascotas: false,
     telefono: "",
-    amenities: {
-      pileta: false,
-      playroom: false,
-      jacuzzi: false,
-      internet: false,
-      cable: false,
-      parrilla: false,
-      camaElastica: false
-    },
+    amenities: [
+      "Pileta",
+      "Playroom",
+      "Jacuzzi",
+      "Internet",
+      "Cable",
+      "Parrilla",
+      "Cama Elástica"
+    ],
+    amenitiesSeleccionadas: [],
     modoDisponibilidad: "disponiblePorDefecto"
   });
 
+  const toggleAmenity = (amenity) => {
+    setForm({
+      ...form,
+      amenitiesSeleccionadas: form.amenitiesSeleccionadas.includes(amenity)
+        ? form.amenitiesSeleccionadas.filter(a => a !== amenity)
+        : [...form.amenitiesSeleccionadas, amenity]
+    });
+  };
+
+  const agregarAmenity = () => {
+    if (!nuevaAmenity.trim()) return;
+
+    setForm({
+      ...form,
+      amenities: [...form.amenities, nuevaAmenity]
+    });
+
+    setNuevaAmenity("");
+  };
+
   const handleCrear = async () => {
-    try {
-      if (!userData) {
-        setError("Usuario no autenticado");
-        return;
-      }
+    if (!userData) return alert("Debes iniciar sesión");
 
-      if (!form.titulo || !form.valor) {
-        setError("Título y precio son obligatorios");
-        return;
-      }
+    const nuevo = {
+      propietarioId: userData.id,
+      propietarioNombre: userData.nombre,
+      isla: userData.isla,
+      manzana: userData.manzana,
+      lote: userData.lote,
 
-      const nuevo = {
-        propietarioId: userData.id || null,
-        propietarioNombre: userData.nombre || "",
-        isla: userData.isla || "",
-        manzana: userData.manzana || "",
-        lote: userData.lote || "",
+      titulo: form.titulo,
+      descripcion: form.descripcion,
 
-        titulo: form.titulo,
-        descripcion: form.descripcion,
+      precio: {
+        valor: Number(form.valor),
+        moneda: form.moneda,
+        tipo: form.tipoPrecio
+      },
 
-        precio: {
-          valor: Number(form.valor),
-          tipo: form.tipo
-        },
+      capacidad: Number(form.capacidad),
+      mascotas: form.mascotas,
 
-        capacidad: Number(form.capacidad) || 0,
-        mascotas: form.mascotas,
+      contacto: {
+        email: userData.email || "",
+        telefono: form.telefono
+      },
 
-        contacto: {
-          email: userData.email || "",
-          telefono: form.telefono || ""
-        },
+      amenities: form.amenitiesSeleccionadas,
 
-        amenities: form.amenities,
+      estado: "disponible",
+      modoDisponibilidad: form.modoDisponibilidad,
+      fechas: [],
 
-        estado: "disponible",
-        modoDisponibilidad: form.modoDisponibilidad,
-        fechas: [],
+      ratings: [],
+      promedioRating: 0,
+      totalRatings: 0,
 
-        ratings: [],
-        promedioRating: 0,
-        totalRatings: 0,
+      createdAt: new Date()
+    };
 
-        createdAt: new Date()
-      };
+    await addDoc(collection(db, "alquileres"), nuevo);
 
-      await addDoc(collection(db, "alquileres"), nuevo);
-
-      alert("Publicación creada correctamente");
-
-      setForm({
-        titulo: "",
-        descripcion: "",
-        valor: "",
-        tipo: "dia",
-        capacidad: "",
-        mascotas: false,
-        telefono: "",
-        amenities: {
-          pileta: false,
-          playroom: false,
-          jacuzzi: false,
-          internet: false,
-          cable: false,
-          parrilla: false,
-          camaElastica: false
-        },
-        modoDisponibilidad: "disponiblePorDefecto"
-      });
-
-      setError("");
-
-    } catch (err) {
-      console.error(err);
-      setError("Error al crear la publicación");
-    }
+    alert("Publicación creada correctamente");
   };
 
   return (
-    <Card className="p-4 mt-3">
-      <h5>Crear Publicación</h5>
+    <Card className="p-4 mt-4 shadow-sm">
+      <h3 className="mb-4 text-center border-bottom pb-2">
+        Crear Nueva Publicación
+      </h3>
 
-      {error && <Alert variant="danger">{error}</Alert>}
+      {/* DATOS PRINCIPALES */}
+      <h5 className="mt-3 border-bottom pb-1">Información General</h5>
 
       <Form.Control
         placeholder="Título"
-        className="mb-2"
-        value={form.titulo}
+        className="mb-3"
         onChange={(e) => setForm({ ...form, titulo: e.target.value })}
       />
 
       <Form.Control
         as="textarea"
+        rows={3}
         placeholder="Descripción"
-        className="mb-2"
-        value={form.descripcion}
+        className="mb-3"
         onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
       />
 
-      <Row>
-        <Col>
+      {/* PRECIO */}
+      <h5 className="mt-4 border-bottom pb-1">Precio</h5>
+
+      <Row className="mb-3">
+        <Col md={4}>
           <Form.Control
             type="number"
-            placeholder="Precio"
-            value={form.valor}
+            placeholder="Valor"
             onChange={(e) => setForm({ ...form, valor: e.target.value })}
           />
         </Col>
-        <Col>
+
+        <Col md={4}>
           <Form.Select
-            value={form.tipo}
-            onChange={(e) => setForm({ ...form, tipo: e.target.value })}
+            onChange={(e) => setForm({ ...form, moneda: e.target.value })}
           >
-            <option value="dia">Por Día</option>
-            <option value="semana">Por Semana</option>
-            <option value="quincena">Por Quincena</option>
+            <option value="ARS">Pesos ($)</option>
+            <option value="USD">Dólares (U$S)</option>
+          </Form.Select>
+        </Col>
+
+        <Col md={4}>
+          <Form.Select
+            onChange={(e) => setForm({ ...form, tipoPrecio: e.target.value })}
+          >
+            <option value="dia">
+              Por Día (10:00 a 20:00)
+            </option>
+            <option value="noche">
+              Por Noche (Check-in 11hs / Check-out 17hs)
+            </option>
           </Form.Select>
         </Col>
       </Row>
 
-      <Form.Control
-        type="number"
-        placeholder="Capacidad"
-        className="mt-2"
-        value={form.capacidad}
-        onChange={(e) => setForm({ ...form, capacidad: e.target.value })}
-      />
+      {/* CAPACIDAD Y MASCOTAS */}
+      <h5 className="mt-4 border-bottom pb-1">Detalles</h5>
 
-      <Form.Check
-        label="Acepta Mascotas"
-        className="mt-2"
-        checked={form.mascotas}
-        onChange={(e) => setForm({ ...form, mascotas: e.target.checked })}
-      />
+      <Row className="mb-3">
+        <Col md={6}>
+          <Form.Control
+            type="number"
+            placeholder="Capacidad de personas"
+            onChange={(e) =>
+              setForm({ ...form, capacidad: e.target.value })
+            }
+          />
+        </Col>
+
+        <Col md={6} className="d-flex align-items-center">
+          <Form.Check
+            label="Acepta Mascotas"
+            onChange={(e) =>
+              setForm({ ...form, mascotas: e.target.checked })
+            }
+          />
+        </Col>
+      </Row>
 
       <Form.Control
-        placeholder="Teléfono"
-        className="mt-2"
-        value={form.telefono}
+        placeholder="Teléfono de contacto"
+        className="mb-3"
         onChange={(e) => setForm({ ...form, telefono: e.target.value })}
       />
 
-      <hr />
-      <h6>Amenities</h6>
+      {/* AMENITIES */}
+      <h5 className="mt-4 border-bottom pb-1">Amenities</h5>
 
-      {Object.keys(form.amenities).map((key) => (
-        <Form.Check
-          key={key}
-          label={key}
-          checked={form.amenities[key]}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              amenities: {
-                ...form.amenities,
-                [key]: e.target.checked
-              }
-            })
-          }
-        />
-      ))}
+      <Row>
+        {form.amenities.map((amenity, index) => (
+          <Col xs={6} md={4} key={index} className="mb-2">
+            <Form.Check
+              type="checkbox"
+              label={amenity}
+              checked={form.amenitiesSeleccionadas.includes(amenity)}
+              onChange={() => toggleAmenity(amenity)}
+            />
+          </Col>
+        ))}
+      </Row>
 
-      <hr />
+      <Row className="mt-3">
+        <Col md={8}>
+          <Form.Control
+            placeholder="Agregar nueva amenity"
+            value={nuevaAmenity}
+            onChange={(e) => setNuevaAmenity(e.target.value)}
+          />
+        </Col>
+        <Col md={4}>
+          <Button variant="secondary" onClick={agregarAmenity} className="w-100">
+            Agregar
+          </Button>
+        </Col>
+      </Row>
+
+      {/* DISPONIBILIDAD */}
+      <h5 className="mt-4 border-bottom pb-1">Disponibilidad</h5>
 
       <Form.Select
-        value={form.modoDisponibilidad}
         onChange={(e) =>
           setForm({ ...form, modoDisponibilidad: e.target.value })
         }
       >
         <option value="disponiblePorDefecto">
-          Disponible por defecto
+          Disponible por defecto (bloquear fechas luego)
         </option>
         <option value="bloqueadoPorDefecto">
-          Bloqueado por defecto
+          Bloqueado por defecto (habilitar fechas luego)
         </option>
       </Form.Select>
 
-      <Button className="mt-3" onClick={handleCrear}>
+      <Button className="mt-4 w-100" onClick={handleCrear}>
         Publicar
       </Button>
     </Card>

@@ -16,6 +16,7 @@ import { RegistrarSocio } from "./components/Services/RegistrarSocios";
 import { Invitados } from "./components/Services/Invitados";
 import { Novedades } from "./components/Services/Novedades";
 import { Alquileres } from "./components/Services/Alquileres";
+import { EditarPublicacion } from "./components/Services/EditarPublicacion";
 import { Mensajeria } from "./components/Services/Mensajeria";
 import { AdminMensajeria } from "./components/Services/AdminMensajeria.jsx";
 import { UserProvider } from './components/Services/UserContext';
@@ -24,6 +25,7 @@ import { NavbarComponent } from './components/Views/Navbar.jsx';
 import { Footer } from './components/Views/Footer';
 import { SeguridadDashboard } from "./components/Seguridad/SeguridadDashboard";
 import './css/App.css';
+import "react-day-picker/dist/style.css";
 
 export const App = () => {
   const [userData, setUserData] = useState(null);
@@ -108,6 +110,7 @@ export const App = () => {
               <Route path="/invitados" element={userData ? <Invitados /> : <Navigate to="/login" />} />
               <Route path="/novedades" element={userData ? <Novedades /> : <Navigate to="/login" />} />
               <Route path="/alquileres" element={userData ? <Alquileres /> : <Navigate to="/login" />} />
+              <Route path="/editar-publicacion/:id" element={userData ? <EditarPublicacion /> : <Navigate to="/login" />} />
               <Route path="/mensajeria" element={userData ? <Mensajeria /> : <Navigate to="/login" />} />
               <Route path="/campanas" element={userData ? <AdminMensajeria /> : <Navigate to="/login" />} />
               <Route path="/privacidad" element={userData ? <Privacidad /> : <Navigate to="/login" />} />
