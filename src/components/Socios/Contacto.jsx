@@ -198,15 +198,7 @@ export const Contacto = () => {
                     <FaComment className="me-2" />
                     Mensaje
                   </Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={4}
-                    name="consulta"
-                    value={formData.consulta}
-                    onChange={handleChange}
-                    required
-                    placeholder="Describe tu consulta aquí..."
-                    />
+                  <Form.Control as="textarea"rows={4} name="consulta" value={formData.consulta} onChange={handleChange}   required placeholder="Describe tu consulta aquí..."/>
                 </Form.Group>
                     </Col>
 
