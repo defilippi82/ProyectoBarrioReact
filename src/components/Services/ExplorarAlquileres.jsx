@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, Row, Col, Button, Badge } from "react-bootstrap";
+import { Card, Row, Col, Button, Badge, Carousel } from "react-bootstrap";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "/src/firebaseConfig/firebase";
 import "./alquileres.css";
@@ -12,153 +12,72 @@ export const ExplorarAlquileres = () => {
   useEffect(() => {
     const fetch = async () => {
       const snap = await getDocs(collection(db, "alquileres"));
-      setAlquileres(
-        snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-      );
+      setAlquileres(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     };
     fetch();
   }, []);
 
-  const renderDisponibilidad = (a) => {
-    if (a.modoDisponibilidad === "bloqueadoPorDefecto") {
-      return <Badge bg="warning">Disponible bajo consulta</Badge>;
+  const renderImagen = (a) => {
+    const imagenes = a.imagenes || (a.imagen ? [a.imagen] : []);
+    
+    if (imagenes.length === 0) {
+      return <div className="imagen-placeholder" style={{ height: "220px" }}><span>Sin fotos</span></div>;
     }
 
-    if (a.fechasBloqueadas && a.fechasBloqueadas.length > 0) {
-      return <Badge bg="secondary">Parcialmente disponible</Badge>;
+    if (imagenes.length === 1) {
+      return <Card.Img variant="top" src={imagenes[0].replace('/upload/', '/upload/w_600,f_auto,q_auto/')} style={{ height: "220px", objectFit: "cover" }} />;
     }
-
-    return <Badge bg="success">Disponible</Badge>;
-  };
-
-  const renderRating = (a) => {
-    if (!a.promedioRating || a.totalRatings === 0) {
-      return <small className="text-muted">Sin calificaciones</small>;
-    }
-
-    const estrellas = "⭐".repeat(Math.round(a.promedioRating));
 
     return (
-      <div>
-        {estrellas}{" "}
-        <small>
-          ({a.promedioRating.toFixed(1)}) · {a.totalRatings} opiniones
-        </small>
-      </div>
+      <Carousel interval={null} indicators={true}>
+        {imagenes.map((url, idx) => (
+          <Carousel.Item key={idx}>
+            <img
+              className="d-block w-100"
+              src={url.replace('/upload/', '/upload/w_600,f_auto,q_auto/')}
+              alt={`Foto ${idx + 1}`}
+              style={{ height: "220px", objectFit: "cover" }}
+            />
+          </Carousel.Item>
+        ))}
+      </Carousel>
     );
   };
 
   return (
     <Row className="mt-4">
       {alquileres.map(a => (
-        <Col md={4} key={a.id}>
-          <Card className="mb-4 shadow alquiler-card">
-
-
+        <Col md={4} key={a.id} className="mb-4">
+          <Card className="alquiler-card h-100 shadow-sm">
+            {renderImagen(a)}
             <Card.Body>
-
-              <div className="d-flex justify-content-between align-items-start">
-                <Card.Title>{a.titulo}</Card.Title>
-              </div>
-                {renderDisponibilidad(a)}
-            {/* Placeholder Imagen */}
-            <div className="imagen-placeholder">
-              📷 Próximamente fotos
-            </div>
-
+              <Card.Title>{a.titulo}</Card.Title>
               <Card.Subtitle className="mb-2 text-primary">
-                ${a.precio?.valor} por {a.precio?.tipo}
+                {a.precio?.moneda === "USD" ? "U$S" : "$"}{a.precio?.valor} <small className="text-muted">/{a.precio?.tipo}</small>
               </Card.Subtitle>
-
-              {renderRating(a)}
-
-              <p className="mt-2">
-                👥 {a.capacidad} personas
-              </p>
-
               
+              <p className="small mb-1">👥 Capacidad: {a.capacidad} pers. {a.mascotas && "· 🐶 Aptos"}</p>
 
-              {a.mascotas && (
-                <Badge bg="info" className="me-1">
-                  🐶 Mascotas
-                </Badge>
-              )}
-
-              {/* Amenities */}
-              <div className="mt-2">
-                {a.amenities && (
-  <div className="mt-2">
-    <strong>Amenities:</strong>
-    <div className="mt-1">
-      {Array.isArray(a.amenities)
-        ? a.amenities.map((am, i) => (
-            <span key={i} className="badge bg-light text-dark me-1 mb-1">
-              {am}
-            </span>
-          ))
-        : Object.entries(a.amenities)
-            .filter(([_, value]) => value)
-            .map(([key]) => (
-              <span key={key} className="badge bg-light text-dark me-1 mb-1">
-                {key}
-              </span>
-            ))}
-    </div>
-  </div>
-)}
+              <div className="d-flex gap-2 mt-3">
+                <Button variant="outline-secondary" size="sm" className="w-100" onClick={() => setDetalleAbierto(detalleAbierto === a.id ? null : a.id)}>Detalles</Button>
+                <Button variant="outline-primary" size="sm" className="w-100" onClick={() => setContactoAbierto(contactoAbierto === a.id ? null : a.id)}>Contacto</Button>
               </div>
 
-              {/* BOTÓN VER DETALLE */}
-              <Button
-                variant="outline-secondary"
-                size="sm"
-                className="mt-3 me-2"
-                onClick={() =>
-                  setDetalleAbierto(detalleAbierto === a.id ? null : a.id)
-                }
-              >
-                Ver detalles
-              </Button>
-
-              {/* BOTÓN CONTACTO */}
-              <Button
-                variant="outline-primary"
-                size="sm"
-                className="mt-3"
-                onClick={() =>
-                  setContactoAbierto(contactoAbierto === a.id ? null : a.id)
-                }
-              >
-                Ver contacto
-              </Button>
-
-              {/* DESCRIPCIÓN DESPLEGABLE */}
               {detalleAbierto === a.id && (
                 <div className="mt-3 border-top pt-2 fade-in">
-                  <strong>Descripción:</strong>
-                  <p className="mb-0">{a.descripcion}</p>
+                  <p className="small mb-2">{a.descripcion}</p>
+                  <div className="d-flex flex-wrap gap-1">
+                    {a.amenities?.map((am, i) => <Badge key={i} bg="light" text="dark" border="true" className="border">{am}</Badge>)}
+                  </div>
                 </div>
               )}
 
-              {/* CONTACTO DESPLEGABLE */}
               {contactoAbierto === a.id && (
-                <div className="mt-3 border-top pt-2 fade-in">
-                  <strong>Propietario:</strong>
-                  <p className="mb-1">
-                    📍 Isla {a.isla}
-                  </p>
-                  <p className="mb-1">
-                    🏠 {a.manzana}-{a.lote}
-                  </p>
-                  <p className="mb-1">
-                    📞 {a.contacto?.telefono || "No informado"}
-                  </p>
-                  <p className="mb-0">
-                    ✉️ {a.contacto?.email || "No informado"}
-                  </p>
+                <div className="mt-3 border-top pt-2 fade-in bg-light p-2 rounded">
+                  <p className="mb-0 small"><strong>📍 Isla {a.isla}</strong> ({a.manzana}-{a.lote})</p>
+                  <p className="mb-0 small">📞 {a.contacto?.telefono}</p>
                 </div>
               )}
-
             </Card.Body>
           </Card>
         </Col>

@@ -1,13 +1,13 @@
 import React, { useState, useContext } from "react";
-import { Form, Button, Card, Row, Col, Badge } from "react-bootstrap";
+import { Form, Button, Card, Row, Col, Spinner } from "react-bootstrap";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "/src/firebaseConfig/firebase";
 import { UserContext } from "./UserContext";
 
 export const CrearAlquiler = () => {
   const { userData } = useContext(UserContext);
-
-  const [nuevaAmenity, setNuevaAmenity] = useState("");
+  const [loadingImg, setLoadingImg] = useState(false);
+  const [imagenes, setImagenes] = useState([]); 
 
   const [form, setForm] = useState({
     titulo: "",
@@ -17,222 +17,127 @@ export const CrearAlquiler = () => {
     tipoPrecio: "dia",
     capacidad: "",
     mascotas: false,
-    telefono: "",
-    amenities: [
-      "Pileta",
-      "Playroom",
-      "Jacuzzi",
-      "Internet",
-      "Cable",
-      "Parrilla",
-      "Cama Elástica"
-    ],
+    amenities: ["Pileta", "Playroom", "Jacuzzi", "Internet", "Cable", "Parrilla", "Cama Elástica"],
     amenitiesSeleccionadas: [],
     modoDisponibilidad: "disponiblePorDefecto"
   });
 
-  const toggleAmenity = (amenity) => {
-    setForm({
-      ...form,
-      amenitiesSeleccionadas: form.amenitiesSeleccionadas.includes(amenity)
-        ? form.amenitiesSeleccionadas.filter(a => a !== amenity)
-        : [...form.amenitiesSeleccionadas, amenity]
-    });
-  };
+  const handleUploadImages = async (e) => {
+    const files = Array.from(e.target.files);
+    if (imagenes.length + files.length > 4) {
+      alert("Máximo 4 fotos permitidas.");
+      return;
+    }
 
-  const agregarAmenity = () => {
-    if (!nuevaAmenity.trim()) return;
+    setLoadingImg(true);
+    const uploadedUrls = [];
 
-    setForm({
-      ...form,
-      amenities: [...form.amenities, nuevaAmenity]
-    });
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", "ml_cube");
 
-    setNuevaAmenity("");
+      try {
+        const res = await fetch("https://api.cloudinary.com/v1_1/cubealquiler/image/upload", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        uploadedUrls.push(data.secure_url);
+      } catch (error) {
+        console.error("Error en Cloudinary:", error);
+      }
+    }
+
+    setImagenes(prev => [...prev, ...uploadedUrls]);
+    setLoadingImg(false);
   };
 
   const handleCrear = async () => {
-    if (!userData) return alert("Debes iniciar sesión");
+    if (!userData) return alert("Error: No se detectó usuario");
+    
+    try {
+      const nuevo = {
+        propietarioId: userData.id,
+        propietarioNombre: userData.nombre,
+        isla: userData.isla,
+        manzana: userData.manzana,
+        lote: userData.lote,
+        titulo: form.titulo,
+        descripcion: form.descripcion,
+        imagenes: imagenes,
+        precio: { valor: Number(form.valor), moneda: form.moneda, tipo: form.tipoPrecio },
+        capacidad: Number(form.capacidad),
+        mascotas: form.mascotas,
+        // TOMA EL TELÉFONO AUTOMÁTICAMENTE DE USERDATA
+        contacto: { 
+          email: userData.email || "", 
+          telefono: userData.numerotelefono || "No informado" 
+        },
+        amenities: form.amenitiesSeleccionadas,
+        estado: "disponible",
+        modoDisponibilidad: form.modoDisponibilidad,
+        fechas: [],
+        createdAt: new Date()
+      };
 
-    const nuevo = {
-      propietarioId: userData.id,
-      propietarioNombre: userData.nombre,
-      isla: userData.isla,
-      manzana: userData.manzana,
-      lote: userData.lote,
-
-      titulo: form.titulo,
-      descripcion: form.descripcion,
-
-      precio: {
-        valor: Number(form.valor),
-        moneda: form.moneda,
-        tipo: form.tipoPrecio
-      },
-
-      capacidad: Number(form.capacidad),
-      mascotas: form.mascotas,
-
-      contacto: {
-        email: userData.email || "",
-        telefono: form.telefono
-      },
-
-      amenities: form.amenitiesSeleccionadas,
-
-      estado: "disponible",
-      modoDisponibilidad: form.modoDisponibilidad,
-      fechas: [],
-
-      ratings: [],
-      promedioRating: 0,
-      totalRatings: 0,
-
-      createdAt: new Date()
-    };
-
-    await addDoc(collection(db, "alquileres"), nuevo);
-
-    alert("Publicación creada correctamente");
+      await addDoc(collection(db, "alquileres"), nuevo);
+      alert("Publicación creada con éxito");
+      window.location.reload(); 
+    } catch (error) {
+      console.error("Error al guardar:", error);
+    }
   };
 
   return (
     <Card className="p-4 mt-4 shadow-sm">
-      <h3 className="mb-4 text-center border-bottom pb-2">
-        Crear Nueva Publicación
-      </h3>
+      <h3 className="mb-4 text-center">Nueva Publicación</h3>
 
-      {/* DATOS PRINCIPALES */}
-      <h5 className="mt-3 border-bottom pb-1">Información General</h5>
+      <h5 className="border-bottom pb-1">Fotos ({imagenes.length}/4)</h5>
+      <Form.Group className="mb-4">
+        <Row className="mb-2 g-2">
+          {imagenes.map((url, i) => (
+            <Col xs={3} key={i}><img src={url} className="img-thumbnail" style={{height:'80px', width:'100%', objectFit:'cover'}} /></Col>
+          ))}
+        </Row>
+        {imagenes.length < 4 && (
+          <Form.Control type="file" multiple onChange={handleUploadImages} disabled={loadingImg} />
+        )}
+      </Form.Group>
 
-      <Form.Control
-        placeholder="Título"
-        className="mb-3"
-        onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-      />
-
-      <Form.Control
-        as="textarea"
-        rows={3}
-        placeholder="Descripción"
-        className="mb-3"
-        onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-      />
-
-      {/* PRECIO */}
-      <h5 className="mt-4 border-bottom pb-1">Precio</h5>
+      <h5 className="border-bottom pb-1">Detalles del Aviso</h5>
+      <Form.Control placeholder="Título" className="mb-3" onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
+      <Form.Control as="textarea" rows={3} placeholder="Descripción" className="mb-3" onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
 
       <Row className="mb-3">
+        <Col md={4}><Form.Control type="number" placeholder="Precio" onChange={(e) => setForm({ ...form, valor: e.target.value })} /></Col>
         <Col md={4}>
-          <Form.Control
-            type="number"
-            placeholder="Valor"
-            onChange={(e) => setForm({ ...form, valor: e.target.value })}
-          />
-        </Col>
-
-        <Col md={4}>
-          <Form.Select
-            onChange={(e) => setForm({ ...form, moneda: e.target.value })}
-          >
-            <option value="ARS">Pesos ($)</option>
-            <option value="USD">Dólares (U$S)</option>
+          <Form.Select onChange={(e) => setForm({ ...form, moneda: e.target.value })}>
+            <option value="ARS">ARS ($)</option>
+            <option value="USD">USD (U$S)</option>
           </Form.Select>
         </Col>
-
         <Col md={4}>
-          <Form.Select
-            onChange={(e) => setForm({ ...form, tipoPrecio: e.target.value })}
-          >
-            <option value="dia">
-              Por Día (10:00 a 20:00)
-            </option>
-            <option value="noche">
-              Por Noche (Check-in 11hs / Check-out 17hs)
-            </option>
+          <Form.Select onChange={(e) => setForm({ ...form, tipoPrecio: e.target.value })}>
+            <option value="dia">Por Día</option>
+            <option value="noche">Por Noche</option>
           </Form.Select>
         </Col>
       </Row>
 
-      {/* CAPACIDAD Y MASCOTAS */}
-      <h5 className="mt-4 border-bottom pb-1">Detalles</h5>
-
       <Row className="mb-3">
-        <Col md={6}>
-          <Form.Control
-            type="number"
-            placeholder="Capacidad de personas"
-            onChange={(e) =>
-              setForm({ ...form, capacidad: e.target.value })
-            }
-          />
-        </Col>
-
+        <Col md={6}><Form.Control type="number" placeholder="Capacidad" onChange={(e) => setForm({ ...form, capacidad: e.target.value })} /></Col>
         <Col md={6} className="d-flex align-items-center">
-          <Form.Check
-            label="Acepta Mascotas"
-            onChange={(e) =>
-              setForm({ ...form, mascotas: e.target.checked })
-            }
-          />
+          <Form.Check label="Acepta Mascotas" onChange={(e) => setForm({ ...form, mascotas: e.target.checked })} />
         </Col>
       </Row>
 
-      <Form.Control
-        placeholder="Teléfono de contacto"
-        className="mb-3"
-        onChange={(e) => setForm({ ...form, telefono: e.target.value })}
-      />
+      <div className="bg-light p-2 rounded mb-4 small text-muted">
+        El contacto se mostrará como: <strong>{userData?.numerotelefono || "Sin teléfono"}</strong> (Isla {userData?.isla})
+      </div>
 
-      {/* AMENITIES */}
-      <h5 className="mt-4 border-bottom pb-1">Amenities</h5>
-
-      <Row>
-        {form.amenities.map((amenity, index) => (
-          <Col xs={6} md={4} key={index} className="mb-2">
-            <Form.Check
-              type="checkbox"
-              label={amenity}
-              checked={form.amenitiesSeleccionadas.includes(amenity)}
-              onChange={() => toggleAmenity(amenity)}
-            />
-          </Col>
-        ))}
-      </Row>
-
-      <Row className="mt-3">
-        <Col md={8}>
-          <Form.Control
-            placeholder="Agregar nueva amenity"
-            value={nuevaAmenity}
-            onChange={(e) => setNuevaAmenity(e.target.value)}
-          />
-        </Col>
-        <Col md={4}>
-          <Button variant="secondary" onClick={agregarAmenity} className="w-100">
-            Agregar
-          </Button>
-        </Col>
-      </Row>
-
-      {/* DISPONIBILIDAD */}
-      <h5 className="mt-4 border-bottom pb-1">Disponibilidad</h5>
-
-      <Form.Select
-        onChange={(e) =>
-          setForm({ ...form, modoDisponibilidad: e.target.value })
-        }
-      >
-        <option value="disponiblePorDefecto">
-          Disponible por defecto (bloquear fechas luego)
-        </option>
-        <option value="bloqueadoPorDefecto">
-          Bloqueado por defecto (habilitar fechas luego)
-        </option>
-      </Form.Select>
-
-      <Button className="mt-4 w-100" onClick={handleCrear}>
-        Publicar
+      <Button className="w-100" onClick={handleCrear} disabled={loadingImg}>
+        {loadingImg ? "Subiendo fotos..." : "Publicar Ahora"}
       </Button>
     </Card>
   );
