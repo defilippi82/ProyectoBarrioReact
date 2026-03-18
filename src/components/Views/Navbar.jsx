@@ -80,16 +80,8 @@ export const NavbarComponent = ({ handleLogout }) => {
         {(userData.rol.propietario || userData.rol.inquilino || userData.rol.administrador) && (
           <>
             <NavItem href="#/panico" icon={faHome} text="Inicio" onClick={onItemClick} />
-            <NavItem href="#/reservas/create" icon={faCalendarAlt} text="Reservar" onClick={onItemClick} />
             <NavItem href="#/invitados" icon={faUserFriends} text="Invitados" onClick={onItemClick} />
-            <NavItem 
-              href="#/mensajeria" 
-              icon={faEnvelope} 
-              text="Mensajes" 
-              showBadge 
-              badgeCount={newMessages}
-              onClick={onItemClick}
-            />
+            <NavItem href="#/mensajeria" icon={faEnvelope} text="Mensajes" showBadge badgeCount={newMessages} onClick={onItemClick}/>
             <NavItem href="#/novedades" icon={faBell} text="Novedades" onClick={onItemClick} />
             <NavItem href="#/alquileres" icon={faHome} text="Alquileres" onClick={onItemClick} />
             <NavItem href="#/contacto" icon={faPhoneAlt} text="Contacto" onClick={onItemClick} />
@@ -98,6 +90,7 @@ export const NavbarComponent = ({ handleLogout }) => {
 
         {userData.rol.administrador && (
           <>
+            <NavItem href="#/reservas/create" icon={faCalendarAlt} text="Reservar" onClick={onItemClick} />
             <NavItem href="#/administracion" icon={faUsersCog} text="Administración" onClick={onItemClick} />
             <NavItem href="#/campanas" icon={faBullhorn} text="Campañas" onClick={onItemClick} />
           </>
