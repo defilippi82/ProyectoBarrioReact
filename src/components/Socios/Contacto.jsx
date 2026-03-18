@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {  Container,  Form,  Button,  Row,  Col,  Card,  Alert, Spinner, FormCheck} from 'react-bootstrap';
-import {  FaWhatsapp,  FaEnvelope,  FaPaperPlane, FaUserCircle, FaHome, FaComment, FaUsersCog }from 'react-icons/fa';
+import {  FaWhatsapp,  FaEnvelope,  FaPaperPlane, FaUserCircle, FaHome, FaComment, FaUsersCog, FaAddressBook }from 'react-icons/fa';
 import { collection, query, getDocs, where } from 'firebase/firestore';
 import { db } from '../../firebaseConfig/firebase';
 import Swal from 'sweetalert2';
@@ -23,9 +23,9 @@ export const Contacto = () => {
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const destinos = [
-    { value: 'Administracion', label: 'Administración', icon: <FaUsersCog className="me-2" /> },
-    { value: 'Facturacion', label: 'Facturación', icon: <FaUsersCog className="me-2" /> },
-    { value: 'ControlDeObras', label: 'Control de Obras', icon: <FaUsersCog className="me-2" /> }
+    { value: 'Administracion', label: '📂 Administración' },
+    { value: 'Facturacion', label: '💳 Facturación' },
+    { value: 'ControlDeObras', label: '🏗️ Control de Obras' }
   ];
 
   useEffect(() => {
@@ -221,7 +221,7 @@ export const Contacto = () => {
                   >
                     {destinos.map((destino) => (
                       <option key={destino.value} value={destino.value}>
-                        {isMobile ? destino.label : `${destino.icon} ${destino.label}`}
+                        {isMobile ? destino.label : `${destino.label}`}
                       </option>
                     ))}
                   </Form.Select>

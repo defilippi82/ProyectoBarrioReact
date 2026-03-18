@@ -8,7 +8,7 @@ export const Alquileres = () => {
   const [key, setKey] = useState("explorar");
 
   return (
-    <Container className="mt-4">
+    <Container className="mt-4 px-1 px-md-3">
       <h2 className="text-center mb-4">Alquileres Internos</h2>
 
       <Tabs activeKey={key} onSelect={(k) => setKey(k)}>

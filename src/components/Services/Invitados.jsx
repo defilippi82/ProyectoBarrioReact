@@ -287,7 +287,7 @@ export const Invitados = () => {
     },
 
     enviarLista: (lista) => {
-      const telefonoGuardia = "+5491167204232";
+      const telefonoGuardia = "+5491149924327";// Telefono del guardia o encargado que recibirá la lista por WhatsApp
       let mensaje = `*LISTA DE INVITADOS - ${lista.nombre}*\n\n`;
       mensaje += `🔹 *Lote:* ${userData.manzana}-${userData.lote}\n`;
       mensaje += `🔹 *Propietario:* ${userData.nombre}\n`;
@@ -381,28 +381,14 @@ export const Invitados = () => {
           </Card.Text>
           
           <InputGroup className="mb-3">
-            <Form.Control 
-              value={compartir.enlace()} 
-              readOnly 
-              className="border-end-0"
-            />
-            <Button 
-              variant="outline-primary" 
-              onClick={compartir.copiar}
-              className="border-start-2"
-            >
+            <Form.Control value={compartir.enlace()}  readOnly className="border-end-0"     />
+            <Button  variant="outline-primary"  onClick={compartir.copiar} className="border-start-2">
               <FaCopy /> {!isMobile && 'Copiar'}
             </Button>
           </InputGroup>
           
           <div className="d-grid gap-2">
-            <ResponsiveButton 
-              variant="success" 
-              onClick={compartir.porWhatsapp} 
-              className="text-white"
-              icon={<FaWhatsapp />}
-              label="Compartir por WhatsApp"
-            />
+            <ResponsiveButton  variant="success"  onClick={compartir.porWhatsapp}  className="text-white" icon={<FaWhatsapp />} label="Compartir por WhatsApp"/>
           </div>
         </Card.Body>
       </Card>
@@ -454,7 +440,7 @@ export const Invitados = () => {
                   />
                 </Form.Group>
               </Col>
-              
+              {/*
               <Col md={6}>
                 <Form.Group>
                   <Form.Label>Email</Form.Label>
@@ -494,12 +480,14 @@ export const Invitados = () => {
                   />
                 </Form.Group>
               </Col>
+              */}
               
               <Col xs={12} className="mt-2">
                 <ResponsiveButton 
                   variant="primary" 
                   type="submit" 
-                  className="w-100"
+                  className="w-100 py-2 fw-bold text-nowrap"
+                  style={{ fontSize: "0.9rem" }}
                   icon={<FaPlusCircle />}
                   label="Agregar Invitado"
                 />

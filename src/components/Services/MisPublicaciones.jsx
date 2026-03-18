@@ -2,9 +2,9 @@ import React, { useEffect, useState, useContext } from "react";
 import { collection, getDocs, query, where, deleteDoc, doc } from "firebase/firestore";
 import { db } from "/src/firebaseConfig/firebase";
 import { UserContext } from "./UserContext";
-import { Card, Button, Badge, Row, Col } from "react-bootstrap";
+import { Card, Button, Badge, Table } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import "./alquileres.css"; // Importamos los estilos para usar el placeholder
+import { formatPrecio } from "/src/utils/formatters"; 
 
 export const MisPublicaciones = () => {
   const { userData } = useContext(UserContext);
@@ -13,103 +13,108 @@ export const MisPublicaciones = () => {
 
   useEffect(() => {
     if (!userData) return;
-
     const fetch = async () => {
       const q = query(
         collection(db, "alquileres"),
         where("propietarioId", "==", userData.id)
       );
-
       const snap = await getDocs(q);
       setMis(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     };
-
     fetch();
   }, [userData]);
 
   const handleDelete = async (id) => {
     if (!window.confirm("¿Seguro que deseas eliminar esta publicación?")) return;
-
     await deleteDoc(doc(db, "alquileres", id));
     setMis(prev => prev.filter(a => a.id !== id));
   };
 
-  if (!mis.length) {
-    return <p className="mt-4 text-center">No tienes publicaciones aún</p>;
-  }
-
-  // Función para optimizar la URL de Cloudinary
-  const optimizarImagen = (url) => {
-    if (!url) return null;
-    // Redimensionamos a 400px de ancho y aplicamos optimización de formato y calidad automática
-    return url.replace('/upload/', '/upload/w_400,c_fill,f_auto,q_auto/');
-  };
+  if (!mis.length) return <p className="mt-4 text-center">No tienes publicaciones aún</p>;
 
   return (
-    <Row className="mt-4">
-      {mis.map(a => (
-        <Col md={6} key={a.id} className="mb-4">
-          <Card className="alquiler-card shadow-sm h-100">
-            {/* Renderizado de Imagen o Placeholder */}
-            {a.imagen ? (
-              <Card.Img
-                variant="top"
-                src={optimizarImagen(a.imagen)}
-                alt={a.titulo}
-                style={{ height: "160px", objectFit: "cover" }}
-              />
-            ) : (
-              <div className="imagen-placeholder" style={{ height: "160px" }}>
-                <span>Sin foto</span>
-              </div>
-            )}
+    <div className="mt-4">
+      
+      {/* --- VISTA ESCRITORIO (TABLA) --- */}
+      <div className="d-none d-md-block shadow-sm rounded overflow-hidden">
+        <Table hover responsive className="bg-white align-middle mb-0">
+          <thead className="table-light">
+            <tr>
+              <th>Aviso</th>
+              <th>Estado</th>
+              <th>Precio</th>
+              <th>Capacidad</th>
+              <th className="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {mis.map(a => (
+              <tr key={a.id}>
+                <td className="fw-bold">{a.titulo}</td>
+                <td>
+                  <Badge bg={a.estado === "pausado" ? "secondary" : "success"}>
+                    {a.estado === "pausado" ? "Pausado" : "Activo"}
+                  </Badge>
+                </td>
+                {/* 2. USAMOS EL FORMATEADOR LIMPIO */}
+                <td>{formatPrecio(a.precio)}</td>
+                <td>{a.capacidad} pers.</td>
+                <td className="text-end">
+                  <Button 
+                    variant="outline-primary" 
+                    size="sm" 
+                    className="me-2"
+                    onClick={() => navigate(`/editar-publicacion/${a.id}`)}
+                  >
+                    Editar
+                  </Button>
+                  <Button 
+                    variant="outline-danger" 
+                    size="sm" 
+                    onClick={() => handleDelete(a.id)}
+                  >
+                    Eliminar
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </div>
 
-            <Card.Body>
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                <Card.Title className="mb-0 text-truncate" style={{ maxWidth: '70%' }}>
-                  {a.titulo}
-                </Card.Title>
+      {/* --- VISTA MÓVIL (CARDS) --- */}
+      {/* --- VISTA MÓVIL (CARDS) --- */}
+<div className="d-md-none">
+  {mis.map(a => (
+    /* Añadimos 'mx-n2' para estirar la card hacia los bordes 
+       y 'rounded-0' si querés que pegue literal al borde de la pantalla 
+    */
+    <Card key={a.id} className="mb-3 border-0 shadow-sm border-start border-4 border-primary rounded-0 mx-n3">
+      <Card.Body>
+        <div className="d-flex justify-content-between align-items-start mb-2">
+          <h6 className="fw-bold mb-0">{a.titulo}</h6>
+          <Badge bg={a.estado === "pausado" ? "secondary" : "success"}>
+            {a.estado}
+          </Badge>
+        </div>
+        
+        <div className="small text-muted mb-3">
+          <p className="mb-1">💰 {formatPrecio(a.precio)}</p>
+          <p className="mb-1">👥 Capacidad: {a.capacidad} personas</p>
+        </div>
 
-                <Badge bg={a.estado === "pausado" ? "secondary" : "success"}>
-                  {a.estado}
-                </Badge>
-              </div>
-
-              <p className="mb-1">
-                <strong className="text-primary">
-                  {a.precio.moneda === "USD" ? "U$S" : "$"}
-                  {a.precio.valor}
-                </strong>{" "}
-                <span className="text-muted small">por {a.precio.tipo}</span>
-              </p>
-
-              <p className="mb-1 small text-muted">
-                <i className="bi bi-people me-1"></i> {a.capacidad} personas
-              </p>
-
-              <div className="d-flex gap-2 mt-3">
-                <Button
-                  variant="outline-primary"
-                  className="w-100"
-                  size="sm"
-                  onClick={() => navigate(`/editar-publicacion/${a.id}`)}
-                >
-                  Editar
-                </Button>
-
-                <Button
-                  variant="outline-danger"
-                  className="w-100"
-                  size="sm"
-                  onClick={() => handleDelete(a.id)}
-                >
-                  Eliminar
-                </Button>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      ))}
-    </Row>
+        <div className="d-flex gap-2">
+          <Button variant="primary" size="sm" className="w-100" onClick={() => navigate(`/editar-publicacion/${a.id}`)}>
+            Editar
+          </Button>
+          <Button variant="outline-danger" size="sm" onClick={() => handleDelete(a.id)}>
+            Eliminar
+          </Button>
+        </div>
+      </Card.Body>
+    </Card>
+  ))}
+</div>
+    </div>
   );
 };
