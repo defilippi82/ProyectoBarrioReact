@@ -1,132 +1,138 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useContext } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { getToken, onMessage } from "firebase/messaging";
-import { messaging } from './firebaseConfig/firebase.js';  // Asegúrate de importar la instancia de messaging desde tu configuración de Firebase
+import { messaging, auth } from './firebaseConfig/firebase.js'; 
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
-import { auth } from './firebaseConfig/firebase.js';
+
+// --- CONTEXTO ---
+import { UserProvider, UserContext } from './components/Services/UserContext';
+
+// --- COMPONENTES DE VISTA ---
+import { NavbarComponent } from './components/Views/Navbar.jsx';
+import { Footer } from './components/Views/Footer';
 import { Login } from "./utils/Login";
-import { Reservas } from "./components/Admin/Reservas";
-import { Administracion } from "./components/Admin/Administracion";
-import { EditarReserva } from "./components/Admin/EditarReserva";
-import { EditarSocio } from "./components/Admin/EditarSocio";
+import { Privacidad } from "./components/Views/Privacidad";
+
+// --- COMPONENTES DE SOCIOS / INICIO ---
 import { Panico } from './components/Socios/Panico';
 import { Contacto } from "./components/Socios/Contacto";
-import { RegistrarReserva } from "./components/Services/RegistrarReservas";
-import { RegistrarSocio } from "./components/Services/RegistrarSocios";
-import { Invitados } from "./components/Services/Invitados";
 import { Novedades } from "./components/Services/Novedades";
+
+// --- COMPONENTES DE SERVICIOS ---
+import { Invitados } from "./components/Services/Invitados";
 import { Alquileres } from "./components/Services/Alquileres";
 import { EditarPublicacion } from "./components/Services/EditarPublicacion";
 import { Mensajeria } from "./components/Services/Mensajeria";
+import { RegistrarReserva } from "./components/Services/RegistrarReservas";
+import { RegistrarSocio } from "./components/Services/RegistrarSocios";
+
+// --- COMPONENTES DE ADMINISTRACIÓN ---
+import { Administracion } from "./components/Admin/Administracion";
 import { AdminMensajeria } from "./components/Services/AdminMensajeria.jsx";
-import { UserProvider } from './components/Services/UserContext';
-import { Privacidad } from "./components/Views/Privacidad";
-import { NavbarComponent } from './components/Views/Navbar.jsx';
-import { Footer } from './components/Views/Footer';
+import { Reservas } from "./components/Admin/Reservas";
+import { EditarReserva } from "./components/Admin/EditarReserva";
+import { EditarSocio } from "./components/Admin/EditarSocio";
+
+// --- COMPONENTES DE SEGURIDAD ---
 import { SeguridadDashboard } from "./components/Seguridad/SeguridadDashboard";
+
+// --- ESTILOS ---
 import './css/App.css';
 import "react-day-picker/dist/style.css";
 
-export const App = () => {
-  const [userData, setUserData] = useState(null);
+// Componente para envolver el contenido y tener acceso al Contexto
+const AppContent = () => {
+  const { userData, setUserData, loading } = useContext(UserContext);
 
   const guardarTokenEnBaseDeDatos = async (token) => {
     const db = getFirestore();
     const usuario = auth.currentUser;
-
     if (usuario) {
       const usuarioRef = doc(db, 'usuarios', usuario.uid);
-
       try {
-        const usuarioDoc = await getDoc(usuarioRef);
-        if (usuarioDoc.exists()) {
-          await setDoc(usuarioRef, { fcmToken: token }, { merge: true });
-          console.log('Token FCM guardado en la base de datos');
-        } else {
-          console.error('El documento del usuario no existe');
-        }
+        await setDoc(usuarioRef, { fcmToken: token }, { merge: true });
+        console.log('Token FCM actualizado');
       } catch (error) {
-        console.error('Error al guardar el token en la base de datos:', error);
+        console.error('Error al guardar token:', error);
       }
-    } else {
-      console.error('No hay usuario autenticado');
     }
   };
 
-  const solicitarPermisoParaNotificaciones = async () => {
+  const solicitarPermiso = async () => {
     try {
       const permiso = await Notification.requestPermission();
       if (permiso === 'granted') {
-        const token = await getToken(messaging, { vapidKey: 'BC1dFTH3QJeInZ8LL-2ZrBj6EXE8iWmDu7PDfDGhx7LiADYJ_KjzZdK-izhIaPOpmI2qQ0cveH_fl5orZ1znFTw' });
-        console.log('Token de FCM:', token);
+        const token = await getToken(messaging, { 
+          vapidKey: 'BC1dFTH3QJeInZ8LL-2ZrBj6EXE8iWmDu7PDfDGhx7LiADYJ_KjzZdK-izhIaPOpmI2qQ0cveH_fl5orZ1znFTw' 
+        });
         guardarTokenEnBaseDeDatos(token);
-      } else {
-        console.log('Permiso de notificación denegado');
       }
     } catch (error) {
-      console.error('Error al solicitar permiso:', error);
+      console.error('Error en notificaciones:', error);
     }
   };
 
   useEffect(() => {
-    // Solicitar permiso cuando el componente se monta
-    solicitarPermisoParaNotificaciones();
-
+    solicitarPermiso();
     const unsubscribe = onMessage(messaging, (payload) => {
-      console.log('Mensaje recibido:', payload);
       alert(payload.notification.body);
     });
-
-    return () => {
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    const userDataFromStorage = localStorage.getItem('userData');
-    if (userDataFromStorage) {
-      setUserData(JSON.parse(userDataFromStorage));
-    }
-  }, []);
-
+  // Función de logout para pasar al Navbar
   const handleLogout = () => {
     localStorage.removeItem('userData');
     setUserData(null);
   };
 
+  if (loading) return null; // Evita parpadeos mientras carga el localStorage
+
   return (
     <div className="App container">
-      <Router>
-        <UserProvider>
-               <header>
-            <NavbarComponent handleLogout={handleLogout} />
-          </header>
-          <main style={{ marginBottom: '100px' }}>
-            <Routes>
-              <Route path="/" element={userData ? <Login />:< Navigate to="/panico" /> } />
-              <Route path="/login" element={<Login />} />
-              <Route path="/panico" element={userData ? <Panico /> : <Navigate to="/login" />} />
-              <Route path="/administracion" element={userData ? <Administracion /> : <Navigate to="/login" />} />
-              <Route path="/invitados" element={userData ? <Invitados /> : <Navigate to="/login" />} />
-              <Route path="/novedades" element={userData ? <Novedades /> : <Navigate to="/login" />} />
-              <Route path="/alquileres" element={userData ? <Alquileres /> : <Navigate to="/login" />} />
-              <Route path="/editar-publicacion/:id" element={userData ? <EditarPublicacion /> : <Navigate to="/login" />} />
-              <Route path="/mensajeria" element={userData ? <Mensajeria /> : <Navigate to="/login" />} />
-              <Route path="/campanas" element={userData ? <AdminMensajeria /> : <Navigate to="/login" />} />
-              <Route path="/privacidad" element={userData ? <Privacidad /> : <Navigate to="/login" />} />
-              <Route path="/contacto" element={userData ? <Contacto /> : <Navigate to="/login" />} />
-              <Route path="/socios/create" element={<RegistrarSocio />} />
-              <Route path="/reservas" element={userData ? <Reservas /> : <Navigate to="/login" />} />
-              <Route path="/reservas/create" element={userData ? <RegistrarReserva /> : <Navigate to="/login" />} />
-              <Route path="/socios/edit/:id" element={userData ? <EditarSocio /> : <Navigate to="/login" />} />
-              <Route path="/reservas/edit/:id" element={userData ? <EditarReserva /> : <Navigate to="/login" />} />
-              <Route path="/seguridad" element={userData ? <SeguridadDashboard /> : <Navigate to="/login" />} />
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-          </main>
-          <Footer />
-        </UserProvider>
-      </Router>
+      <NavbarComponent handleLogout={handleLogout} />
+      <main style={{ marginBottom: '100px', marginTop: '80px' }}>
+        <Routes>
+          {/* Lógica de Raíz: Si hay usuario va a pánico, si no a Login */}
+          <Route path="/" element={userData ? <Navigate to="/novedades" /> : <Login />} />
+          <Route path="/login" element={!userData ? <Login /> : <Navigate to="/novedades" />} />
+
+          {/* Rutas Protegidas */}
+          <Route path="/panico" element={userData ? <Panico /> : <Navigate to="/login" />} />
+          <Route path="/administracion" element={userData ? <Administracion /> : <Navigate to="/login" />} />
+          <Route path="/invitados" element={userData ? <Invitados /> : <Navigate to="/login" />} />
+          <Route path="/novedades" element={userData ? <Novedades /> : <Navigate to="/login" />} />
+          <Route path="/alquileres" element={userData ? <Alquileres /> : <Navigate to="/login" />} />
+          <Route path="/editar-publicacion/:id" element={userData ? <EditarPublicacion /> : <Navigate to="/login" />} />
+          <Route path="/mensajeria" element={userData ? <Mensajeria /> : <Navigate to="/login" />} />
+          <Route path="/campanas" element={userData ? <AdminMensajeria /> : <Navigate to="/login" />} />
+          <Route path="/privacidad" element={userData ? <Privacidad /> : <Navigate to="/login" />} />
+          <Route path="/contacto" element={userData ? <Contacto /> : <Navigate to="/login" />} />
+          <Route path="/reservas" element={userData ? <Reservas /> : <Navigate to="/login" />} />
+          <Route path="/reservas/create" element={userData ? <RegistrarReserva /> : <Navigate to="/login" />} />
+          <Route path="/reservas/edit/:id" element={userData ? <EditarReserva /> : <Navigate to="/login" />} />
+          <Route path="/socios/edit/:id" element={userData ? <EditarSocio /> : <Navigate to="/login" />} />
+          <Route path="/seguridad" element={userData ? <SeguridadDashboard /> : <Navigate to="/login" />} />
+          
+          {/* Ruta de registro siempre accesible o según prefieras */}
+          <Route path="/socios/create" element={<RegistrarSocio />} />
+
+          {/* Captura de rutas no existentes */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </main>
+      <Footer />
     </div>
+  );
+};
+
+// Componente principal que envuelve todo en el Provider y el Router
+export const App = () => {
+  return (
+    <UserProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </UserProvider>
   );
 };

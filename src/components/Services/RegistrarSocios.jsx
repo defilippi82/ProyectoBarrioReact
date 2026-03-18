@@ -2,285 +2,218 @@ import React, { useState, useEffect } from 'react';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig/firebase';
-import { Form, Table, Button, FloatingLabel, Row, Col, Pagination } from 'react-bootstrap';
+import { Form, Button, Row, Col, Card, Container, InputGroup } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-
-/* SWEET ALERT*/
+import { FaUserPlus, FaHome, FaPhone, FaLock, FaEnvelope } from 'react-icons/fa';
 import Swal from "sweetalert2";
-import whitReactContent from "sweetalert2-react-content";
+import withReactContent from "sweetalert2-react-content";
 
-const MySwal = whitReactContent(Swal)
+const MySwal = withReactContent(Swal);
 
 export const RegistrarSocio = () => {
+  const navigate = useNavigate();
+  const auth = getAuth();
+  const sociosCollection = collection(db, 'usuarios');
+
+  // Estados del Formulario
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
   const [email, setEmail] = useState('');
   const [manzana, setManzana] = useState('');
   const [lote, setLote] = useState('');
   const [isla, setIsla] = useState('');
-  const roles = new Map([
-    
-    ['propietario', { valor: 'propietario', administrador: false, propietario: true, inquilino: false, guardia: false }],
-    ['inquilino', { valor: 'inquilino', administrador: false, propietario: false, inquilino: true, guardia: false }],
-    
-  ]);
-  const [rol, setRol] = useState(roles.get('propietario')); // Valor inicial del rol
   const [tel, setTel] = useState('');
-  const [codPais, setCodPais] = useState('');
-  const [numerotelefono, setNumeroTelefono] = useState ('');
+  const [codPais, setCodPais] = useState('+54'); // Argentina por defecto
   const [contrasena, setContrasena] = useState('');
   const [repetirContrasena, setRepetirContrasena] = useState('');
- 
 
-  const auth = getAuth();
-  const sociosCollection = collection(db, 'usuarios');
-  const navigate = useNavigate()
+  // SOLUCIÓN AL ERROR DEL ROL:
+  // Definimos los roles fuera o dentro pero los usamos en el estado principal
+  const rolesMap = {
+    propietario: { valor: 'propietario', administrador: false, propietario: true, inquilino: false, guardia: false },
+    inquilino: { valor: 'inquilino', administrador: false, propietario: false, inquilino: true, guardia: false }
+  };
 
-
-  const MySwal = whitReactContent(Swal);
-
-  useEffect(() => {
-    setNumeroTelefono(`${codPais}${tel}`);
-  }, [codPais, tel]);
-
+  // Seteamos el objeto completo de 'propietario' por defecto
+  const [rol, setRol] = useState(rolesMap.propietario);
 
   const crearSocio = async (e) => {
     e.preventDefault();
-    // Validar que la contraseña tenga al menos 6 caracteres
-  if (contrasena.length < 6) {
-    MySwal.fire({
-      title: 'Error',
-      text: 'La contraseña debe tener al menos 6 caracteres',
-      icon: 'error',
-      showConfirmButton: true,
-    });
-    //return;  Salir de la función sin intentar crear el usuario
-  }
-  if (contrasena !== repetirContrasena) {
-    MySwal.fire({
-      title: 'Error',
-      text: 'Las contraseñas no coinciden',
-      icon: 'error',
-      showConfirmButton: true,
-    });
-    return;
-  }
-  try {
-    // Crear usuario en Firebase Authentication
-    const { user } = await createUserWithEmailAndPassword(auth, email, contrasena);
 
-     //  Generar idPublico automáticamente
-    const idPublico = `${nombre.trim()}-${manzana.trim()}-${lote.trim()}`.replace(/\s+/g, '-');
+    if (contrasena.length < 6) {
+      return MySwal.fire('Error', 'La contraseña debe tener al menos 6 caracteres', 'error');
+    }
+    if (contrasena !== repetirContrasena) {
+      return MySwal.fire('Error', 'Las contraseñas no coinciden', 'error');
+    }
 
+    try {
+      const { user } = await createUserWithEmailAndPassword(auth, email, contrasena);
+      const idPublico = `${nombre.trim()}-${manzana.trim()}-${lote.trim()}`.toLowerCase().replace(/\s+/g, '-');
+      const numeroCompleto = `${codPais}${tel}`;
 
-    // Agregar datos del usuario a la colección 'usuarios' en Firestore
-    await addDoc(sociosCollection, {
-      nombre,
-      apellido,
-      email,
-      manzana,
-      lote,
-      isla,
-      rol: rol.valor,
-      numerotelefono,
-      contrasena,
-      idPublico,
-      
-    });
+      await addDoc(sociosCollection, {
+        nombre,
+        apellido,
+        email,
+        manzana,
+        lote,
+        isla,
+        rol: rol.valor, // Aquí enviamos el valor ("propietario" o "inquilino")
+        numerotelefono: numeroCompleto,
+        idPublico,
+        createdAt: new Date()
+      });
 
-    // Mostrar alerta de éxito
-    MySwal.fire({
-      title: 'Registro exitoso',
-      text: 'El socio ha sido registrado correctamente',
-      icon: 'success',
-      showConfirmButton: true,
-    }).then(() => {
-      // Redirigir al usuario a otra página después de la alerta
-      navigate ('/#');
-    });
-    
-    // Resetear los campos del formulario
-    setNombre('');
-    setApellido('');
-    setEmail('');
-    setContrasena('');
-  } catch (error) {
-    // Mostrar alerta de error
-    MySwal.fire({
-      title: 'Error',
-      text: error.message,
-      icon: 'error',
-      showConfirmButton: true,
-    });
-  }
-};
-const RolSelect = () => {
-  const [rol, setRol] = useState(roles.get('propietario'));
+      MySwal.fire({
+        title: '¡Éxito!',
+        text: 'Socio registrado correctamente',
+        icon: 'success'
+      }).then(() => navigate('/login'));
 
-  const handleRolChange = (e) => {
-    const nuevoRol = roles.get(e.target.value);
-    setRol(nuevoRol);
+    } catch (error) {
+      MySwal.fire('Error', error.message, 'error');
+    }
   };
 
   return (
-    <div className="container fluid elem-group form-floating mb-3">
-      <select
-        name="rol"
-        id="rol"
-        value={rol.valor}
-        onChange={handleRolChange}
-        className="form-select"
-      >
-        {Array.from(roles.keys()).map((key) => (
-          <option key={key} value={key}  >
-            {key}
-          </option>
-        ))}
-      </select>
-      <label htmlFor="rol">Rol</label>
-    </div>
-  );
-};
-
-    return (
-
-      
-       <div className="container">
-        <div className='card text-bg-primary mb-3 shadow-lg" style="max-width: 18rem;"'>
-         <h1 className='card-header'>Registrar Nueva Socio</h1>
-       </div>
-       <form onSubmit={crearSocio} className="card card-body shadow-lg">
-       <Row className="align-items-center">
-                            <Col xs="auto">
-        <div className="elem-group">
-         <div className='form-floating mb-3'>
-
-          <input className='form-control'
-            type="text"
-            id="nombre"
-            placeholder="Nombre"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            required />
-          <label for="floatingInputDisabled" htmlFor="nombre">Nombre</label>
-         </div>
-        </div>
-
-        <div className="elem-group">
-         <div className='form-floating mb-3'>
-
-          <input className='form-control'
-            type="text"
-            id="apellido"
-            placeholder="Apellido"
-            value={apellido}
-            onChange={(e) => setApellido(e.target.value)}
-            required />
-          <label for="floatingInputDisabled" htmlFor="apellido">Apellido</label>
-         </div>
-        </div>
-        </Col>
-        </Row>
-        <Row className="align-items-center">
-                            <Col xs="auto">
-        <div className="elem-group">
-        <div className='form-floating mb-3'>
-
-          <input className='form-control'
-            type="email"
-            id="email"
-            placeholder="ejemplo@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required/>
-          <label for="floatingInputDisabled" htmlFor="email">Correo electrónico</label>
-            </div>
-        </div>
-            <div className="elem-group">
-            <div className='form-floating mb-3'>
-              
-
-                <input type="number"required id="manzana" value={manzana} onChange={(e) => setManzana(e.target.value)} name="manzana" maxlength="2" className='form-control'/>
-                <label for="floatingInputDisabled" htmlFor="manzana">Manzana</label>
-              </div>
-              </div>
-              <div className="elem-group">
-            <div className='form-floating mb-3'>
-                <input type="number" id="lote" value={lote} onChange={(e) => setLote(e.target.value)} name="lote" maxlength="3" className='form-control'/>
-                <label for="floatingInputDisabled" htmlFor="lote">Lote</label>
-                </div>
-                </div>
-                <div className="elem-group">
-            <div className='form-floating mb-3'>
-                <input type="number" id="isla" value={isla} onChange={(e) => setIsla(e.target.value)} name="isla" maxlength="3" className='form-control'/>
-                <label for="floatingInputDisabled" htmlFor="isla">Isla</label>
-                </div>
-                </div>
-                </Col>
+    <Container className="py-5">
+      <Row className="justify-content-center">
+        <Col md={10} lg={8}>
+          <Card className="shadow-lg border-0">
+            <Card.Header className="bg-primary text-white text-center py-4">
+              <FaUserPlus size={40} className="mb-2" />
+              <h2 className="fw-bold">Registrar Nuevo Socio</h2>
+              <p className="mb-0 opacity-75">Completá los datos para el acceso al barrio</p>
+            </Card.Header>
+            <Card.Body className="p-4 p-md-5">
+              <Form onSubmit={crearSocio}>
+                
+                <h5 className="text-primary mb-3 border-bottom pb-2">Datos Personales</h5>
+                <Row>
+                  <Col md={6} className="mb-3">
+                    <Form.Floating>
+                      <Form.Control type="text" placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
+                      <label>Nombre</label>
+                    </Form.Floating>
+                  </Col>
+                  <Col md={6} className="mb-3">
+                    <Form.Floating>
+                      <Form.Control type="text" placeholder="Apellido" value={apellido} onChange={(e) => setApellido(e.target.value)} required />
+                      <label>Apellido</label>
+                    </Form.Floating>
+                  </Col>
                 </Row>
-                <Row className="align-items-center">
-                            <Col xs="auto">
-                <div className="elem-group">
-                <div className='form-floating mb-3'>
-                    <select className="form-select"
-                      id="codPais"
-                      name="codPais"
-                      value={codPais}
-                      onChange={(e) => setCodPais(e.target.value)}
-                      required>
-                        <option value="">Código de País</option>  
+
+                <Row>
+                  <Col md={12} className="mb-3">
+                    <Form.Floating>
+                      <Form.Control type="email" placeholder="email@ejemplo.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                      <label><FaEnvelope className="me-2" />Correo Electrónico</label>
+                    </Form.Floating>
+                  </Col>
+                </Row>
+
+                <h5 className="text-primary mb-3 border-bottom pb-2 mt-3">Ubicación y Contacto</h5>
+                <Row>
+                  <Col md={4} className="mb-3">
+                    <Form.Floating>
+                      <Form.Control type="number" placeholder="Manzana" value={manzana} onChange={(e) => setManzana(e.target.value)} required />
+                      <label><FaHome className="me-2" />Manzana</label>
+                    </Form.Floating>
+                  </Col>
+                  <Col md={4} className="mb-3">
+                    <Form.Floating>
+                      <Form.Control type="number" placeholder="Lote" value={lote} onChange={(e) => setLote(e.target.value)} required />
+                      <label>Lote</label>
+                    </Form.Floating>
+                  </Col>
+                  <Col md={4} className="mb-3">
+                    <Form.Floating>
+                      <Form.Control type="number" placeholder="Isla" value={isla} onChange={(e) => setIsla(e.target.value)} required />
+                      <label>Isla</label>
+                    </Form.Floating>
+                  </Col>
+                </Row>
+
+                <Row>
+                  <Col md={5} className="mb-3">
+                    <Form.Floating>
+                      <Form.Select value={codPais} onChange={(e) => setCodPais(e.target.value)}>
                         <option value="+54">Argentina (+54)</option>
                         <option value="+598">Uruguay (+598)</option>
                         <option value="+55">Brasil (+55)</option>
-                        <option value="+56">Chile (+56)</option>
-                        <option value="+57">Colombia (+57)</option>
-                        <option value="+1">EE. UU. (+1)</option>
-                        <option value="+1">Canadá (+1)</option>
-                        <option value="+52">México (+52)</option>
+                        <option value="+1">EE.UU. (+1)</option>
                         <option value="+34">España (+34)</option>
-                        <option value="+44">Reino Unido (+44)</option>
-                        <option value="+49">Alemania (+49)</option>
-                        <option value="+33">Francia (+33)</option>
-                        <option value="+39">Italia (+39)</option>
-                        <option value="+41">Suiza (+41)</option>
-                    </select> 
+                      </Form.Select>
+                      <label>País</label>
+                    </Form.Floating>
+                  </Col>
+                  <Col md={7} className="mb-3">
+                    <Form.Floating>
+                      <Form.Control type="text" placeholder="Teléfono" value={tel} onChange={(e) => setTel(e.target.value)} required />
+                      <label><FaPhone className="me-2" />Teléfono (sin el código)</label>
+                    </Form.Floating>
+                  </Col>
+                </Row>
 
-                <input type="text" id="tel" value={tel} onChange={(e) => setTel(e.target.value)} name="tel" placeholder="11-XXXX-XXXX" className="form-select"/>
-                <label for="floatingInputDisabled" htmlFor="tel">Teléfono</label>
-               </div>
+                <h5 className="text-primary mb-3 border-bottom pb-2 mt-3">Seguridad y Rol</h5>
+                <Row>
+                  <Col md={12} className="mb-3">
+                    <Form.Floating>
+                      <Form.Select 
+                        value={rol.valor} 
+                        onChange={(e) => setRol(rolesMap[e.target.value])}
+                      >
+                        <option value="propietario">Propietario</option>
+                        <option value="inquilino">Inquilino</option>
+                      </Form.Select>
+                      <label>Tipo de Usuario (Rol)</label>
+                    </Form.Floating>
+                  </Col>
+                </Row>
+
+                <Row>
+                  <Col md={6} className="mb-3">
+                    <Form.Floating>
+                      <Form.Control type="password" placeholder="Contraseña" value={contrasena} onChange={(e) => setContrasena(e.target.value)} required />
+                      <label><FaLock className="me-2" />Contraseña</label>
+                    </Form.Floating>
+                  </Col>
+                  <Col md={6} className="mb-3">
+                    <Form.Floating>
+                      <Form.Control type="password" placeholder="Repetir" value={repetirContrasena} onChange={(e) => setRepetirContrasena(e.target.value)} required />
+                      <label>Repetir Contraseña</label>
+                    </Form.Floating>
+                  </Col>
+                </Row>
+
+                <Row className="mt-4">
+                  <Col xs={12} className="d-flex justify-content-center">
+                    <Button 
+                      type="submit" 
+                      variant="primary" 
+                      size="lg" 
+                      className="text-nowrap px-5 shadow-sm fw-bold"
+                      style={{ minWidth: '250px' }}
+                    >
+                      REGISTRAR SOCIO
+                    </Button>
+                  </Col>
+                </Row>
+
+                {/* Enlace opcional para volver al login */}
+                <div className="text-center mt-3">
+                  <Button variant="link" onClick={() => navigate('/login')} className="text-muted small">
+                    ¿Ya tenés cuenta? Iniciá sesión
+                  </Button>
                 </div>
-                <div className="elem-group form-floating mb-3">
-                <RolSelect />
-                
-            </div>
 
-            <div className='elem-group form-floating mb-3'>
-          <input className='form-control'
-            type="password"
-            id="contrasena"
-            placeholder="XXXXXXXX"
-            value={contrasena}
-            onChange={(e) => setContrasena(e.target.value)}
-            minLength={6}
-            required />
-          <label for="floatingInputDisabled" htmlFor="contrasena">Contraseña</label>
-        </div>
-        <div className='elem-group form-floating mb-3'>
-          <input className='form-control'
-            type="password"
-            id="repetirContrasena"
-            placeholder="XXXXXXXX"
-            value={repetirContrasena}
-            onChange={(e) => setRepetirContrasena(e.target.value)}
-            required />
-          <label for="floatingInputDisabled" htmlFor="repetirContrasena">Repetir Contraseña</label>
-        </div>
+              </Form>
+            </Card.Body>
+          </Card>
         </Col>
-        </Row>
-        <button type="submit" className="btn btn-primary">
-          Registrar
-        </button>
-      </form>
-    </div> 
-    );
-  }
+      </Row>
+    </Container>
+  );
+};

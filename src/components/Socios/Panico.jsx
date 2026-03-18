@@ -1,374 +1,205 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
-import { 
-  Image, 
-  Button, 
-  Container, 
-  Row, 
-  Col, 
-  Card, 
-  Spinner,
-  Alert,
-  Modal
-} from 'react-bootstrap';
-import { 
-  FaExclamationTriangle, 
-  FaBell, 
-  FaPhoneAlt,
-  FaMapMarkerAlt,
-  FaInfoCircle
-} from 'react-icons/fa';
-import { getFirestore, collection, getDocs, query, where, addDoc } from 'firebase/firestore';
+import { Button, Container, Row, Col, Card, Spinner, Alert, Modal, Table } from 'react-bootstrap';
+import { FaExclamationTriangle, FaBell, FaPhoneAlt, FaMapMarkerAlt, FaHistory } from 'react-icons/fa';
+import { getFirestore, collection, getDocs, query, where, addDoc, serverTimestamp, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { UserContext } from "../Services/UserContext";
 import { obtenerTokenFCM } from '../../firebaseConfig/firebase';
 import { getMessaging, onMessage } from 'firebase/messaging';
 import { useMediaQuery } from 'react-responsive';
+import Swal from 'sweetalert2';
 
 const messaging = getMessaging();
 
 export const Panico = () => {
   const { userData } = useContext(UserContext);
-  const [isLoading, setIsLoading] = useState(true);
-  const [fcmToken, setFcmToken] = useState(null);
-  const [location, setLocation] = useState(null);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [actionType, setActionType] = useState(null);
-  const [error, setError] = useState(null);
+  const [state, setState] = useState({
+    isLoading: true,
+    location: null,
+    showConfirm: false,
+    actionType: null,
+    error: null,
+    incidencias: [] // Nuevo estado para el registro
+  });
+
   const isMobile = useMediaQuery({ maxWidth: 768 });
-  const isSmallMobile = useMediaQuery({ maxWidth: 576 });
 
-  // Inicialización y obtención de token FCM
+  // --- CORRECCIÓN DE SONIDO ---
+  const playAlertSound = useCallback((tipo) => {
+    // Se elimina '/public' de la ruta para compatibilidad con Vercel
+    const audioSrc = tipo === 'alerta' ? '/Sound/siren.mp3' : '/Sound/mensaje.mp3';
+    const audio = new Audio(audioSrc);
+    audio.play().catch(err => console.log("Reproducción automática bloqueada por el navegador"));
+  }, []);
+
+  // --- CARGA DE INCIDENCIAS Y NOTIFICACIONES ---
   useEffect(() => {
-    const inicializar = async () => {
-      try {
-        const token = await obtenerTokenFCM();
-        setFcmToken(token);
-      } catch (error) {
-        console.error("Error obteniendo el token FCM: ", error);
-        setError("Error al configurar notificaciones");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    inicializar();
-
-    // Escuchar mensajes entrantes
-    const unsubscribe = onMessage(messaging, payload => {
-      console.log('Mensaje recibido: ', payload);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  // Obtener ubicación del usuario
-  const obtenerUbicacion = useCallback(() => {
-    return new Promise((resolve, reject) => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          position => {
-            const loc = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            };
-            setLocation(loc);
-            resolve(loc);
-          },
-          error => {
-            console.error("Error obteniendo ubicación: ", error);
-            setError("No se pudo obtener la ubicación");
-            reject(error);
-          },
-          { enableHighAccuracy: true, timeout: 10000 }
-        );
-      } else {
-        const error = "Geolocalización no soportada";
-        console.error(error);
-        setError(error);
-        reject(error);
-      }
-    });
-  }, []);
-
-  // Enviar mensajes a múltiples usuarios
-  const enviarMensaje = useCallback(async (usuarios, mensaje, prioridad) => {
-    if (!location) {
-      await obtenerUbicacion();
-    }
-
     const db = getFirestore();
+    
+    // Escuchar incidencias recientes del barrio (últimas 5)
+    const qIncidencias = query(
+      collection(db, 'mensajes'),
+      where('source', '==', 'alerta'),
+      orderBy('timestamp', 'desc'),
+      limit(5)
+    );
+
+    const unsubscribeIncidencias = onSnapshot(qIncidencias, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setState(prev => ({ ...prev, incidencias: docs, isLoading: false }));
+    });
+
+    obtenerTokenFCM().catch(console.error);
+    
+    const unsubscribeFCM = onMessage(messaging, payload => {
+      playAlertSound('mensaje');
+      Swal.fire('Notificación', payload.notification.body, 'info');
+    });
+
+    return () => {
+      unsubscribeIncidencias();
+      unsubscribeFCM();
+    };
+  }, [playAlertSound]);
+
+  const obtenerUbicacion = useCallback(() => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) resolve(null);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => resolve(null),
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    });
+  }, []);
+
+  const dispararAlerta = async (tipo) => {
+    if (!userData?.manzana || !userData?.lote) return;
+
+    setState(prev => ({ ...prev, isLoading: true, showConfirm: false }));
+    const db = getFirestore();
+    const currentLoc = await obtenerUbicacion();
+    
     try {
-      const promesasMensajes = usuarios.map(async (usuario) => {
-        await addDoc(collection(db, 'mensajes'), {
+      let usuariosDestino = [];
+      let mensaje = "";
+      let prioridad = "media";
+
+      if (tipo === 'alerta') {
+        const [snapIsla, snapGuardia] = await Promise.all([
+          getDocs(query(collection(db, 'usuarios'), where('isla', '==', userData.isla))),
+          getDocs(query(collection(db, 'usuarios'), where('rol.guardia', '==', true)))
+        ]);
+        usuariosDestino = [...snapIsla.docs, ...snapGuardia.docs].map(d => d.data());
+        mensaje = `🚨 EMERGENCIA en Lote ${userData.manzana}-${userData.lote}`;
+        prioridad = "alta";
+      } else {
+        const snapManzana = await getDocs(query(collection(db, 'usuarios'), where('manzana', '==', userData.manzana)));
+        usuariosDestino = snapManzana.docs.map(d => d.data());
+        mensaje = `⚠️ Ruidos sospechosos cerca del Lote ${userData.manzana}-${userData.lote}`;
+      }
+
+      const batchPromises = usuariosDestino
+        .filter(u => u.lote !== userData.lote)
+        .map(u => addDoc(collection(db, 'mensajes'), {
           sender: `${userData.manzana}-${userData.lote}`,
-          receiver: `${usuario.manzana}-${usuario.lote}`,
+          receiver: `${u.manzana}-${u.lote}`,
           content: mensaje,
-          prioridad: prioridad,
-          ubicacion: location,
-          timestamp: new Date(),
+          prioridad,
+          ubicacion: currentLoc,
+          timestamp: serverTimestamp(),
           read: false,
           source: 'alerta'
-        });
-      });
-      await Promise.all(promesasMensajes);
-      return true;
-    } catch (error) {
-      console.error("Error enviando mensajes: ", error);
-      setError("Error al enviar alertas");
-      return false;
-    }
-  }, [location, userData, obtenerUbicacion]);
+        }));
 
-  // Manejar alerta de ruidos
-  const manejarRuidos = useCallback(async () => {
-    if (!userData?.manzana) {
-      setError("Datos de usuario incompletos");
-      return false;
-    }
-
-    try {
-      const db = getFirestore();
-      const usuariosManzanaQuery = query(
-        collection(db, 'usuarios'),
-        where('manzana', '==', userData.manzana)
-      );
-      const usuariosSnapshot = await getDocs(usuariosManzanaQuery);
-      const usuariosManzana = usuariosSnapshot.docs.map(doc => doc.data());
-
-      const mensaje = `Soy del lote ${userData.manzana}-${userData.lote} y escucho ruidos sospechosos`;
-      return await enviarMensaje(usuariosManzana, mensaje, 'media');
-    } catch (error) {
-      console.error("Error en manejarRuidos: ", error);
-      setError("Error al notificar ruidos");
-      return false;
-    }
-  }, [userData, enviarMensaje]);
-
-  // Manejar alerta de emergencia
-  const manejarAlerta = useCallback(async () => {
-    if (!userData?.manzana || !userData?.isla) {
-      setError("Datos de usuario incompletos");
-      return false;
-    }
-
-    try {
-      const db = getFirestore();
-      const [usuariosIslaSnapshot, usuariosGuardiaSnapshot] = await Promise.all([
-        getDocs(query(collection(db, 'usuarios'), where('isla', '==', userData.isla))),
-        getDocs(query(collection(db, 'usuarios'), where('rol.guardia', '==', true)))
-      ]);
-
-      const usuariosIsla = usuariosIslaSnapshot.docs.map(doc => doc.data());
-      const usuariosGuardia = usuariosGuardiaSnapshot.docs.map(doc => doc.data());
-      const todosUsuarios = [...usuariosIsla, ...usuariosGuardia];
-
-      const mensaje = `EMERGENCIA en ${userData.manzana}-${userData.lote}, necesito ayuda inmediata`;
-      return await enviarMensaje(todosUsuarios, mensaje, 'alta');
-    } catch (error) {
-      console.error("Error en manejarAlerta: ", error);
-      setError("Error al enviar alerta de emergencia");
-      return false;
-    }
-  }, [userData, enviarMensaje]);
-
-  // Confirmar acción antes de ejecutarla
-  const confirmarAccion = (tipo) => {
-    setActionType(tipo);
-    setShowConfirm(true);
-  };
-
-  // Ejecutar la acción confirmada
-  const ejecutarAccion = async () => {
-    setShowConfirm(false);
-    let success = false;
-    
-    if (actionType === 'alerta') {
-      success = await manejarAlerta();
-    } else if (actionType === 'ruidos') {
-      success = await manejarRuidos();
-    }
-
-    if (success) {
-      Swal.fire({
-        icon: 'success',
-        title: '¡Alerta enviada!',
-        text: actionType === 'alerta' 
-          ? 'La guardia y vecinos han sido notificados' 
-          : 'Los vecinos de tu manzana han sido notificados',
-        timer: 3000
-      });
+      await Promise.all(batchPromises);
+      playAlertSound('alerta'); // Sonar al enviar
+      setState(prev => ({ ...prev, location: currentLoc, isLoading: false }));
+      Swal.fire('Enviado', 'Alerta distribuida', 'success');
+      
+    } catch (err) {
+      console.error(err);
+      setState(prev => ({ ...prev, isLoading: false }));
     }
   };
-
-  // Llamar al 911
-  const llamar911 = () => {
-    window.open('tel:911');
-  };
-
-  if (isLoading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
-        <Spinner animation="border" variant="primary" />
-        <span className="ms-3">Cargando sistema de alertas...</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Container className="mt-5">
-        <Alert variant="danger">
-          <Alert.Heading>Error en el sistema de alertas</Alert.Heading>
-          <p>{error}</p>
-          <hr />
-          <div className="d-flex justify-content-end">
-            <Button variant="outline-danger" onClick={() => setError(null)}>
-              Reintentar
-            </Button>
-          </div>
-        </Alert>
-      </Container>
-    );
-  }
 
   return (
-    <Container fluid className="py-4 px-2">
-      <h2 className="text-center mb-4">Sistema de Emergencias</h2>
+    <Container className="py-4">
+      <h2 className="text-center mb-4 fw-bold text-primary">Seguridad CUBE</h2>
       
-      <Row className="g-4">
-        {/* Tarjeta de Alerta */}
-        <Col xs={12} sm={12} md={6} lg={4}>
-          <Card className="h-100 shadow-sm w-100 border-danger">
-            <Card.Body className="text-center">
-              <div className="icon-container mb-3">
-                <FaExclamationTriangle size={isSmallMobile ? 70 : isMobile ? 80 : 90} className="text-danger" />
-              </div>
-              <Card.Title className={`fw-bold ${isSmallMobile ? 'fs-5' : isMobile ? 'fs-4' : 'fs-3'}`}>
-                ALERTA DE EMERGENCIA
-              </Card.Title>
-              <Button 
-                variant="danger" 
-                size={isSmallMobile ? "md" : "lg"}
-                onClick={() => confirmarAccion('alerta')}
-                className="w-100 py-3 mt-3"
-              >
-                <FaBell className="me-2" />
-                ACTIVAR ALERTA
-              </Button>
-              <Card.Text className="mt-3">
-                Notifica a la guardia y vecinos de tu isla sobre una emergencia inmediata
-              </Card.Text>
-            </Card.Body>
+      <Row className="g-3 mb-5">
+        <Col xs={12} md={4}>
+          <Card className="h-100 border-danger shadow-sm text-center p-3">
+            <FaExclamationTriangle size={50} className="text-danger mx-auto mb-2" />
+            <Card.Title>EMERGENCIA</Card.Title>
+            <Button variant="danger" className="mt-auto py-3 fw-bold" onClick={() => setState(p => ({ ...p, showConfirm: true, actionType: 'alerta' }))}>
+              ACTIVAR
+            </Button>
           </Card>
         </Col>
-  
-        {/* Tarjeta de Ruidos */}
-        <Col xs={12} sm={12} md={6} lg={4}>
-          <Card className="h-100 shadow-sm w-100 border-warning">
-            <Card.Body className="text-center">
-              <div className="icon-container mb-3">
-                <FaBell size={isSmallMobile ? 70 : isMobile ? 80 : 90} className="text-warning" />
-              </div>
-              <Card.Title className={`fw-bold ${isSmallMobile ? 'fs-5' : isMobile ? 'fs-4' : 'fs-3'}`}>
-                RUIDOS SOSPECHOSOS
-              </Card.Title>
-              <Button 
-                variant="warning" 
-                size={isSmallMobile ? "md" : "lg"}
-                onClick={() => confirmarAccion('ruidos')}
-                className="w-100 py-3 mt-3 text-white"
-              >
-                <FaBell className="me-2" />
-                REPORTAR RUIDOS
-              </Button>
-              <Card.Text className="mt-3">
-                Avisa a los vecinos de tu manzana sobre actividades sospechosas
-              </Card.Text>
-            </Card.Body>
+        <Col xs={12} md={4}>
+          <Card className="h-100 border-warning shadow-sm text-center p-3">
+            <FaBell size={50} className="text-warning mx-auto mb-2" />
+            <Card.Title>RUIDOS</Card.Title>
+            <Button variant="warning" className="mt-auto py-3 fw-bold text-white" onClick={() => setState(p => ({ ...p, showConfirm: true, actionType: 'ruidos' }))}>
+              REPORTAR
+            </Button>
           </Card>
         </Col>
-  
-        {/* Tarjeta de 911 */}
-        <Col xs={12} sm={12} md={6} lg={4}>
-          <Card className="h-100 shadow-sm w-100 border-primary">
-            <Card.Body className="text-center">
-              <div className="icon-container mb-3">
-                <FaPhoneAlt size={isSmallMobile ? 70 : isMobile ? 80 : 90} className="text-primary" />
-              </div>
-              <Card.Title className={`fw-bold ${isSmallMobile ? 'fs-5' : isMobile ? 'fs-4' : 'fs-3'}`}>
-                LLAMADA DE EMERGENCIA
-              </Card.Title>
-              <Button 
-                variant="primary" 
-                size={isSmallMobile ? "md" : "lg"}
-                onClick={llamar911}
-                className="w-100 py-3 mt-3"
-              >
-                <FaPhoneAlt className="me-2" />
-                911
-              </Button>
-              <Card.Text className="mt-3">
-                Realiza una llamada directa al servicio de emergencias 911
-              </Card.Text>
-            </Card.Body>
+        <Col xs={12} md={4}>
+          <Card className="h-100 border-primary shadow-sm text-center p-3">
+            <FaPhoneAlt size={50} className="text-primary mx-auto mb-2" />
+            <Card.Title>911</Card.Title>
+            <Button variant="primary" className="mt-auto py-3 fw-bold" onClick={() => window.open('tel:911')}>
+              LLAMAR
+            </Button>
           </Card>
         </Col>
       </Row>
-  
-      {/* Información de ubicación */}
-      {location && (
-        <Row className="mt-4">
-          <Col>
-            <Alert variant="info" className="d-flex align-items-center">
-              <FaMapMarkerAlt size={24} className="me-3" />
-              <div>
-                <Alert.Heading>Tu ubicación ha sido compartida</Alert.Heading>
-                <p className="mb-0">
-                  Lat: {location.lat.toFixed(6)}, Lng: {location.lng.toFixed(6)}
-                </p>
-              </div>
-            </Alert>
-          </Col>
-        </Row>
-      )}
-  
-      {/* Modal de confirmación */}
-      <Modal show={showConfirm} onHide={() => setShowConfirm(false)} centered>
-        <Modal.Header closeButton className="border-0">
-          <Modal.Title className="w-100 text-center">
-            <FaExclamationTriangle className="text-warning me-2" />
-            Confirmar acción
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="text-center">
-          {actionType === 'alerta' ? (
-            <>
-              <p className="fw-bold">¿Estás seguro que deseas activar la ALERTA DE EMERGENCIA?</p>
-              <p>Se notificará a la guardia y vecinos de tu isla.</p>
-            </>
-          ) : (
-            <>
-              <p className="fw-bold">¿Reportar ruidos sospechosos?</p>
-              <p>Se notificará a los vecinos de tu manzana.</p>
-            </>
-          )}
-          <div className="d-flex justify-content-center gap-3 mt-3">
-            <Button 
-              variant="outline-secondary" 
-              onClick={() => setShowConfirm(false)}
-              className="px-4"
-            >
-              Cancelar
-            </Button>
-            <Button 
-              variant={actionType === 'alerta' ? 'danger' : 'warning'}
-              onClick={ejecutarAccion}
-              className="px-4 text-white"
-            >
-              {actionType === 'alerta' ? 'CONFIRMAR ALERTA' : 'REPORTAR RUIDOS'}
+
+      {/* --- REGISTRO DE INCIDENCIAS --- */}
+      <Card className="shadow-sm border-0 bg-light">
+        <Card.Body>
+          <Card.Title className="d-flex align-items-center mb-3">
+            <FaHistory className="me-2 text-secondary" /> Registro de Incidencias Recientes
+          </Card.Title>
+          <Table responsive hover className="bg-white rounded">
+            <thead>
+              <tr>
+                <th>Hora</th>
+                <th>Origen</th>
+                <th>Evento</th>
+              </tr>
+            </thead>
+            <tbody>
+              {state.incidencias.length > 0 ? state.incidencias.map((inc) => (
+                <tr key={inc.id}>
+                  <td className="small text-muted">
+                    {inc.timestamp?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </td>
+                  <td className="fw-bold">{inc.sender}</td>
+                  <td className={inc.prioridad === 'alta' ? 'text-danger fw-bold' : 'text-dark'}>
+                    {inc.content}
+                  </td>
+                </tr>
+              )) : (
+                <tr><td colSpan="3" className="text-center text-muted">No hay incidencias hoy</td></tr>
+              )}
+            </tbody>
+          </Table>
+        </Card.Body>
+      </Card>
+
+      <Modal show={state.showConfirm} onHide={() => setState(p => ({ ...p, showConfirm: false }))} centered>
+        <Modal.Body className="text-center p-4">
+          <h5>¿Confirmas el envío de alerta?</h5>
+          <div className="d-flex justify-content-center gap-3 mt-4">
+            <Button variant="outline-secondary" onClick={() => setState(p => ({ ...p, showConfirm: false }))}>Cancelar</Button>
+            <Button variant={state.actionType === 'alerta' ? 'danger' : 'warning'} onClick={() => dispararAlerta(state.actionType)}>
+              Confirmar
             </Button>
           </div>
         </Modal.Body>
       </Modal>
     </Container>
   );
-  
 };

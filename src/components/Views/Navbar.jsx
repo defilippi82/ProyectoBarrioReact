@@ -1,205 +1,137 @@
 import React, { useContext, useEffect, useState, useCallback } from 'react';
-import {Container,  Button,  Nav,  Navbar,  Badge,  Offcanvas, Stack} from 'react-bootstrap';
+import { Container, Button, Nav, Navbar, Badge, Offcanvas, Stack } from 'react-bootstrap';
+import { Link, useNavigate } from 'react-router-dom';
 import { UserContext } from '../Services/UserContext';
 import { db } from '/src/firebaseConfig/firebase.js';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {faEnvelope, faHome, faCalendarAlt, faUserFriends, faBell, faPhoneAlt, faShieldAlt, faUsersCog, faBullhorn, faSignOutAlt, faBars} from '@fortawesome/free-solid-svg-icons';
+import { faEnvelope, faHome, faUserFriends, faPhoneAlt, faShieldAlt, faUsersCog, faSignOutAlt, faCalendarAlt, faBullhorn} from '@fortawesome/free-solid-svg-icons';
 import { useMediaQuery } from 'react-responsive';
 
-export const NavbarComponent = ({ handleLogout }) => {
-  const { userData } = useContext(UserContext);
+export const NavbarComponent = () => {
+  const { userData, setUserData } = useContext(UserContext);
   const [newMessages, setNewMessages] = useState(0);
   const [showOffcanvas, setShowOffcanvas] = useState(false);
-  const isWideScreen = useMediaQuery({ minWidth: 1200 });
-  const isMediumScreen = useMediaQuery({ minWidth: 992, maxWidth: 1199 });
   const isMobile = useMediaQuery({ maxWidth: 991 });
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('userData');
+    setUserData(null);
+    navigate('/login');
+  };
 
   const playSound = useCallback((source) => {
-    const audioSrc = source === 'alerta' ? '/public/Sound/siren.mp3' : '/public/Sound/mensaje.mp3';
-    const audio = new Audio(audioSrc);
-    audio.play();
+    const audioSrc = source === 'alerta' ? '/Sound/siren.mp3' : '/Sound/mensaje.mp3';
+    new Audio(audioSrc).play().catch(e => console.log("Audio play blocked"));
   }, []);
 
+  // SISTEMA DE MENSAJERÍA: Escucha mensajes no leídos
   useEffect(() => {
-    if (userData && userData.manzana && userData.lote) {
-      const socioNumber = `${userData.manzana}-${userData.lote}`;
+    if (userData?.manzana && userData?.lote) {
       const q = query(
         collection(db, 'mensajes'),
-        where('receiver', '==', socioNumber),
+        where('receiver', '==', `${userData.manzana}-${userData.lote}`),
         where('read', '==', false)
       );
-
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        setNewMessages(querySnapshot.size);
-
-        if (querySnapshot.size > 0) {
-          querySnapshot.forEach(doc => {
-            const data = doc.data();
-            playSound(data.source);
-          });
-        }
+      return onSnapshot(q, (snapshot) => {
+        setNewMessages(snapshot.size);
+        if (!snapshot.empty) playSound('mensaje');
       });
-
-      return () => unsubscribe();
     }
   }, [userData, playSound]);
 
-  const toggleOffcanvas = () => setShowOffcanvas(!showOffcanvas);
-
-  const NavItem = ({ href, icon, text, showBadge = false, badgeCount = 0, onClick }) => (
+  const NavItem = ({ to, icon, text, badge, onClick }) => (
     <Nav.Link 
-      href={href} 
-      className="d-flex align-items-center py-2 px-2 mx-1"
-      onClick={onClick}
+      as={Link} 
+      to={to} 
+      className="d-flex align-items-center py-2 px-3" 
+      onClick={() => {
+        if (onClick) onClick();
+        setShowOffcanvas(false);
+      }}
     >
-      <FontAwesomeIcon icon={icon} className="me-2" />
+      <div className="position-relative me-2">
+        <FontAwesomeIcon icon={icon} />
+        {badge > 0 && (
+          <Badge pill bg="danger" className="position-absolute top-0 start-100 translate-middle" style={{ fontSize: '0.6rem' }}>
+            {badge}
+          </Badge>
+        )}
+      </div>
       <span>{text}</span>
-      {showBadge && badgeCount > 0 && (
-        <Badge pill bg="danger" className="ms-2">
-          {badgeCount}
-        </Badge>
-      )}
     </Nav.Link>
   );
 
-  const renderNavItems = (onItemClick = () => {}) => {
-    if (!userData?.rol) return null;
+  // Si no hay usuario o no tiene rol definido, no mostramos el menú de navegación
+  if (!userData || !userData.rol) return null;
 
-    return (
-      <>
-        {(userData.rol.administrador || userData.rol.guardia) && (
-          <NavItem 
-            href="#/seguridad" 
-            icon={faShieldAlt} 
-            text="Seguridad" 
-            onClick={onItemClick}
-          />
-        )}
-
-        {(userData.rol.propietario || userData.rol.inquilino || userData.rol.administrador) && (
-          <>
-            <NavItem href="#/panico" icon={faHome} text="Inicio" onClick={onItemClick} />
-            <NavItem href="#/invitados" icon={faUserFriends} text="Invitados" onClick={onItemClick} />
-            <NavItem href="#/mensajeria" icon={faEnvelope} text="Mensajes" showBadge badgeCount={newMessages} onClick={onItemClick}/>
-            <NavItem href="#/novedades" icon={faBell} text="Novedades" onClick={onItemClick} />
-            <NavItem href="#/alquileres" icon={faHome} text="Alquileres" onClick={onItemClick} />
-            <NavItem href="#/contacto" icon={faPhoneAlt} text="Contacto" onClick={onItemClick} />
-          </>
-        )}
-
-        {userData.rol.administrador && (
-          <>
-            <NavItem href="#/reservas/create" icon={faCalendarAlt} text="Reservar" onClick={onItemClick} />
-            <NavItem href="#/administracion" icon={faUsersCog} text="Administración" onClick={onItemClick} />
-            <NavItem href="#/campanas" icon={faBullhorn} text="Campañas" onClick={onItemClick} />
-          </>
-        )}
-      </>
-    );
-  };
-
-  const renderDesktopNavbar = () => (
-    <Navbar.Collapse id="navbar-desktop">
-      <Nav className="me-auto">
-        <Stack direction="horizontal" gap={1}>
-          {renderNavItems()}
-        </Stack>
-      </Nav>
-      <Nav>
-        {userData?.nombre && (
-          <Button 
-            variant="outline-light" 
-            onClick={handleLogout}
-            className="d-flex align-items-center ms-2"
-          >
-            <FontAwesomeIcon icon={faSignOutAlt} className="me-2" />
-            Salir
-          </Button>
-        )}
-      </Nav>
-    </Navbar.Collapse>
-  );
-
-  const renderMobileNavbar = () => (
-    <>
-      <Navbar.Toggle 
-        aria-controls="offcanvas-navbar" 
-        onClick={toggleOffcanvas}
-        className="border-0"
-      >
-        <FontAwesomeIcon icon={faBars} />
-        {newMessages > 0 && (
-          <Badge pill bg="danger" className="ms-1">
-            {newMessages}
-          </Badge>
-        )}
-      </Navbar.Toggle>
-
-      <Offcanvas 
-        show={showOffcanvas} 
-        onHide={toggleOffcanvas} 
-        placement="end"
-        className="w-75"
-      >
-        <Offcanvas.Header closeButton className="border-bottom">
-          <Offcanvas.Title>
-            {userData?.nombre ? `¡Hola ${userData.nombre}!` : 'Menú'}
-          </Offcanvas.Title>
-        </Offcanvas.Header>
-        <Offcanvas.Body className="p-0">
-          <Nav className="flex-column">
-            {renderNavItems(toggleOffcanvas)}
-            {userData?.nombre && (
-              <div className="border-top mt-2 pt-2">
-                <NavItem 
-                  href="/" 
-                  icon={faSignOutAlt} 
-                  text="Cerrar sesión" 
-                  onClick={() => {
-                    toggleOffcanvas();
-                    handleLogout();
-                  }}
-                />
-              </div>
-            )}
-          </Nav>
-        </Offcanvas.Body>
-      </Offcanvas>
-    </>
-  );
+  const { rol } = userData;
 
   return (
-    <Navbar 
-      bg="primary" 
-      variant="dark" 
-      expand="lg" 
-      fixed="top" 
-      className="shadow-sm"
-      collapseOnSelect
-    >
+    <Navbar bg="primary" variant="dark" expand="lg" fixed="top" className="shadow-sm">
       <Container fluid>
-        <Navbar.Brand href="#/panico" className="responsive d-flex align-items-center me-3">
-          <div className="position-relative">
-            <FontAwesomeIcon icon={faEnvelope} />
-            {newMessages > 0 && (
-              <Badge 
-                pill 
-                bg="danger" 
-                className="position-absolute top-0 start-100 translate-middle"
-                style={{ fontSize: '0.6rem' }}
-              >
-                {newMessages}
-              </Badge>
-            )}
-          </div>
-          <span className="fw-bold ms-2">CUBE</span>
-          {userData?.nombre && isWideScreen && (
-            <span className="ms-2">| ¡Hola {userData.nombre}!</span>
-          )}
+        <Navbar.Brand as={Link} to="/" className="fw-bold d-flex align-items-center">
+          <FontAwesomeIcon icon={faEnvelope} className="me-2" />
+          <span>CUBE</span>
+          {!isMobile && <span className="ms-2 small fw-normal">| {userData.nombre}</span>}
         </Navbar.Brand>
+        
+        <Navbar.Toggle onClick={() => setShowOffcanvas(true)} />
 
-        {isMobile ? renderMobileNavbar() : renderDesktopNavbar()}
+        <Navbar.Offcanvas show={showOffcanvas} onHide={() => setShowOffcanvas(false)} placement="end">
+          <Offcanvas.Header closeButton className="bg-light">
+            <Offcanvas.Title>Menú de {userData.nombre}</Offcanvas.Title>
+          </Offcanvas.Header>
+          <Offcanvas.Body>
+            <Nav className="justify-content-end flex-grow-1 pe-3">
+              
+              {/* ACCESOS PARA TODOS LOS LOGUEADOS */}
+              {(rol.administrador || rol.propietario || rol.inquilino || rol.seguridad) && (
+                <>
+              <NavItem to="/novedades" icon={faHome} text="Inicio" />
+              <NavItem to="/panico" icon={faBullhorn} text="Alertas" />
+              <NavItem to="/mensajeria" icon={faEnvelope} text="Mensajes" badge={newMessages} />
+                </>
+               )}
+
+              {/* PERMISOS: PROPIETARIOS  */}
+              {(rol.administrador || rol.propietario ) && (
+                <>
+                  <NavItem to="/alquileres" icon={faCalendarAlt} text="Alquileres" />
+                  
+                </>
+              )}
+              {/* PERMISOS: PROPIETARIOS / INQUILINOS */}
+              {(rol.administrador || rol.propietario || rol.inquilino) && (
+                <>
+                   <NavItem to="/invitados" icon={faUserFriends} text="Invitados" />
+                  <NavItem to="/contacto" icon={faPhoneAlt} text="Contacto" />
+                </>
+              )}
+
+
+              {/* PERMISOS: ADMINISTRACIÓN */}
+              {rol.administrador && (
+                <>
+                  <NavItem to="/reservas" icon={faCalendarAlt} text="Reservas" />
+                  <NavItem to="/administracion" icon={faUsersCog} text="Panel Admin" />
+                  <NavItem to="/campanas" icon={faBullhorn} text="Campañas" />
+                </>
+              )}
+
+              {/* PERMISOS: SEGURIDAD / GUARDIA */}
+              {(rol.administrador || rol.seguridad) && (
+                <NavItem to="/seguridad" icon={faShieldAlt} text="Guardia" />
+              )}
+
+              <hr className="d-lg-none" />
+              <Button variant="outline-danger" onClick={handleLogout} className="mt-2 mt-lg-0 ms-lg-3 fw-bold">
+                <FontAwesomeIcon icon={faSignOutAlt} className="me-2" /> SALIR
+              </Button>
+            </Nav>
+          </Offcanvas.Body>
+        </Navbar.Offcanvas>
       </Container>
     </Navbar>
   );
