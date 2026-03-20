@@ -486,8 +486,8 @@ export const Invitados = () => {
                 <ResponsiveButton 
                   variant="primary" 
                   type="submit" 
-                  className="w-100 py-2 fw-bold text-nowrap"
-                  style={{ fontSize: "0.9rem" }}
+                  className="w-100 py-2 fw-bold "
+                  
                   icon={<FaPlusCircle />}
                   label="Agregar Invitado"
                 />
