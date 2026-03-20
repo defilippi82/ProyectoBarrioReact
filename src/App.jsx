@@ -93,7 +93,7 @@ const AppContent = () => {
       <NavbarComponent handleLogout={handleLogout} />
       <main style={{ marginBottom: '100px', marginTop: '80px' }}>
         <Routes>
-          {/* Lógica de Raíz: Si hay usuario va a pánico, si no a Login */}
+          {/* Lógica de Raíz: Si hay usuario va a novedades, si no a Login */}
           <Route path="/" element={userData ? <Navigate to="/novedades" /> : <Login />} />
           <Route path="/login" element={!userData ? <Login /> : <Navigate to="/novedades" />} />
 
