@@ -1,63 +1,55 @@
+/* src/App.css - Versión Corregida y Simplificada */
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
+  /* Eliminado padding excesivo */
   text-align: center;
-  background-position-y: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* Global Styles */
+body {
+  /* Fondo limpio o degradado suave, la imagen 'ingreso.png' puede cargar mucho el fondo si está en toda la app */
+  background: #375DDB;
+  background: linear-gradient(135deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed; /* Mantiene el fondo quieto al hacer scroll */
+  min-height: 100vh;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+/* CORRECCIÓN CRÍTICA DE FORMULARIOS */
+/* Eliminamos los width: auto que comprimen los inputs */
+.form-control, .form-select {
+  border-radius: 8px !important;
+  border: 1px solid #ced4da;
+  /* Bootstrap manejará el width: 100% por defecto */
+}
+
+/* Estilos de botones corregidos para que no se compriman */
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  /* Eliminado el scale excesivo que puede romper el layout */
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+}
+
+/* Media Queries para responsividad general */
+@media (max-width: 768px) {
+  .container {
+    max-width: 100%;
+    padding: 10px;
   }
-  to {
-    transform: rotate(360deg);
+  
+  /* Inputs al 100% en mobile */
+  .form-control, .form-select {
+    width: 100% !important;
   }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
-/* src/App.css */
-
-.footer {
-  background-color: #3e8ac484; /* Color de fondo del footer */
-  padding: 0.1%;
-  text-align: center;
-  position: inherit;
-  bottom: 0;
-  width: 100%;
-  color: antiquewhite;
-}
-
-.footer .rodapie {
-  margin-bottom: 0.5%;
-}
-
-.footer .eslogan {
-  font-size: 14px;
-  color: #fafafa;
 }
