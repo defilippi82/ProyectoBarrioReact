@@ -1,4 +1,23 @@
 /* Global Styles */
+/* Dentro de tu index.css, modifica o añade esto */
+@media (max-width: 576px) {
+  .container {
+    padding: 8px; /* Reducimos para ganar espacio */
+  }
+  
+  /* IMPORTANTE: No fuerces el width auto aquí si usas Floating Labels */
+  .form-control {
+    width: 100% !important; 
+    margin: 0.5rem 0 !important;
+  }
+
+  .buttons {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+}
 body {
   background-image: url("../img/ingreso.png");
   background-size: cover;
