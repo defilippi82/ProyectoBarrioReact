@@ -89,7 +89,8 @@ export const NavbarComponent = ({ startTutorial }) => {
               <NavItem to="/panico" icon={faBullhorn} text="Alertas" />
               <NavItem to="/mensajeria" icon={faEnvelope} className="mensajeria" text="Mensajes" badge={newMessages} />
 
-              {(rol.administrador || rol.propietario) && <NavItem to="/alquileres" icon={faCalendarAlt} text="Alquileres" />}
+              {(rol.administrador || rol.propietario) &&
+               <NavItem to="/alquileres" icon={faCalendarAlt} text="Alquileres" />}
               {(rol.administrador || rol.propietario || rol.inquilino) && (
                 <>
                   <NavItem to="/invitados" icon={faUserFriends} text="Invitados" />
