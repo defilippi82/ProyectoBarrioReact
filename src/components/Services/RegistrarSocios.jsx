@@ -36,7 +36,7 @@ export const RegistrarSocio = () => {
 
   // Seteamos el objeto completo de 'propietario' por defecto
   //const [rol, setRol] = useState(rolesMap.propietario);
-  const [rol, setRol] = useState("propietario");
+  const [rol, setRol] = useState('');
 
   const crearSocio = async (e) => {
     e.preventDefault();
