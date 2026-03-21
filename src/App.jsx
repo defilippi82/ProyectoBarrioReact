@@ -1,8 +1,11 @@
-import React, { useEffect, useContext } from 'react';
+import React, { useEffect, useContext, useState } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { getToken, onMessage } from "firebase/messaging";
 import { messaging, auth } from './firebaseConfig/firebase.js'; 
-import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc } from "firebase/firestore";
+
+// --- LIBRERÍA DE TUTORIAL ---
+import Joyride, { STATUS } from 'react-joyride';
 
 // --- CONTEXTO ---
 import { UserProvider, UserContext } from './components/Services/UserContext';
@@ -40,10 +43,66 @@ import { SeguridadDashboard } from "./components/Seguridad/SeguridadDashboard";
 import './css/App.css';
 import "react-day-picker/dist/style.css";
 
-// Componente para envolver el contenido y tener acceso al Contexto
 const AppContent = () => {
   const { userData, setUserData, loading } = useContext(UserContext);
+  
+  // --- ESTADO Y PASOS DEL TUTORIAL ---
+  const [runTutorial, setRunTutorial] = useState(false);
 
+  const [steps] = useState([
+  {
+    target: '.navbar', // Clase CSS del elemento
+    content: 'Bienvenido a CUBE. Esta es tu barra principal.',
+    placement: 'bottom',
+    disableBeacon: true,
+  },
+  {
+    target: '.titulo-novedades', // Clase de la pestaña Novedades
+    content: 'Aquí verás los anuncios importantes del barrio.',
+  },
+  {
+      target: '.btn-agregar-novedad', // La clase del botón verde
+      content: 'Usa este botón para publicar una nueva noticia o contacto.',
+    },
+  {
+    target: 'a[href*="mensajeria"]', // Clase de la pestaña Teléfonos
+    content: 'En esta sección puedes enviar mensajes a sus vecinos del barrio.',
+  },
+  {
+    target: 'a[href*="alquileres"]', // Clase de la pestaña Teléfonos
+    content: 'En esta sección puedes crear avisos para alquileres en el barrio.',
+  },
+  {
+    target: 'a[href*="invitados"]', // Clase de la pestaña Teléfonos
+    content: 'En esta sección puedes enviar invitaciones o crear listas para luego autorizar el ingreso a sus invitados.',
+  },
+  {
+    target: 'a[href*="panico"]', // Clase de la pestaña Teléfonos
+    content: 'En esta sección puedes enviar Alertas de ayuda por emergencias a vecinos y/o guardia(todavia sin habilitar).',
+  },
+  {
+    target: '.btn-guia-ayuda', // Clase que pusimos en el Navbar
+    content: 'Usa este botón si quieres repetir esta guía más tarde.',
+  }
+]);
+
+  // Lógica para mostrar el tutorial la primera vez
+  useEffect(() => {
+    const hasSeen = localStorage.getItem('cube_tutorial_visto');
+    if (!hasSeen && userData) {
+      setRunTutorial(true);
+    }
+  }, [userData]);
+
+  const handleJoyrideCallback = (data) => {
+    const { status } = data;
+    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+      localStorage.setItem('cube_tutorial_visto', 'true');
+      setRunTutorial(false);
+    }
+  };
+
+  // --- LÓGICA DE FIREBASE MESSAGING ---
   const guardarTokenEnBaseDeDatos = async (token) => {
     const db = getFirestore();
     const usuario = auth.currentUser;
@@ -51,7 +110,6 @@ const AppContent = () => {
       const usuarioRef = doc(db, 'usuarios', usuario.uid);
       try {
         await setDoc(usuarioRef, { fcmToken: token }, { merge: true });
-        console.log('Token FCM actualizado');
       } catch (error) {
         console.error('Error al guardar token:', error);
       }
@@ -73,27 +131,55 @@ const AppContent = () => {
   };
 
   useEffect(() => {
-    solicitarPermiso();
-    const unsubscribe = onMessage(messaging, (payload) => {
-      alert(payload.notification.body);
-    });
-    return () => unsubscribe();
-  }, []);
+    if (userData) {
+      solicitarPermiso();
+      const unsubscribe = onMessage(messaging, (payload) => {
+        alert(payload.notification.body);
+      });
+      return () => unsubscribe();
+    }
+  }, [userData]);
 
-  // Función de logout para pasar al Navbar
   const handleLogout = () => {
     localStorage.removeItem('userData');
     setUserData(null);
   };
 
-  if (loading) return null; // Evita parpadeos mientras carga el localStorage
+  if (loading) return null;
 
   return (
     <div className="App container">
-      <NavbarComponent handleLogout={handleLogout} />
+      {/* COMPONENTE JOYRIDE PARA EL TUTORIAL */}
+      <Joyride
+        steps={steps}
+        run={runTutorial}
+        continuous={true}
+        showSkipButton={true}
+        showProgress={true}
+        callback={handleJoyrideCallback}
+        locale={{
+          back: 'Atrás',
+          close: 'Cerrar',
+          last: 'Finalizar',
+          next: 'Siguiente',
+          skip: 'Saltar guía'
+        }}
+        styles={{
+          options: {
+            primaryColor: '#0d6efd',
+            zIndex: 10000,
+          }
+        }}
+      />
+
+      {/* Navbar con la función para reiniciar el tutorial */}
+      <NavbarComponent 
+        handleLogout={handleLogout} 
+        startTutorial={() => setRunTutorial(true)} 
+      />
+
       <main style={{ marginBottom: '100px', marginTop: '80px' }}>
         <Routes>
-          {/* Lógica de Raíz: Si hay usuario va a novedades, si no a Login */}
           <Route path="/" element={userData ? <Navigate to="/novedades" /> : <Login />} />
           <Route path="/login" element={!userData ? <Login /> : <Navigate to="/novedades" />} />
 
@@ -114,10 +200,7 @@ const AppContent = () => {
           <Route path="/socios/edit/:id" element={userData ? <EditarSocio /> : <Navigate to="/login" />} />
           <Route path="/seguridad" element={userData ? <SeguridadDashboard /> : <Navigate to="/login" />} />
           
-          {/* Ruta de registro siempre accesible o según prefieras */}
           <Route path="/socios/create" element={<RegistrarSocio />} />
-
-          {/* Captura de rutas no existentes */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>
@@ -126,7 +209,6 @@ const AppContent = () => {
   );
 };
 
-// Componente principal que envuelve todo en el Provider y el Router
 export const App = () => {
   return (
     <UserProvider>

@@ -164,17 +164,17 @@ export const Novedades = () => {
             <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
                 <h2 className="fw-bold text-primary m-0">Tablero Informativo</h2>
                 <div className="d-flex gap-2">
-                    <Button variant="success" onClick={handleAddNovedad}><FaPlus/> Novedad</Button>
+                    <Button variant="success" className="btn-agregar-novedad" onClick={handleAddNovedad}><FaPlus/> Novedad</Button>
                     <Button variant="outline-success" onClick={handleAddTelefono}><FaPlus/> Contacto</Button>
                 </div>
             </div>
 
-            <Tabs activeKey={key} onSelect={(k) => setKey(k)} className="mb-4 custom-tabs" fill>
-                <Tab eventKey="novedades" title="NOTICIAS">
+            <Tabs activeKey={key} onSelect={(k) => setKey(k)} className="mb-4 custom-tabs " fill>
+                <Tab className="titulo-novedades" eventKey="novedades" title="NOTICIAS">
                     <Row className="g-3 mt-2">
                         {novedades.map((item) => {
                             // MEJORA 4: Solo admin o el autor pueden borrar
-                            const canDelete = userData?.rol === 'admin' || item.autorId === `${userData?.manzana}-${userData?.lote}`;
+                            const canDelete = userData?.rol === 'administrador' || item.autorId === `${userData?.manzana}-${userData?.lote}`;
                             
                             return (
                                 <Col xs={12} md={6} lg={4} key={item.id}>
@@ -204,7 +204,7 @@ export const Novedades = () => {
                     </Row>
                 </Tab>
 
-                <Tab eventKey="telefonos" title="TELÉFONOS">
+                <Tab className="titulo-telefonos" eventKey="telefonos"  title="TELÉFONOS">
                     <Row className="mb-4 g-2">
                         <Col sm={6}>
                             <Form.Select className="shadow-sm h-100" value={categoriaSeleccionada} onChange={(e) => setCategoriaSeleccionada(e.target.value)}>
