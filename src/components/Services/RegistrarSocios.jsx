@@ -29,14 +29,14 @@ export const RegistrarSocio = () => {
 
   // SOLUCIÓN AL ERROR DEL ROL:
   // Definimos los roles fuera o dentro pero los usamos en el estado principal
-  const rolesMap = {
+  /*const rolesMap = {
     propietario: { valor: 'propietario', administrador: false, propietario: true, inquilino: false, guardia: false },
     inquilino: { valor: 'inquilino', administrador: false, propietario: false, inquilino: true, guardia: false }
-  };
+  };*/
 
   // Seteamos el objeto completo de 'propietario' por defecto
   //const [rol, setRol] = useState(rolesMap.propietario);
-  const [rol, setRol] = useState('');
+  const [rol, setRol] = useState('propietario');
 
   const crearSocio = async (e) => {
     e.preventDefault();
@@ -163,6 +163,26 @@ export const RegistrarSocio = () => {
                 <Row>
                   <Col md={12} className="mb-3">
                     <Form.Floating>
+                    <Form.Check
+                      type="radio"
+                      label="Propietario"
+                      name="rolOptions"
+                      id="role-propietario"
+                      checked={rol === 'propietario'}
+                      onChange={() => setRol('propietario')}
+                      className="fw-bold text-secondary"
+                    />
+
+                    {/* Opción Inquilino */}
+                    <Form.Check
+                      type="radio"
+                      label="Inquilino"
+                      name="rolOptions"
+                      id="role-inquilino"
+                      checked={rol === 'inquilino'}
+                      onChange={() => setRol('inquilino')}
+                      className="fw-bold text-secondary"
+                    />
                       <Form.Select 
                         value={rol} 
                         onChange={(e) => setRol(e.target.value)}
