@@ -29,14 +29,14 @@ export const RegistrarSocio = () => {
 
   // SOLUCIÓN AL ERROR DEL ROL:
   // Definimos los roles fuera o dentro pero los usamos en el estado principal
-  /*const rolesMap = {
+  const rolesMap = {
     propietario: { valor: 'propietario', administrador: false, propietario: true, inquilino: false, guardia: false },
     inquilino: { valor: 'inquilino', administrador: false, propietario: false, inquilino: true, guardia: false }
-  };*/
+  };
 
   // Seteamos el objeto completo de 'propietario' por defecto
-  //const [rol, setRol] = useState(rolesMap.propietario);
-  const [rol, setRol] = useState('propietario');
+ const [rolSeleccionado, setRolSeleccionado] = useState('propietario');
+ // const [rol, setRol] = useState('propietario');
 
   const crearSocio = async (e) => {
     e.preventDefault();
@@ -60,7 +60,7 @@ export const RegistrarSocio = () => {
         manzana,
         lote,
         isla,
-        rol: rol, // Aquí enviamos el valor ("propietario" o "inquilino")
+        rol: rolesMap[rolSeleccionado], // Aquí enviamos el valor ("propietario" o "inquilino")
         contrasena: contrasena,
         numerotelefono: numeroCompleto,
         idPublico,
@@ -168,8 +168,8 @@ export const RegistrarSocio = () => {
                       label="Propietario"
                       name="rolOptions"
                       id="role-propietario"
-                      checked={rol === 'propietario'}
-                      onChange={() => setRol('propietario')}
+                      checked={rolSeleccionado === 'propietario'}
+                      onChange={() => setRolSeleccionado('propietario')}
                       className="fw-bold text-secondary"
                     />
 
@@ -179,13 +179,13 @@ export const RegistrarSocio = () => {
                       label="Inquilino"
                       name="rolOptions"
                       id="role-inquilino"
-                      checked={rol === 'inquilino'}
-                      onChange={() => setRol('inquilino')}
+                      checked={rolSeleccionado === 'inquilino'}
+                      onChange={() => setRolSeleccionado('inquilino')}
                       className="fw-bold text-secondary"
                     />
                       <Form.Select 
-                        value={rol} 
-                        onChange={(e) => setRol(e.target.value)}
+                        value={rolSeleccionado} 
+                        onChange={(e) => setRolSeleccionado(e.target.value)}
                       >
                         <option value="propietario">Propietario</option>
                         <option value="inquilino">Inquilino</option>

@@ -1,253 +1,181 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { collection, getDocs, addDoc, deleteDoc, doc, writeBatch, updateDoc, arrayUnion, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { 
+    collection, 
+    deleteDoc, 
+    doc, 
+    query, 
+    orderBy, 
+    onSnapshot 
+} from 'firebase/firestore';
 import { db } from '/src/firebaseConfig/firebase.js';
 import { UserContext } from '../Services/UserContext';
-import { Card, Button, Tabs, Tab, Row, Col, Form, Container, Badge, InputGroup } from 'react-bootstrap';
+import { Card, Button, Tabs, Tab, Row, Col, Container, Badge, Alert, InputGroup, Form } from 'react-bootstrap';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import { FaStar, FaPlus, FaTrashAlt, FaPhoneAlt, FaChevronDown, FaChevronUp, FaSearch, FaClock } from 'react-icons/fa';
-import './Novedades.css';
+import { FaTrashAlt, FaPhoneAlt, FaClock, FaBullhorn, FaSearch, FaMapMarkerAlt, FaUserCircle } from 'react-icons/fa';
+import './Novedades.css'; // Asegúrate de usar el CSS actualizado que te pasé antes
 
 const MySwal = withReactContent(Swal);
 
-const getRandomColor = () => {
-    const colors = ['#FFB6C1', '#ADD8E6', '#90EE90', '#FFD700', '#FF6347'];
-    return colors[Math.floor(Math.random() * colors.length)];
-};
+// --- SOLUCIÓN DE COLORES: Paleta que asegura contraste total entre fondo y título ---
+// Cada objeto define el fondo (bg), el color del borde (border) y el color del título (titleColor).
+const postItPalettes = [
+    { bg: '#fff9db', border: '#fcc419', titleColor: '#856404' }, // Amarillo Pastel
+    { bg: '#e3f2fd', border: '#2196f3', titleColor: '#004a99' }, // Azul Pastel -> Título Azul Oscuro
+    { bg: '#e6fffa', border: '#38b2ac', titleColor: '#00695c' }, // Menta Pastel
+    { bg: '#fff5f5', border: '#ff6b6b', titleColor: '#a52a2a' }, // Rojizo Pastel
+    { bg: '#f3e5f5', border: '#9c27b0', titleColor: '#4a148c' }, // Violeta Pastel
+    { bg: '#f1f8e9', border: '#8bc34a', titleColor: '#33691e' }  // Verde Pastel
+];
 
 export const Novedades = () => {
     const { userData } = useContext(UserContext);
     const [novedades, setNovedades] = useState([]);
     const [telefonosUtiles, setTelefonosUtiles] = useState([]);
-    const [categorias, setCategorias] = useState([]);
+    const [campanasActivas, setCampanasActivas] = useState([]);
     const [key, setKey] = useState('novedades');
-    const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('');
-    const [searchTerm, setSearchTerm] = useState(''); // MEJORA 3: Buscador
-    const [expandedNews, setExpandedNews] = useState({});
+    const [searchTerm, setSearchTerm] = useState('');
 
+    // Escuchar datos en tiempo real (Costo Cero)
     useEffect(() => {
-        fetchData();
-    }, []);
+        if (!userData) return;
 
-    const fetchData = async () => {
-        try {
-            // Cargar Novedades ordenadas por fecha (MEJORA 2)
-            const q = query(collection(db, 'novedades'), orderBy('fecha', 'desc'));
-            const novSnap = await getDocs(q);
-            setNovedades(novSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-
-            // Cargar Teléfonos
-            const telSnap = await getDocs(collection(db, 'telefonosUtiles'));
-            setTelefonosUtiles(telSnap.docs.map(doc => {
-                const data = doc.data();
-                return {
-                    id: doc.id,
-                    ...data,
-                    promedioRating: data.ratings?.length ? (data.ratings.reduce((a, b) => a + b, 0) / data.ratings.length) : 0,
-                    totalRatings: data.ratings?.length || 0
-                };
-            }));
-
-            // Cargar Categorías
-            const catSnap = await getDocs(collection(db, 'categoriasTelefonos'));
-            if (catSnap.empty) {
-                const catsPre = ["Jardinero", "Piletero", "Plomero", "Electricista", "Sodero", "Veterinarias"];
-                const batch = writeBatch(db);
-                catsPre.forEach(cat => batch.set(doc(collection(db, 'categoriasTelefonos')), { nombre: cat }));
-                await batch.commit();
-                setCategorias(catsPre.sort());
-                setCategoriaSeleccionada(catsPre[0]);
-            } else {
-                const catsData = catSnap.docs.map(d => d.data().nombre).sort();
-                setCategorias(catsData);
-                setCategoriaSeleccionada(catsData[0]);
-            }
-        } catch (error) { console.error("Error fetching data:", error); }
-    };
-
-    const handleAddNovedad = async () => {
-        const { value } = await MySwal.fire({
-            title: 'Nueva Novedad',
-            html: `<textarea id="swal-novedad" class="swal2-textarea" placeholder="¿Qué quieres contar a los vecinos?"></textarea>`,
-            showCancelButton: true,
-            confirmButtonText: 'Publicar',
-            preConfirm: () => {
-                const contenido = document.getElementById('swal-novedad').value;
-                if (!contenido) return MySwal.showValidationMessage('El contenido es obligatorio');
-                return {
-                    titulo: `Aviso de Lote ${userData.manzana}-${userData.lote}`,
-                    contenido: contenido,
-                    nombre: userData.nombre,
-                    autorId: `${userData.manzana}-${userData.lote}`, // Para MEJORA 4
-                    lote: `${userData.manzana}-${userData.lote}`,
-                    color: getRandomColor(),
-                    fecha: serverTimestamp() // MEJORA 2
-                };
-            }
+        // 1. Campañas (Alertas urgentes)
+        const qCampanas = query(collection(db, 'campanas'), orderBy('timestamp', 'desc'));
+        const unsubCampanas = onSnapshot(qCampanas, (snapshot) => {
+            const filtradas = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .filter(c => 
+                    (c.islasDestino?.includes(userData.isla)) || 
+                    (c.manzanasDestino?.includes(userData.manzana))
+                );
+            setCampanasActivas(filtradas);
         });
-        if (value) { await addDoc(collection(db, 'novedades'), value); fetchData(); }
-    };
 
-    const handleAddTelefono = async () => {
-        const { value } = await MySwal.fire({
-            title: 'Agregar Contacto',
-            html: `
-                <select id="swal-categoria" class="swal2-input">
-                    ${categorias.map(cat => `<option value="${cat}">${cat}</option>`).join('')}
-                    <option value="nueva">+ Nueva Categoría</option>
-                </select>
-                <input id="swal-nueva-cat" class="swal2-input" placeholder="Nombre categoría" style="display:none">
-                <input id="swal-nombre" class="swal2-input" placeholder="Nombre">
-                <input id="swal-tel" class="swal2-input" placeholder="Teléfono">
-            `,
-            didOpen: () => {
-                const sel = document.getElementById('swal-categoria');
-                const nCat = document.getElementById('swal-nueva-cat');
-                sel.onchange = () => nCat.style.display = sel.value === 'nueva' ? 'block' : 'none';
-            },
-            preConfirm: async () => {
-                const catSel = document.getElementById('swal-categoria').value;
-                const nombre = document.getElementById('swal-nombre').value;
-                const tel = document.getElementById('swal-tel').value;
-                let catFinal = catSel;
-                if (catSel === 'nueva') {
-                    catFinal = document.getElementById('swal-nueva-cat').value;
-                    if (!catFinal) return MySwal.showValidationMessage('Nombre de categoría obligatorio');
-                    await addDoc(collection(db, 'categoriasTelefonos'), { nombre: catFinal });
-                }
-                if (!nombre || !tel) return MySwal.showValidationMessage('Nombre y teléfono obligatorios');
-                return { categoria: catFinal, nombre, telefono: tel, ratings: [], autorId: `${userData.manzana}-${userData.lote}` };
-            }
+        // 2. Novedades (Tablero de Vecinos)
+        const qNovedades = query(collection(db, 'novedades')); 
+        const unsubNovedades = onSnapshot(qNovedades, (snapshot) => {
+            const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setNovedades(lista.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
         });
-        if (value) { await addDoc(collection(db, 'telefonosUtiles'), value); fetchData(); }
-    };
 
-    // MEJORA 1: Confirmación de borrado
-    const handleDelete = async (id, coll) => {
-        const res = await MySwal.fire({
-            title: '¿Estás seguro?',
-            text: "Esta acción no se puede deshacer",
+        // 3. Teléfonos
+        const qTels = query(collection(db, 'telefonosUtiles'));
+        const unsubTels = onSnapshot(qTels, (snapshot) => {
+            setTelefonosUtiles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        });
+
+        return () => { unsubCampanas(); unsubNovedades(); unsubTels(); };
+    }, [userData]);
+
+    const handleDelete = async (id, col) => {
+        const result = await MySwal.fire({
+            title: '¿Quitar anuncio?',
+            text: "Se borrará del tablero de todos los vecinos.",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar'
+            confirmButtonText: 'Sí, borrar'
         });
-        if (res.isConfirmed) {
-            await deleteDoc(doc(db, coll, id));
-            fetchData();
-            MySwal.fire('Eliminado', 'El registro ha sido borrado.', 'success');
+        if (result.isConfirmed) {
+            await deleteDoc(doc(db, col, id));
         }
     };
 
-    const handleRate = async (id, val) => {
-        await updateDoc(doc(db, 'telefonosUtiles', id), { ratings: arrayUnion(val) });
-        fetchData();
-    };
-
-    // Lógica del Buscador (MEJORA 3)
-    const telefonosFiltrados = telefonosUtiles.filter(t => 
-        t.categoria === categoriaSeleccionada && 
-        t.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    // Formatear Fecha (MEJORA 2)
-    const formatFecha = (ts) => {
-        if (!ts) return '';
-        const date = ts.toDate();
-        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    };
-
     return (
-        <Container className="py-4">
-            <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-                <h2 className="fw-bold text-primary m-0">Tablero Informativo</h2>
-                <div className="d-flex gap-2">
-                    <Button variant="success" className="btn-agregar-novedad" onClick={handleAddNovedad}><FaPlus/> Novedad</Button>
-                    <Button variant="outline-success" onClick={handleAddTelefono}><FaPlus/> Contacto</Button>
+        <Container className="py-5 mt-4 board-container">
+            {/* --- SECCIÓN DE COMUNICADOS CRÍTICOS (SIN CAMBIOS) --- */}
+            {campanasActivas.length > 0 && (
+                <div className="board-urgent-section mb-5">
+                    {campanasActivas.map(c => (
+                        <div key={c.id} className="modern-announcement shadow-sm">
+                            <div className="announcement-icon"><FaBullhorn /></div>
+                            <div className="announcement-body">
+                                <h6>{c.title}</h6>
+                                <p>{c.body}</p>
+                            </div>
+                        </div>
+                    ))}
                 </div>
+            )}
+
+            {/* --- TÍTULO CENTRAL Y "DIVERTIDO" (Patrick Hand Font) --- */}
+            <div className="text-center mb-5 board-header">
+                <h1 className="display-4 fw-bold main-board-title">Tablero de la Comunidad</h1>
+                <p className="lead text-muted">¿Qué está pasando en CUBE hoy?</p>
             </div>
 
-            <Tabs activeKey={key} onSelect={(k) => setKey(k)} className="mb-4 custom-tabs " fill>
-                <Tab className="titulo-novedades" eventKey="novedades" title="NOTICIAS">
-                    <Row className="g-3 mt-2">
-                        {novedades.map((item) => {
-                            // MEJORA 4: Solo admin o el autor pueden borrar
-                            const canDelete = userData?.rol === 'administrador' || item.autorId === `${userData?.manzana}-${userData?.lote}`;
-                            
+            <Tabs activeKey={key} onSelect={(k) => setKey(k)} className="custom-board-tabs mb-4 shadow-sm" fill>
+                <Tab eventKey="novedades" title="📢 ANUNCIOS DE VECINOS">
+                    <Row className="g-4 mt-2">
+                        {novedades.map((n, index) => {
+                            const canDelete = userData?.rol?.administrador || n.autorId === `${userData?.manzana}-${userData?.lote}`;
+                            // Selección dinámica de paleta según el índice
+                            const palette = postItPalettes[index % postItPalettes.length];
+
                             return (
-                                <Col xs={12} md={6} lg={4} key={item.id}>
-                                    <Card className="h-100 border-0 shadow-sm" style={{ borderTop: `5px solid ${item.color || '#0d6efd'}` }}>
-                                        <Card.Body className="d-flex flex-column">
-                                            <div className="d-flex justify-content-between align-items-start mb-2">
-                                                <Badge bg="light" className="text-dark border">Lote {item.lote}</Badge>
-                                                {canDelete && <FaTrashAlt className="text-danger cursor-pointer" onClick={() => handleDelete(item.id, 'novedades')} />}
-                                            </div>
-                                            <Card.Title className="fw-bold small text-muted mb-1">{item.nombre}</Card.Title>
-                                            <small className="text-muted mb-2 d-flex align-items-center gap-1" style={{fontSize: '0.75rem'}}>
-                                                <FaClock size={12}/> {formatFecha(item.fecha)}
-                                            </small>
-                                            <div className={`news-text flex-grow-1 ${!expandedNews[item.id] ? "clamp-active" : ""}`}>
-                                                {item.contenido}
-                                            </div>
-                                            {item.contenido?.length > 120 && (
-                                                <Button variant="link" size="sm" className="p-0 mt-2 text-start text-decoration-none" onClick={() => setExpandedNews({...expandedNews, [item.id]: !expandedNews[item.id]})}>
-                                                    {expandedNews[item.id] ? <><FaChevronUp/> Ver menos</> : <><FaChevronDown/> Leer más</>}
-                                                </Button>
-                                            )}
-                                        </Card.Body>
-                                    </Card>
+                                <Col key={n.id} xs={12} md={6} lg={4}>
+                                    {/* --- Post-it con color aleatorio y SIN CORTE DE TEXTO --- */}
+                                    <div className="post-it-card shadow-sm" style={{ backgroundColor: palette.bg, borderLeft: `8px solid ${palette.border}` }}>
+                                        <div className="post-it-header">
+                                            <span className="post-it-tag text-muted"><FaMapMarkerAlt /> Mnz {n.manzana || 'S/D'}</span>
+                                            {canDelete && <FaTrashAlt className="delete-btn text-danger" onClick={() => handleDelete(n.id, 'novedades')} />}
+                                        </div>
+                                        
+                                        <div className="d-flex align-items-center gap-2 mb-3 post-it-author">
+                                            <FaUserCircle size={22} className="text-secondary" />
+                                            {/* SOLUCIÓN: El color del título ahora es específico para contrastar con el fondo */}
+                                            <h5 className="post-it-title mb-0" style={{ color: palette.titleColor }}>
+                                                {n.nombre || n.titulo || 'Vecino'}
+                                            </h5>
+                                        </div>
+                                        
+                                        {/* El texto ahora ocupa todo el espacio necesario */}
+                                        <div className="post-it-text text-dark mb-3">
+                                            {n.contenido || n.descripcion}
+                                        </div>
+                                        
+                                        <div className="post-it-footer text-muted small mt-auto pt-2 border-top">
+                                            <FaClock className="me-1" /> {n.createdAt?.toDate ? n.createdAt.toDate().toLocaleDateString() : 'Reciente'}
+                                        </div>
+                                    </div>
                                 </Col>
                             );
                         })}
                     </Row>
                 </Tab>
 
-                <Tab className="titulo-telefonos" eventKey="telefonos"  title="TELÉFONOS">
-                    <Row className="mb-4 g-2">
-                        <Col sm={6}>
-                            <Form.Select className="shadow-sm h-100" value={categoriaSeleccionada} onChange={(e) => setCategoriaSeleccionada(e.target.value)}>
-                                {categorias.map(c => <option key={c} value={c}>{c}</option>)}
-                            </Form.Select>
-                        </Col>
-                        <Col sm={6}>
-                            <InputGroup className="shadow-sm">
-                                <InputGroup.Text className="bg-white border-end-0"><FaSearch className="text-muted"/></InputGroup.Text>
-                                <Form.Control 
-                                    className="border-start-0" 
-                                    placeholder="Buscar por nombre..." 
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </InputGroup>
-                        </Col>
-                    </Row>
-                    
-                    <Row className="g-2">
-                        {telefonosFiltrados.map((t) => {
-                            const canDeleteTel = userData?.rol === 'admin' || t.autorId === `${userData?.manzana}-${userData?.lote}`;
-                            return (
-                                <Col xs={12} md={6} key={t.id}>
-                                    <Card className="border-0 shadow-sm">
-                                        <Card.Body className="d-flex justify-content-between align-items-center p-3">
-                                            <div>
-                                                <h6 className="fw-bold mb-1">{t.nombre}</h6>
-                                                <div className="mb-2">
-                                                    {[1,2,3,4,5].map(s => <FaStar key={s} size={14} color={t.promedioRating >= s ? "gold" : "#ddd"} onClick={() => handleRate(t.id, s)} style={{cursor:'pointer'}} />)}
-                                                    <small className="ms-2 text-muted">{t.promedioRating.toFixed(1)}</small>
-                                                </div>
-                                                <div className="text-success fw-bold small"><FaPhoneAlt/> {t.telefono}</div>
-                                            </div>
-                                            <div className="d-flex flex-column gap-2 align-items-center">
-                                                <Button variant="success" href={`tel:${t.telefono}`} className="rounded-circle p-2 shadow-sm"><FaPhoneAlt/></Button>
-                                                {canDeleteTel && <FaTrashAlt className="text-danger cursor-pointer mt-1" onClick={() => handleDelete(t.id, 'telefonosUtiles')} />}
-                                            </div>
-                                        </Card.Body>
-                                    </Card>
-                                </Col>
-                            );
-                        })}
+                <Tab eventKey="telefonos" title="📞 TELÉFONOS ÚTILES">
+                    <div className="search-container mb-4 mt-3">
+                        <InputGroup className="modern-search shadow-sm lg">
+                            <InputGroup.Text className="bg-white border-end-0"><FaSearch className="text-muted"/></InputGroup.Text>
+                            <Form.Control 
+                                size="lg"
+                                className="border-start-0"
+                                placeholder="Buscar Jardinero, Electricista, Guardia..." 
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </InputGroup>
+                    </div>
+                    <Row className="g-3">
+                        {telefonosUtiles.filter(t => 
+                            t.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            t.categoria?.toLowerCase().includes(searchTerm.toLowerCase())
+                        ).map((t) => (
+                            <Col key={t.id} xs={12} md={6} lg={4}>
+                                {/* --- Tarjeta de Contacto con letra grande --- */}
+                                <div className="contact-card shadow-sm h-100">
+                                    <div className="contact-info">
+                                        {t.categoria && <Badge bg="light" className="text-muted border mb-2 text-uppercase fw-bold" style={{fontSize: '11px'}}>{t.categoria}</Badge>}
+                                        <h5 className="fw-bold text-dark mb-1 contact-name">{t.nombre}</h5>
+                                        <p className="phone-number h5 fw-bold text-success mb-0">{t.telefono}</p>
+                                    </div>
+                                    <Button variant="success" href={`tel:${t.telefono}`} className="call-btn rounded-circle shadow">
+                                        <FaPhoneAlt size={18} />
+                                    </Button>
+                                </div>
+                            </Col>
+                        ))}
                     </Row>
                 </Tab>
             </Tabs>

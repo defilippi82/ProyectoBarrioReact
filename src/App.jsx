@@ -116,7 +116,7 @@ const AppContent = () => {
     }
   };
 
-  const solicitarPermiso = async () => {
+  /*const solicitarPermiso = async () => {
     try {
       const permiso = await Notification.requestPermission();
       if (permiso === 'granted') {
@@ -128,11 +128,11 @@ const AppContent = () => {
     } catch (error) {
       console.error('Error en notificaciones:', error);
     }
-  };
+  };*/
 
   useEffect(() => {
     if (userData) {
-      solicitarPermiso();
+      /*solicitarPermiso();*/
       const unsubscribe = onMessage(messaging, (payload) => {
         alert(payload.notification.body);
       });

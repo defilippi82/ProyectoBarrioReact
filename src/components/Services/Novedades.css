@@ -1,69 +1,162 @@
-/* Soporte estándar para Line-Clamp */
-.clamp-active {
-    display: -webkit-box;
-    -webkit-line-clamp: 4;
-    line-clamp: 4;
-    -webkit-box-orient: vertical;
-    box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
+/* =========================================
+   ESTILOS DEL TABLERO DE LA COMUNIDAD (CUBE)
+   ========================================= */
+
+/* PUNTO 4: Tipografía "Fresca y Divertida" (Carga Google Fonts) */
+@import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
+
+.board-container {
+    background-color: #fcfcfc;
 }
 
-.news-text {
-    font-size: 0.95rem;
+/* PUNTO 4: Título Centrado y Divertido */
+.main-board-title {
+    font-family: 'Patrick Hand', cursive; /* Tipografía estilo Comic Sans moderna */
+    letter-spacing: -1px;
+    color: #0f0f0f !important; /* Azul fresco */
+}
+
+/* --- Sección de Campañas Críticas (Sin Cambios) --- */
+.modern-announcement {
+    background: #fff9db;
+    border: 1px solid #ffec99;
+    border-radius: 12px;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    position: relative;
+    border-left: 5px solid #f08c00;
+}
+
+.announcement-icon {
+    font-size: 1.5rem;
+    color: #f08c00;
+}
+
+.announcement-body h6 {
+    margin: 0;
+    font-weight: 700;
     color: #444;
-    line-height: 1.5;
-    white-space: pre-wrap; /* Mantiene saltos de línea */
 }
 
-/* Tabs personalizadas */
-.custom-tabs .nav-link {
-    font-weight: bold;
-    color: #6c757d;
-    border: none !important;
-    border-bottom: 3px solid transparent !important;
+.announcement-body p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #666;
 }
 
-.custom-tabs .nav-link.active {
-    color: #0d6efd !important;
-    background: transparent !important;
-    border-bottom: 3px solid #0d6efd !important;
+/* --- PUNTO 1 y 2: Tarjetas Estilo Post-it Adaptables y Coloridas --- */
+.post-it-card {
+    padding: 25px;
+    border-radius: 4px 25px 4px 4px; /* Efecto hoja doblada */
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.05);
+    /* PUNTO 1: Sin min-height para que se adapte al contenido */
 }
 
-/* Animaciones y Hover */
-.card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    border-radius: 12px !important;
+.post-it-card:hover {
+    transform: rotate(-0.5deg) translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.12) !important;
 }
 
-.card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 15px rgba(0,0,0,0.1) !important;
+.post-it-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
 }
 
-.cursor-pointer {
+.post-it-tag {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.delete-btn {
     cursor: pointer;
-}
-
-.cursor-pointer:hover {
+    font-size: 1rem;
     opacity: 0.7;
+    transition: opacity 0.2s;
 }
 
-/* Input de búsqueda */
-.input-group-text {
-    border-radius: 10px 0 0 10px;
-}
-.form-control {
-    border-radius: 0 10px 10px 0;
+.delete-btn:hover {
+    opacity: 1;
 }
 
-@media (max-width: 768px) {
-    .custom-tabs .nav-link {
-        font-size: 0.8rem;
-        padding: 10px 5px;
-    }
-    .clamp-active {
-        -webkit-line-clamp: 3;
-        line-clamp: 3;
-    }
+.post-it-title {
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+/* PUNTO 1: Texto completo, sin cortes */
+.post-it-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #333;
+    white-space: pre-line; /* Respeta los saltos de línea al escribir */
+}
+
+.post-it-footer {
+    font-size: 0.8rem;
+}
+
+/* --- PUNTO 3: Tarjetas de Contacto Grandes --- */
+.contact-card {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #eee;
+}
+
+/* PUNTO 3: Aumentar tamaño de letra de contactos */
+.contact-name {
+    font-size: 1.25rem; /* Letra más grande */
+    margin-bottom: 3px;
+}
+
+.phone-number {
+    font-size: 1.2rem; /* Número más grande y legible */
+    letter-spacing: 0.5px;
+}
+
+.call-btn {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Tabs personalizadas (Estilo Tablero) */
+.custom-board-tabs {
+    border: none;
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 5px;
+}
+
+.custom-board-tabs .nav-link {
+    border: none;
+    color: #777;
+    font-weight: 700;
+    padding: 12px 20px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+}
+
+.custom-board-tabs .nav-link.active {
+    color: #fff;
+    background-color: #2b3646; /* Azul Bootstrap */
+    box-shadow: 0 4px 10px rgba(13, 110, 253, 0.2);
+}
+
+.modern-search.lg .form-control {
+    border-radius: 10px;
 }
