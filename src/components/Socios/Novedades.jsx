@@ -11,7 +11,7 @@ import {
     FaTrashAlt, FaPhoneAlt, FaClock, FaBullhorn, FaSearch, 
     FaMapMarkerAlt, FaUserCircle, FaFilter, FaPlus, FaTag, FaStar 
 } from 'react-icons/fa';
-import '../css/Novedades.css';
+//import '../css/Novedades.css';
 
 const MySwal = withReactContent(Swal);
 
