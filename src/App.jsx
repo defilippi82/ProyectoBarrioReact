@@ -19,19 +19,19 @@ import { Privacidad } from "./components/Views/Privacidad";
 // --- COMPONENTES DE SOCIOS / INICIO ---
 import { Panico } from './components/Socios/Panico';
 import { Contacto } from "./components/Socios/Contacto";
-import { Novedades } from "./components/Services/Novedades";
+import { Novedades } from "./components/Socios/Novedades.jsx";
 
 // --- COMPONENTES DE SERVICIOS ---
-import { Invitados } from "./components/Services/Invitados";
-import { Alquileres } from "./components/Services/Alquileres";
+import { Invitados } from "./components/Socios/Invitados.jsx";
+import { Alquileres } from "./components/Socios/Alquileres.jsx";
 import { EditarPublicacion } from "./components/Services/EditarPublicacion";
 import { Mensajeria } from "./components/Services/Mensajeria";
 import { RegistrarReserva } from "./components/Services/RegistrarReservas";
-import { RegistrarSocio } from "./components/Services/RegistrarSocios";
+import { RegistrarSocio } from "./components/Admin/RegistrarSocios.jsx";
 
 // --- COMPONENTES DE ADMINISTRACIÓN ---
 import { Administracion } from "./components/Admin/Administracion";
-import { AdminMensajeria } from "./components/Services/AdminMensajeria.jsx";
+import { AdminMensajeria } from "./components/Admin/AdminMensajeria.jsx";
 import { Reservas } from "./components/Admin/Reservas";
 import { EditarReserva } from "./components/Admin/EditarReserva";
 import { EditarSocio } from "./components/Admin/EditarSocio";

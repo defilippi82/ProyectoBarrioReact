@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Container, Tabs, Tab } from "react-bootstrap";
-import { CrearAlquiler } from "./CrearAlquiler";
-import { ExplorarAlquileres } from "./ExplorarAlquileres";
-import { MisPublicaciones } from "./MisPublicaciones";
+import { CrearAlquiler } from "../Services/CrearAlquiler";
+import { ExplorarAlquileres } from "../Services/ExplorarAlquileres";
+import { MisPublicaciones } from "../Services/MisPublicaciones";
 
 export const Alquileres = () => {
   const [key, setKey] = useState("explorar");
