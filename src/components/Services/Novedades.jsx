@@ -1,31 +1,27 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { 
-    collection, 
-    deleteDoc, 
-    doc, 
-    query, 
-    orderBy, 
-    onSnapshot 
+    collection, addDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp, updateDoc 
 } from 'firebase/firestore';
 import { db } from '/src/firebaseConfig/firebase.js';
 import { UserContext } from '../Services/UserContext';
-import { Card, Button, Tabs, Tab, Row, Col, Container, Badge, Alert, InputGroup, Form } from 'react-bootstrap';
+import { Button, Tabs, Tab, Row, Col, Container, Badge, InputGroup, Form, Modal } from 'react-bootstrap';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import { FaTrashAlt, FaPhoneAlt, FaClock, FaBullhorn, FaSearch, FaMapMarkerAlt, FaUserCircle } from 'react-icons/fa';
-import './Novedades.css'; // Asegúrate de usar el CSS actualizado que te pasé antes
+import { 
+    FaTrashAlt, FaPhoneAlt, FaClock, FaBullhorn, FaSearch, 
+    FaMapMarkerAlt, FaUserCircle, FaFilter, FaPlus, FaTag, FaStar 
+} from 'react-icons/fa';
+import './Novedades.css';
 
 const MySwal = withReactContent(Swal);
 
-// --- SOLUCIÓN DE COLORES: Paleta que asegura contraste total entre fondo y título ---
-// Cada objeto define el fondo (bg), el color del borde (border) y el color del título (titleColor).
 const postItPalettes = [
-    { bg: '#fff9db', border: '#fcc419', titleColor: '#856404' }, // Amarillo Pastel
-    { bg: '#e3f2fd', border: '#2196f3', titleColor: '#004a99' }, // Azul Pastel -> Título Azul Oscuro
-    { bg: '#e6fffa', border: '#38b2ac', titleColor: '#00695c' }, // Menta Pastel
-    { bg: '#fff5f5', border: '#ff6b6b', titleColor: '#a52a2a' }, // Rojizo Pastel
-    { bg: '#f3e5f5', border: '#9c27b0', titleColor: '#4a148c' }, // Violeta Pastel
-    { bg: '#f1f8e9', border: '#8bc34a', titleColor: '#33691e' }  // Verde Pastel
+    { bg: '#fffdf2', border: '#fcc419', titleColor: '#856404' }, 
+    { bg: '#f0f7ff', border: '#2196f3', titleColor: '#004a99' }, 
+    { bg: '#f2fcfb', border: '#38b2ac', titleColor: '#00695c' }, 
+    { bg: '#fff8f8', border: '#ff6b6b', titleColor: '#a52a2a' }, 
+    { bg: '#fbf7fd', border: '#9c27b0', titleColor: '#4a148c' }, 
+    { bg: '#f7fdf2', border: '#8bc34a', titleColor: '#33691e' }
 ];
 
 export const Novedades = () => {
@@ -34,109 +30,175 @@ export const Novedades = () => {
     const [telefonosUtiles, setTelefonosUtiles] = useState([]);
     const [campanasActivas, setCampanasActivas] = useState([]);
     const [key, setKey] = useState('novedades');
+    
+    // Filtros
     const [searchTerm, setSearchTerm] = useState('');
+    const [categoriaFiltro, setCategoriaFiltro] = useState('Todas');
 
-    // Escuchar datos en tiempo real (Costo Cero)
+    // Modales
+    const [showModalNov, setShowModalNov] = useState(false);
+    const [showModalTel, setShowModalTel] = useState(false);
+    const [isNuevaCat, setIsNuevaCat] = useState(false);
+    
+    // Formularios
+    const [nuevaNov, setNuevaNov] = useState({ titulo: '', contenido: '' });
+    const [nuevoTel, setNuevoTel] = useState({ nombre: '', telefono: '', categoria: '' });
+
     useEffect(() => {
         if (!userData) return;
 
-        // 1. Campañas (Alertas urgentes)
-        const qCampanas = query(collection(db, 'campanas'), orderBy('timestamp', 'desc'));
-        const unsubCampanas = onSnapshot(qCampanas, (snapshot) => {
+        // Escucha Campañas (Alertas Admin)
+        const unsubCampanas = onSnapshot(query(collection(db, 'campanas'), orderBy('timestamp', 'desc')), (snapshot) => {
             const filtradas = snapshot.docs
                 .map(doc => ({ id: doc.id, ...doc.data() }))
-                .filter(c => 
-                    (c.islasDestino?.includes(userData.isla)) || 
-                    (c.manzanasDestino?.includes(userData.manzana))
-                );
+                .filter(c => (c.islasDestino?.includes(userData.isla)) || (c.manzanasDestino?.includes(userData.manzana)));
             setCampanasActivas(filtradas);
         });
 
-        // 2. Novedades (Tablero de Vecinos)
-        const qNovedades = query(collection(db, 'novedades')); 
-        const unsubNovedades = onSnapshot(qNovedades, (snapshot) => {
-            const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setNovedades(lista.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+        // Escucha Novedades (Post-its)
+        const unsubNovedades = onSnapshot(query(collection(db, 'novedades'), orderBy('createdAt', 'desc')), (snapshot) => {
+            setNovedades(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         });
 
-        // 3. Teléfonos
-        const qTels = query(collection(db, 'telefonosUtiles'));
-        const unsubTels = onSnapshot(qTels, (snapshot) => {
+        // Escucha Teléfonos (Guía)
+        const unsubTels = onSnapshot(query(collection(db, 'telefonosUtiles')), (snapshot) => {
             setTelefonosUtiles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         });
 
         return () => { unsubCampanas(); unsubNovedades(); unsubTels(); };
     }, [userData]);
 
+    const categoriasExistentes = [...new Set(telefonosUtiles.map(t => t.categoria).filter(Boolean))].sort();
+
+    // --- LÓGICA DE RATING ---
+    const handleRate = async (id, stars) => {
+        if (!userData) return;
+        const telRef = doc(db, 'telefonosUtiles', id);
+        const tel = telefonosUtiles.find(t => t.id === id);
+        const userId = `${userData.manzana}-${userData.lote}`;
+        
+        const ratings = tel.ratings || {};
+        ratings[userId] = stars;
+
+        const allStars = Object.values(ratings);
+        const promedio = allStars.reduce((a, b) => a + b, 0) / allStars.length;
+
+        try {
+            await updateDoc(telRef, { ratings, promedioRating: promedio });
+        } catch (error) { console.error("Error rating:", error); }
+    };
+
+    // --- ACCIONES FIREBASE ---
+    const handleAddNovedad = async (e) => {
+        e.preventDefault();
+        try {
+            await addDoc(collection(db, 'novedades'), {
+                ...nuevaNov,
+                nombreAutor: userData.nombre || 'Vecino',
+                manzana: userData.manzana,
+                lote: userData.lote,
+                autorId: `${userData.manzana}-${userData.lote}`,
+                createdAt: serverTimestamp()
+            });
+            setShowModalNov(false);
+            setNuevaNov({ titulo: '', contenido: '' });
+            MySwal.fire('¡Éxito!', 'Tu anuncio está en el tablero.', 'success');
+        } catch (e) { MySwal.fire('Error', 'No se pudo publicar', 'error'); }
+    };
+
+    const handleAddTelefono = async (e) => {
+        e.preventDefault();
+        try {
+            await addDoc(collection(db, 'telefonosUtiles'), {
+                ...nuevoTel,
+                promedioRating: 0,
+                ratings: {},
+                autorId: `${userData.manzana}-${userData.lote}`
+            });
+            setShowModalTel(false);
+            setNuevoTel({ nombre: '', telefono: '', categoria: '' });
+            setIsNuevaCat(false);
+            MySwal.fire('¡Guardado!', 'Contacto añadido.', 'success');
+        } catch (e) { MySwal.fire('Error', 'No se pudo guardar', 'error'); }
+    };
+
     const handleDelete = async (id, col) => {
-        const result = await MySwal.fire({
-            title: '¿Quitar anuncio?',
-            text: "Se borrará del tablero de todos los vecinos.",
+        const res = await MySwal.fire({
+            title: '¿Estás seguro?',
+            text: "Esta acción no se puede deshacer",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             confirmButtonText: 'Sí, borrar'
         });
-        if (result.isConfirmed) {
-            await deleteDoc(doc(db, col, id));
-        }
+        if (res.isConfirmed) await deleteDoc(doc(db, col, id));
     };
+
+    const telefonosFiltrados = telefonosUtiles.filter(t => {
+        const matchSearch = t.nombre?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchCat = categoriaFiltro === 'Todas' || t.categoria === categoriaFiltro;
+        return matchSearch && matchCat;
+    });
 
     return (
         <Container className="py-5 mt-4 board-container">
-            {/* --- SECCIÓN DE COMUNICADOS CRÍTICOS (SIN CAMBIOS) --- */}
-            {campanasActivas.length > 0 && (
-                <div className="board-urgent-section mb-5">
-                    {campanasActivas.map(c => (
-                        <div key={c.id} className="modern-announcement shadow-sm">
-                            <div className="announcement-icon"><FaBullhorn /></div>
-                            <div className="announcement-body">
-                                <h6>{c.title}</h6>
-                                <p>{c.body}</p>
-                            </div>
-                        </div>
-                    ))}
+            {/* Campañas Críticas */}
+            {campanasActivas.map(c => (
+                <div key={c.id} className="modern-announcement shadow-sm mb-3">
+                    <div className="announcement-icon"><FaBullhorn /> Alerta de Administración</div>
+                    <div className="announcement-body">
+                        <h6>{c.title}</h6>
+                        <p>{c.body}</p>
+                    </div>
                 </div>
-            )}
+            ))}
 
-            {/* --- TÍTULO CENTRAL Y "DIVERTIDO" (Patrick Hand Font) --- */}
             <div className="text-center mb-5 board-header">
-                <h1 className="display-4 fw-bold main-board-title">Tablero de la Comunidad</h1>
-                <p className="lead text-muted">¿Qué está pasando en CUBE hoy?</p>
+                <h1 className="display-3 main-board-title">Tablero de la Comunidad</h1>
+                <p className="lead text-muted">CUBE: Escobar, Buenos Aires</p>
             </div>
 
             <Tabs activeKey={key} onSelect={(k) => setKey(k)} className="custom-board-tabs mb-4 shadow-sm" fill>
-                <Tab eventKey="novedades" title="📢 ANUNCIOS DE VECINOS">
-                    <Row className="g-4 mt-2">
-                        {novedades.map((n, index) => {
-                            const canDelete = userData?.rol?.administrador || n.autorId === `${userData?.manzana}-${userData?.lote}`;
-                            // Selección dinámica de paleta según el índice
+                
+                {/* TAB NOVEDADES */}
+                <Tab eventKey="novedades" title="📢 ANUNCIOS" className='titulo-novedades'>
+                    <div className="d-flex justify-content-end my-3">
+                        <Button variant="primary" className="btn-add-modern shadow btn-agregar-novedad" onClick={() => setShowModalNov(true)}>
+                            <FaPlus className="me-2"/> Nuevo Anuncio
+                        </Button>
+                    </div>
+                    <Row className="g-4">
+                       {novedades.map((n, index) => {
                             const palette = postItPalettes[index % postItPalettes.length];
-
+                            const canDelete = userData?.rol?.administrador || n.autorId === `${userData?.manzana}-${userData?.lote}`;
+                            
                             return (
                                 <Col key={n.id} xs={12} md={6} lg={4}>
-                                    {/* --- Post-it con color aleatorio y SIN CORTE DE TEXTO --- */}
                                     <div className="post-it-card shadow-sm" style={{ backgroundColor: palette.bg, borderLeft: `8px solid ${palette.border}` }}>
                                         <div className="post-it-header">
-                                            <span className="post-it-tag text-muted"><FaMapMarkerAlt /> Mnz {n.manzana || 'S/D'}</span>
+                                            {/* Soporte para datos viejos y nuevos de manzana/lote */}
+                                            <span className="post-it-tag text-muted">
+                                                <FaMapMarkerAlt /> Mnz {n.manzana || 'S/D'} - Lote {n.lote || 'S/D'}
+                                            </span>
                                             {canDelete && <FaTrashAlt className="delete-btn text-danger" onClick={() => handleDelete(n.id, 'novedades')} />}
                                         </div>
-                                        
-                                        <div className="d-flex align-items-center gap-2 mb-3 post-it-author">
-                                            <FaUserCircle size={22} className="text-secondary" />
-                                            {/* SOLUCIÓN: El color del título ahora es específico para contrastar con el fondo */}
+                                        <div className="d-flex align-items-center gap-2 mb-2">
+                                            <FaUserCircle size={20} className="text-secondary" />
+                                            {/* Compatibilidad: busca titulo o nombre */}
                                             <h5 className="post-it-title mb-0" style={{ color: palette.titleColor }}>
-                                                {n.nombre || n.titulo || 'Vecino'}
+                                                {n.titulo || n.nombre || "Anuncio"}
                                             </h5>
                                         </div>
-                                        
-                                        {/* El texto ahora ocupa todo el espacio necesario */}
+                                        {/* Compatibilidad: busca contenido o descripcion */}
                                         <div className="post-it-text text-dark mb-3">
                                             {n.contenido || n.descripcion}
                                         </div>
-                                        
-                                        <div className="post-it-footer text-muted small mt-auto pt-2 border-top">
-                                            <FaClock className="me-1" /> {n.createdAt?.toDate ? n.createdAt.toDate().toLocaleDateString() : 'Reciente'}
+                                        <div className="post-it-footer text-muted small mt-auto pt-2 border-top d-flex justify-content-between">
+                                            <span>
+                                                <FaClock className="me-1" /> 
+                                                {n.createdAt?.toDate ? n.createdAt.toDate().toLocaleDateString() : 'Anterior'}
+                                            </span>
+                                            <span className="fw-bold">{n.nombreAutor || n.nombre || 'Vecino'}</span>
                                         </div>
                                     </div>
                                 </Col>
@@ -145,40 +207,105 @@ export const Novedades = () => {
                     </Row>
                 </Tab>
 
-                <Tab eventKey="telefonos" title="📞 TELÉFONOS ÚTILES">
-                    <div className="search-container mb-4 mt-3">
-                        <InputGroup className="modern-search shadow-sm lg">
-                            <InputGroup.Text className="bg-white border-end-0"><FaSearch className="text-muted"/></InputGroup.Text>
-                            <Form.Control 
-                                size="lg"
-                                className="border-start-0"
-                                placeholder="Buscar Jardinero, Electricista, Guardia..." 
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </InputGroup>
+                {/* TAB TELÉFONOS */}
+                <Tab eventKey="telefonos" title="📞 GUÍA ÚTIL">
+                    <div className="d-flex justify-content-end my-3">
+                        <Button variant="success" className="btn-add-modern shadow" onClick={() => setShowModalTel(true)}>
+                            <FaPlus className="me-2"/> Sugerir Contacto
+                        </Button>
                     </div>
+                    <Row className="mb-4 g-3">
+                        <Col xs={12} md={7}>
+                            <InputGroup className="modern-search shadow-sm">
+                                <InputGroup.Text className="bg-white"><FaSearch/></InputGroup.Text>
+                                <Form.Control placeholder="Buscar jardinero, electricista..." onChange={(e) => setSearchTerm(e.target.value)} />
+                            </InputGroup>
+                        </Col>
+                        <Col xs={12} md={5}>
+                            <InputGroup className="modern-search shadow-sm">
+                                <InputGroup.Text className="bg-white"><FaFilter/></InputGroup.Text>
+                                <Form.Select value={categoriaFiltro} onChange={(e) => setCategoriaFiltro(e.target.value)}>
+                                    <option value="Todas">Todas las categorías</option>
+                                    {categoriasExistentes.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                </Form.Select>
+                            </InputGroup>
+                        </Col>
+                    </Row>
                     <Row className="g-3">
-                        {telefonosUtiles.filter(t => 
-                            t.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            t.categoria?.toLowerCase().includes(searchTerm.toLowerCase())
-                        ).map((t) => (
+                        {telefonosFiltrados.map((t) => (
                             <Col key={t.id} xs={12} md={6} lg={4}>
-                                {/* --- Tarjeta de Contacto con letra grande --- */}
                                 <div className="contact-card shadow-sm h-100">
-                                    <div className="contact-info">
-                                        {t.categoria && <Badge bg="light" className="text-muted border mb-2 text-uppercase fw-bold" style={{fontSize: '11px'}}>{t.categoria}</Badge>}
-                                        <h5 className="fw-bold text-dark mb-1 contact-name">{t.nombre}</h5>
+                                    <div className="contact-info flex-grow-1">
+                                        <Badge bg="primary" className="mb-2 badge-category">{t.categoria}</Badge>
+                                        <h5 className="fw-bold text-dark mb-1">{t.nombre}</h5>
+                                        <div className="mb-2 rating-display">
+                                            {[1, 2, 3, 4, 5].map(s => (
+                                                <FaStar 
+                                                    key={s} 
+                                                    size={16} 
+                                                    color={ (t.promedioRating || 0) >= s ? "#ffc107" : "#e4e5e9"} 
+                                                    onClick={() => handleRate(t.id, s)} 
+                                                    className="star-icon"
+                                                    style={{ cursor: 'pointer' }}
+                                                />
+                                            ))}
+                                            <small className="ms-2 fw-bold text-muted">({(t.promedioRating || 0).toFixed(1)})</small>
+                                        </div>
                                         <p className="phone-number h5 fw-bold text-success mb-0">{t.telefono}</p>
                                     </div>
-                                    <Button variant="success" href={`tel:${t.telefono}`} className="call-btn rounded-circle shadow">
-                                        <FaPhoneAlt size={18} />
-                                    </Button>
+                                    <div className="d-flex flex-column gap-3 align-items-center">
+                                        <Button variant="success" href={`tel:${t.telefono}`} className="call-btn rounded-circle shadow"><FaPhoneAlt/></Button>
+                                        {(userData?.rol?.administrador || t.autorId === `${userData.manzana}-${userData.lote}`) && (
+                                            <FaTrashAlt className="text-danger cursor-pointer" size={14} onClick={() => handleDelete(t.id, 'telefonosUtiles')} />
+                                        )}
+                                    </div>
                                 </div>
                             </Col>
                         ))}
                     </Row>
                 </Tab>
             </Tabs>
+
+            {/* MODAL NOVEDADES */}
+            <Modal show={showModalNov} onHide={() => setShowModalNov(false)} centered>
+                <Modal.Header closeButton><Modal.Title className="main-board-title h3">Nuevo Anuncio</Modal.Title></Modal.Header>
+                <Form onSubmit={handleAddNovedad}>
+                    <Modal.Body>
+                        <Form.Group className="mb-3"><Form.Label className="fw-bold">Asunto</Form.Label><Form.Control required placeholder="Ej: Vendo Bicicleta" onChange={e => setNuevaNov({...nuevaNov, titulo: e.target.value})} /></Form.Group>
+                        <Form.Group className="mb-3"><Form.Label className="fw-bold">Descripción</Form.Label><Form.Control as="textarea" rows={4} required placeholder="Escribe los detalles aquí..." onChange={e => setNuevaNov({...nuevaNov, contenido: e.target.value})} /></Form.Group>
+                    </Modal.Body>
+                    <Modal.Footer><Button variant="light" onClick={() => setShowModalNov(false)}>Cerrar</Button><Button variant="primary" type="submit">Publicar</Button></Modal.Footer>
+                </Form>
+            </Modal>
+
+            {/* MODAL TELÉFONOS */}
+            <Modal show={showModalTel} onHide={() => {setShowModalTel(false); setIsNuevaCat(false);}} centered>
+                <Modal.Header closeButton><Modal.Title className="main-board-title h3">Sugerir Contacto</Modal.Title></Modal.Header>
+                <Form onSubmit={handleAddTelefono}>
+                    <Modal.Body>
+                        <Form.Group className="mb-3"><Form.Label className="fw-bold">Nombre o Servicio</Form.Label><Form.Control required placeholder="Ej: Pedro Gasista" onChange={e => setNuevoTel({...nuevoTel, nombre: e.target.value})} /></Form.Group>
+                        <Form.Group className="mb-3"><Form.Label className="fw-bold">Teléfono</Form.Label><Form.Control required placeholder="11 2345 6789" onChange={e => setNuevoTel({...nuevoTel, telefono: e.target.value})} /></Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="fw-bold">Categoría</Form.Label>
+                            {!isNuevaCat ? (
+                                <div className="d-flex gap-2">
+                                    <Form.Select required onChange={e => setNuevoTel({...nuevoTel, categoria: e.target.value})}>
+                                        <option value="">Seleccionar...</option>
+                                        {categoriasExistentes.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                    </Form.Select>
+                                    <Button variant="outline-primary" onClick={() => setIsNuevaCat(true)}><FaPlus /></Button>
+                                </div>
+                            ) : (
+                                <InputGroup>
+                                    <Form.Control required placeholder="Escribe el rubro" onChange={e => setNuevoTel({...nuevoTel, categoria: e.target.value})} />
+                                    <Button variant="outline-secondary" onClick={() => setIsNuevaCat(false)}>Listado</Button>
+                                </InputGroup>
+                            )}
+                        </Form.Group>
+                    </Modal.Body>
+                    <Modal.Footer><Button variant="light" onClick={() => setShowModalTel(false)}>Cancelar</Button><Button variant="success" type="submit">Guardar</Button></Modal.Footer>
+                </Form>
+            </Modal>
         </Container>
     );
 };

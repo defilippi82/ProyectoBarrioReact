@@ -1,162 +1,66 @@
-/* =========================================
-   ESTILOS DEL TABLERO DE LA COMUNIDAD (CUBE)
-   ========================================= */
-
-/* PUNTO 4: Tipografía "Fresca y Divertida" (Carga Google Fonts) */
 @import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
 
-.board-container {
-    background-color: #fcfcfc;
-}
-
-/* PUNTO 4: Título Centrado y Divertido */
+/* Título con sombra formal */
 .main-board-title {
-    font-family: 'Patrick Hand', cursive; /* Tipografía estilo Comic Sans moderna */
-    letter-spacing: -1px;
-    color: #0f0f0f !important; /* Azul fresco */
-}
-
-/* --- Sección de Campañas Críticas (Sin Cambios) --- */
-.modern-announcement {
-    background: #fff9db;
-    border: 1px solid #ffec99;
-    border-radius: 12px;
-    padding: 15px 20px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    position: relative;
-    border-left: 5px solid #f08c00;
-}
-
-.announcement-icon {
-    font-size: 1.5rem;
-    color: #f08c00;
-}
-
-.announcement-body h6 {
-    margin: 0;
+    font-family: 'Patrick Hand', cursive;
+    color: #2c3e50 !important;
+    text-shadow: 2px 2px 5px rgba(0,0,0,0.1);
     font-weight: 700;
-    color: #444;
 }
 
-.announcement-body p {
-    margin: 0;
-    font-size: 0.9rem;
-    color: #666;
-}
-
-/* --- PUNTO 1 y 2: Tarjetas Estilo Post-it Adaptables y Coloridas --- */
+/* Post-its adaptables */
 .post-it-card {
+    border-radius: 4px 30px 4px 4px;
     padding: 25px;
-    border-radius: 4px 25px 4px 4px; /* Efecto hoja doblada */
+    transition: transform 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.05);
+    height: 100%;
     display: flex;
     flex-direction: column;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(0,0,0,0.05);
-    /* PUNTO 1: Sin min-height para que se adapte al contenido */
 }
 
 .post-it-card:hover {
-    transform: rotate(-0.5deg) translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.12) !important;
-}
-
-.post-it-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 15px;
-}
-
-.post-it-tag {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-}
-
-.delete-btn {
-    cursor: pointer;
-    font-size: 1rem;
-    opacity: 0.7;
-    transition: opacity 0.2s;
-}
-
-.delete-btn:hover {
-    opacity: 1;
+    transform: rotate(-0.5deg) scale(1.02);
 }
 
 .post-it-title {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 1.5rem;
+}
+
+/* Sección de Alertas */
+.modern-announcement {
+    background: #fff9db;
+    border-left: 6px solid #f08c00;
+    border-radius: 10px;
+    padding: 15px;
+}
+
+.announcement-icon {
+    color: #f08c00;
     font-weight: 800;
-    letter-spacing: -0.5px;
-}
-
-/* PUNTO 1: Texto completo, sin cortes */
-.post-it-text {
-    font-size: 1rem;
-    line-height: 1.6;
-    color: #333;
-    white-space: pre-line; /* Respeta los saltos de línea al escribir */
-}
-
-.post-it-footer {
     font-size: 0.8rem;
+    text-transform: uppercase;
+    margin-bottom: 5px;
 }
 
-/* --- PUNTO 3: Tarjetas de Contacto Grandes --- */
+/* Rating */
+.star-icon:hover {
+    transform: scale(1.3);
+    transition: transform 0.1s;
+}
+
+/* Botón flotante de acción */
+.btn-add-modern {
+    border-radius: 50px;
+    padding: 8px 20px;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
 .contact-card {
-    background: white;
+    border: none;
     border-radius: 15px;
     padding: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border: 1px solid #eee;
-}
-
-/* PUNTO 3: Aumentar tamaño de letra de contactos */
-.contact-name {
-    font-size: 1.25rem; /* Letra más grande */
-    margin-bottom: 3px;
-}
-
-.phone-number {
-    font-size: 1.2rem; /* Número más grande y legible */
-    letter-spacing: 0.5px;
-}
-
-.call-btn {
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-/* Tabs personalizadas (Estilo Tablero) */
-.custom-board-tabs {
-    border: none;
-    background: #f8f9fa;
-    border-radius: 12px;
-    padding: 5px;
-}
-
-.custom-board-tabs .nav-link {
-    border: none;
-    color: #777;
-    font-weight: 700;
-    padding: 12px 20px;
-    border-radius: 10px;
-    text-transform: uppercase;
-    font-size: 0.85rem;
-}
-
-.custom-board-tabs .nav-link.active {
-    color: #fff;
-    background-color: #2b3646; /* Azul Bootstrap */
-    box-shadow: 0 4px 10px rgba(13, 110, 253, 0.2);
-}
-
-.modern-search.lg .form-control {
-    border-radius: 10px;
+    background: white;
 }
