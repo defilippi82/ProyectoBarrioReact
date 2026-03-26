@@ -6,6 +6,7 @@ import { getFirestore, doc, setDoc } from "firebase/firestore";
 
 // --- LIBRERÍA DE TUTORIAL ---
 import Joyride, { STATUS } from 'react-joyride';
+import { GodPanel } from './components/Admin/GodPanel.jsx';
 
 // --- CONTEXTO ---
 import { UserProvider, UserContext } from './components/Services/UserContext';
@@ -199,7 +200,7 @@ const AppContent = () => {
           <Route path="/reservas/edit/:id" element={userData ? <EditarReserva /> : <Navigate to="/login" />} />
           <Route path="/socios/edit/:id" element={userData ? <EditarSocio /> : <Navigate to="/login" />} />
           <Route path="/seguridad" element={userData ? <SeguridadDashboard /> : <Navigate to="/login" />} />
-          
+          <Route path="/god-panel" element={<GodPanel />} />
           <Route path="/socios/create" element={<RegistrarSocio />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

@@ -3,7 +3,7 @@ import { Container, Tabs, Tab } from "react-bootstrap";
 import { CrearAlquiler } from "../Services/CrearAlquiler";
 import { ExplorarAlquileres } from "../Services/ExplorarAlquileres";
 import { MisPublicaciones } from "../Services/MisPublicaciones";
-
+import "./alquileres.css";
 
 export const Alquileres = () => {
   const [key, setKey] = useState("explorar");

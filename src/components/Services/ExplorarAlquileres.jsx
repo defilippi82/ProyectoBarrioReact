@@ -4,7 +4,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "/src/firebaseConfig/firebase";
 // 1. IMPORTAMOS LAS UTILIDADES
 import { formatPrecio, getOptimizedImage } from "/src/utils/formatters";
-import "./alquileres.css";
+import "../Socios/alquileres.css";
 
 export const ExplorarAlquileres = () => {
   const [alquileres, setAlquileres] = useState([]);

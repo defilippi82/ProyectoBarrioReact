@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, updateDoc, setDoc, increment } from 'firebase/firestore'; // Importes necesarios para la lógica de packs
 import { db } from '../../firebaseConfig/firebase';
-import { Form, Button, Row, Col, Card, Container, InputGroup } from 'react-bootstrap';
+import { Form, Button, Row, Col, Card, Container } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { FaUserPlus, FaHome, FaPhone, FaLock, FaEnvelope } from 'react-icons/fa';
 import Swal from "sweetalert2";
@@ -13,7 +13,9 @@ const MySwal = withReactContent(Swal);
 export const RegistrarSocio = () => {
   const navigate = useNavigate();
   const auth = getAuth();
-  const sociosCollection = collection(db, 'usuarios');
+  
+  // ID estático para tu primer cliente
+  const BARRIO_ID = "cube";
 
   // Estados del Formulario
   const [nombre, setNombre] = useState('');
@@ -23,20 +25,16 @@ export const RegistrarSocio = () => {
   const [lote, setLote] = useState('');
   const [isla, setIsla] = useState('');
   const [tel, setTel] = useState('');
-  const [codPais, setCodPais] = useState('+54'); // Argentina por defecto
+  const [codPais, setCodPais] = useState('+54');
   const [contrasena, setContrasena] = useState('');
   const [repetirContrasena, setRepetirContrasena] = useState('');
 
-  // SOLUCIÓN AL ERROR DEL ROL:
-  // Definimos los roles fuera o dentro pero los usamos en el estado principal
   const rolesMap = {
     propietario: { valor: 'propietario', administrador: false, propietario: true, inquilino: false, guardia: false },
     inquilino: { valor: 'inquilino', administrador: false, propietario: false, inquilino: true, guardia: false }
   };
 
-  // Seteamos el objeto completo de 'propietario' por defecto
- const [rolSeleccionado, setRolSeleccionado] = useState('propietario');
- // const [rol, setRol] = useState('propietario');
+  const [rolSeleccionado, setRolSeleccionado] = useState('propietario');
 
   const crearSocio = async (e) => {
     e.preventDefault();
@@ -49,22 +47,50 @@ export const RegistrarSocio = () => {
     }
 
     try {
+      // 1. VALIDACIÓN DE CUPO (Límite de 200 o el contratado)
+      const barrioRef = doc(db, "configuracionBarrios", BARRIO_ID);
+      const barrioSnap = await getDoc(barrioRef);
+
+      if (!barrioSnap.exists()) {
+        throw new Error("La configuración del barrio no fue encontrada.");
+      }
+
+      const config = barrioSnap.data();
+      if (config.usuariosActuales >= config.limiteUsuarios) {
+        return MySwal.fire({
+          title: 'Cupo Alcanzado',
+          text: `El barrio ${config.nombre} ha llegado al límite de usuarios de su plan actual.`,
+          icon: 'warning'
+        });
+      }
+
+      // 2. CREACIÓN EN AUTH
       const { user } = await createUserWithEmailAndPassword(auth, email, contrasena);
+      
       const idPublico = `${nombre.trim()}-${manzana.trim()}-${lote.trim()}`.toLowerCase().replace(/\s+/g, '-');
       const numeroCompleto = `${codPais}${tel}`;
 
-      await addDoc(sociosCollection, {
+      // 3. GUARDADO EN FIRESTORE (Usamos setDoc para vincularlo al UID de Auth)
+      // Agregamos barrioId sin tocar los campos anteriores
+      await setDoc(doc(db, "usuarios", user.uid), {
+        uid: user.uid,
         nombre,
         apellido,
         email,
         manzana,
         lote,
         isla,
-        rol: rolesMap[rolSeleccionado], // Aquí enviamos el valor ("propietario" o "inquilino")
-        contrasena: contrasena,
+        rol: rolesMap[rolSeleccionado],
+        contrasena: contrasena, // Mantengo el campo como lo tenías
         numerotelefono: numeroCompleto,
         idPublico,
+        barrioId: BARRIO_ID, // <--- CAMPO CLAVE PARA EL USERCONTEXT
         createdAt: new Date()
+      });
+
+      // 4. INCREMENTO AUTOMÁTICO DEL CONTADOR DEL BARRIO
+      await updateDoc(barrioRef, {
+        usuariosActuales: increment(1)
       });
 
       MySwal.fire({
@@ -162,27 +188,27 @@ export const RegistrarSocio = () => {
                 <h5 className="text-primary mb-3 border-bottom pb-2 mt-3">Seguridad y Rol</h5>
                 <Row>
                   <Col md={12} className="mb-3">
+                    <div className="d-flex gap-4 mb-2 ps-2">
+                        <Form.Check
+                            type="radio"
+                            label="Propietario"
+                            name="rolOptions"
+                            id="role-propietario"
+                            checked={rolSeleccionado === 'propietario'}
+                            onChange={() => setRolSeleccionado('propietario')}
+                            className="fw-bold text-secondary"
+                        />
+                        <Form.Check
+                            type="radio"
+                            label="Inquilino"
+                            name="rolOptions"
+                            id="role-inquilino"
+                            checked={rolSeleccionado === 'inquilino'}
+                            onChange={() => setRolSeleccionado('inquilino')}
+                            className="fw-bold text-secondary"
+                        />
+                    </div>
                     <Form.Floating>
-                    <Form.Check
-                      type="radio"
-                      label="Propietario"
-                      name="rolOptions"
-                      id="role-propietario"
-                      checked={rolSeleccionado === 'propietario'}
-                      onChange={() => setRolSeleccionado('propietario')}
-                      className="fw-bold text-secondary"
-                    />
-
-                    {/* Opción Inquilino */}
-                    <Form.Check
-                      type="radio"
-                      label="Inquilino"
-                      name="rolOptions"
-                      id="role-inquilino"
-                      checked={rolSeleccionado === 'inquilino'}
-                      onChange={() => setRolSeleccionado('inquilino')}
-                      className="fw-bold text-secondary"
-                    />
                       <Form.Select 
                         value={rolSeleccionado} 
                         onChange={(e) => setRolSeleccionado(e.target.value)}
@@ -190,7 +216,7 @@ export const RegistrarSocio = () => {
                         <option value="propietario">Propietario</option>
                         <option value="inquilino">Inquilino</option>
                       </Form.Select>
-                      <label>Tipo de Usuario (Rol)</label>
+                      <label>Confirmar Rol</label>
                     </Form.Floating>
                   </Col>
                 </Row>
@@ -224,7 +250,6 @@ export const RegistrarSocio = () => {
                   </Col>
                 </Row>
 
-                {/* Enlace opcional para volver al login */}
                 <div className="text-center mt-3">
                   <Button variant="link" onClick={() => navigate('/login')} className="text-muted small">
                     ¿Ya tenés cuenta? Iniciá sesión

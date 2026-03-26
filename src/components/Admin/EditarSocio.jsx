@@ -21,13 +21,13 @@ export const EditarSocio = () => {
         isla: "",
         numerotelefono: "",
         idPublico: "",
-        rol: { valor: 'propietario', administrador: false, propietario: true, inquilino: false, guardia: false }
+        rol: { valor: 'propietario', administrador: false, propietario: true, inquilino: false, seguridad: false }
     });
     const roles = new Map([
-        ['administrador', { valor: 'administrador', administrador: true, propietario: true, inquilino: true, guardia: true }],
-        ['propietario', { valor: 'propietario', administrador: false, propietario: true, inquilino: false, guardia: false }],
-        ['inquilino', { valor: 'inquilino', administrador: false, propietario: false, inquilino: true, guardia: false }],
-        ['guardia', { valor: 'guardia', administrador: false, propietario: false, inquilino: false, guardia: true }],
+        ['administrador', { valor: 'administrador', administrador: true, propietario: true, inquilino: true, seguridad: true }],
+        ['propietario', { valor: 'propietario', administrador: false, propietario: true, inquilino: false, seguridad: false }],
+        ['inquilino', { valor: 'inquilino', administrador: false, propietario: false, inquilino: true, seguridad: false }],
+        ['seguridad', { valor: 'seguridad', administrador: false, propietario: false, inquilino: false, seguridad: true }],
       ]);
     const navigate = useNavigate();
 
