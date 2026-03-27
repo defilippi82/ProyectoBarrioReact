@@ -4,10 +4,10 @@ export const Footer = () => {
   return (
     
       <div className="footer">
-    <hr class="sm-4" />
+    <hr className="sm-4" />
 
       
-      <section class="sm-4 text-center">
+      <section className="sm-4 text-center">
        
                 
         <a

@@ -100,7 +100,7 @@ export const NavbarComponent = ({ startTutorial }) => {
               </div>
             )}
 
-            <Nav className="justify-content-end flex-grow-1 pe-3">
+            <Nav className="justify-content-end align-items-center flex-grow-1 pe-3">
               
               {/* --- PACK STANDARD --- */}
               <NavItem to="/novedades" icon={faHome} text="Inicio" />
@@ -141,12 +141,12 @@ export const NavbarComponent = ({ startTutorial }) => {
               <Button 
                 variant="outline-light" 
                 onClick={() => { startTutorial(); setShowOffcanvas(false); }} 
-                className="mt-2 mt-lg-0 ms-lg-3 fw-bold"
+                className="mt-2 mt-lg-0 ms-lg-3 fw-bold text-nowrap"
               >
                 <FontAwesomeIcon icon={faLifeRing} className="me-2" /> AYUDA
               </Button>
 
-              <Button variant="outline-danger" onClick={handleLogout} className="mt-2 mt-lg-0 ms-lg-2 fw-bold">
+              <Button variant="outline-danger" onClick={handleLogout} className="mt-2 mt-lg-0 ms-lg-2 fw-bold text-nowrap">
                 <FontAwesomeIcon icon={faSignOutAlt} className="me-2" /> SALIR
               </Button>
             </Nav>

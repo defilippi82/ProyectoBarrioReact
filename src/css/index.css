@@ -85,7 +85,7 @@ body {
 .navbar-collapse {
   display: flex;
   align-items: center;
-  white-space: nowrap;
+  /*white-space: nowrap;*/ /* Evita que el texto se divida en varias líneas */
 }
 
 .navbar-collapse strong {
@@ -105,7 +105,7 @@ body {
 }
 
 .container {
-  max-width: 90%;
+  /*max-width: 90%;*/
   margin: 0 auto;
   padding: 1rem auto;
   border-radius: 8px;
@@ -123,7 +123,8 @@ h1 {
 
 /* Navbar Styles */
 .navbar-collapse {
-  width: 90%;
+  /*width: 90%;*/
+  margin: 0 auto;
   align-items: center;
   justify-content: center;
   text-align: center;
@@ -131,9 +132,9 @@ h1 {
 
 .navlinks {
   color: rgb(33, 238, 98);
-  font-size: medium;
+  font-size: 0.9rem;
   margin-top: 2px;
-  margin-right: 5px;
+  margin-right: 10px;
 }
 
 .navlinks:hover {
@@ -283,7 +284,7 @@ h1 {
     padding: 1rem auto;
   }
   .navlinks {
-    font-size: medium;
+    font-size: 0.9rem;
     margin-right: 5px;
   }
   .form-control {
