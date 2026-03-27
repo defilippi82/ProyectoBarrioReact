@@ -11,24 +11,24 @@ export const Footer = () => {
        
                 
         <a
-           class="btn btn-outline-light btn-floating m-1"
+           className="btn btn-outline-light btn-floating m-1"
            href="mailto:federico.filippi@trenesargentinos.gob.ar"
            role="button"
-           ><i class="fa fa-train "></i
+           ><i className="fa fa-train "></i
           ></a>
 
         <a
-           class="btn btn-outline-light btn-floating m-1"
+           className="btn btn-outline-light btn-floating m-1"
            href="https://www.linkedin.com/in/defilippi/"
            role="button"
-           ><i class="fab fa-linkedin-in"></i
+           ><i className="fab fa-linkedin-in"></i
           ></a>
 
         <a
-           class="btn btn-outline-light btn-floating m-1"
+           className="btn btn-outline-light btn-floating m-1"
            href="https://github.com/defilippi82"
            role="button"
-           ><i class="fab fa-github"></i
+           ><i className="fab fa-github"></i
           ></a>
       </section>
       

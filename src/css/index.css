@@ -2,7 +2,7 @@
 /* Dentro de tu index.css, modifica o añade esto */
 @media (max-width: 576px) {
   .container {
-    padding: 8px; /* Reducimos para ganar espacio */
+    padding: 1rem auto; /* Reducimos para ganar espacio */
   }
   
   /* IMPORTANTE: No fuerces el width auto aquí si usas Floating Labels */
@@ -99,7 +99,7 @@ body {
 #root {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem auto;
   text-align: center;
   background-position-y: center;
 }
@@ -107,7 +107,7 @@ body {
 .container {
   max-width: 90%;
   margin: 0 auto;
-  padding: 20px;
+  padding: 1rem auto;
   border-radius: 8px;
   background-color: #3e8ac484;
   color: #eee;
@@ -250,7 +250,7 @@ h1 {
 /* Media Queries */
 @media (max-width: 576px) {
   .container {
-    padding: 10px;
+    padding: 0rem auto;
   }
   .navlinks {
     font-size: small;
@@ -280,7 +280,7 @@ h1 {
   }
 @media (min-width: 577px) and (max-width: 768px) {
   .container {
-    padding: 15px;
+    padding: 1rem auto;
   }
   .navlinks {
     font-size: medium;

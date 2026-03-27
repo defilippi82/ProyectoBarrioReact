@@ -149,7 +149,7 @@ const AppContent = () => {
   if (loading) return null;
 
   return (
-    <div className="App container">
+    <div className="App container" style={{ minHeight: '100vh', display: 'table-cell', flexDirection: 'column', padding: '0rem auto' }}>
       {/* COMPONENTE JOYRIDE PARA EL TUTORIAL */}
       <Joyride
         steps={steps}
@@ -179,7 +179,7 @@ const AppContent = () => {
         startTutorial={() => setRunTutorial(true)} 
       />
 
-      <main style={{ marginBottom: '100px', marginTop: '80px' }}>
+      <main style={{ marginBottom: '100px', marginTop: '80px', padding: '0rem auto' }}>
         <Routes>
           <Route path="/" element={userData ? <Navigate to="/novedades" /> : <Login />} />
           <Route path="/login" element={!userData ? <Login /> : <Navigate to="/novedades" />} />

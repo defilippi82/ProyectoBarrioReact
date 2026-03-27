@@ -45,7 +45,7 @@ body {
 @media (max-width: 768px) {
   .container {
     max-width: 100%;
-    padding: 10px;
+    padding: 0rem auto; /* Reducimos el padding para ganar espacio en móviles */
   }
   
   /* Inputs al 100% en mobile */
