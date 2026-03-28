@@ -3,61 +3,108 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Formulario de Invitación</title>
+  <title>Registro de Acceso | Invitaciones</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { background-color: #69acee; }
-    .form-container { max-width: 600px; margin: 50px auto; padding: 30px; border-radius: 10px; background: rgb(174, 249, 246); box-shadow: 0 0 20px rgba(0,0,0,0.1); }
-    .header { text-align: center; margin-bottom: 30px; }
+    body { 
+      background-color: #f4f7f6; 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .form-container { 
+      max-width: 550px; 
+      margin: 40px auto; 
+      padding: 40px 30px; 
+      border-radius: 12px; 
+      background: #ffffff; 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
+    }
+    .header { 
+      text-align: center; 
+      margin-bottom: 35px; 
+      border-bottom: 2px solid #e9ecef;
+      padding-bottom: 20px;
+    }
+    .header h2 {
+      color: #2c3e50;
+      font-weight: 700;
+      font-size: 1.5rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .btn-primary {
+      background-color: #2c3e50;
+      border-color: #2c3e50;
+      padding: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .btn-primary:hover {
+      background-color: #1a252f;
+    }
+    .spinner-overlay {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255,255,255,0.8); z-index: 9999; justify-content: center; align-items: center;
+    }
   </style>
 </head>
 <body>
+
+  <div class="spinner-overlay" id="loadingSpinner">
+    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+  </div>
+
   <div class="container">
     <div class="form-container">
       <div class="header">
-        <h2>Formulario de Invitación</h2>
-        <p id="invitador-text" class="text-muted"></p>
+        <h2>Registro de Acceso</h2>
+        <p id="invitador-text" class="text-muted mt-2 fw-bold">Verificando enlace...</p>
       </div>
       
-      <form id="invitacionForm">
+      <form id="invitacionForm" style="display: none;">
+        <input type="hidden" id="barrioId" name="barrioId">
         <input type="hidden" id="lote" name="lote">
         <input type="hidden" id="invitador" name="invitador">
         <input type="hidden" id="telefonoInvitador" name="telefonoInvitador">
+        <input type="hidden" id="registradoPor" name="registradoPor">
         
         <div class="mb-3">
-          <label for="nombre" class="form-label">Nombre completo*</label>
-          <input type="text" class="form-control" id="nombre" name="nombre" required>
+          <label for="nombre" class="form-label fw-bold small text-muted">Nombre Completo *</label>
+          <input type="text" class="form-control bg-light" id="nombre" name="nombre" required>
+        </div>
+        
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="dni" class="form-label fw-bold small text-muted">DNI *</label>
+            <input type="text" class="form-control bg-light" id="dni" name="dni" required placeholder="Sin puntos">
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="patente" class="form-label fw-bold small text-muted">Patente Vehículo</label>
+            <input type="text" class="form-control bg-light" id="patente" name="patente" placeholder="Opcional">
+          </div>
         </div>
         
         <div class="mb-3">
-          <label for="dni" class="form-label">DNI*</label>
-          <input type="text" class="form-control" id="dni" name="dni" required placeholder="XX.XXX.XXX">
+          <label for="telefono" class="form-label fw-bold small text-muted">Teléfono de Contacto *</label>
+          <input type="tel" class="form-control bg-light" id="telefono" name="telefono" required>
         </div>
         
-        <div class="mb-3">
-          <label for="patente" class="form-label">Patente del vehículo</label>
-          <input type="text" class="form-control" id="patente" name="patente" placeholder="XXX-XXX">
+        <div class="mb-4">
+          <label for="email" class="form-label fw-bold small text-muted">Correo Electrónico (Para recibir QR) *</label>
+          <input type="email" class="form-control bg-light" id="email" name="email" required>
         </div>
         
-        <div class="mb-3">
-          <label for="telefono" class="form-label">Teléfono*</label>
-          <input type="tel" class="form-control" id="telefono" name="telefono" required>
-        </div>
-        
-        <div class="mb-3">
-          <label for="email" class="form-label">Email (Requerido para el código QR)*</label>
-          <input type="email" class="form-control" id="email" name="email" required>
-        </div>
-        
-        <div class="form-check mb-3">
+        <div class="form-check mb-4 small">
           <input class="form-check-input" type="checkbox" id="privacidad" required>
-          <label class="form-check-label" for="privacidad">
-            Acepto el tratamiento de mis datos según la política de privacidad
+          <label class="form-check-label text-muted" for="privacidad">
+            Confirmo que los datos ingresados son correctos y acepto las normativas de ingreso del barrio.
           </label>
         </div>
         
         <div class="d-grid">
-          <button type="submit" class="btn btn-primary">Enviar Datos</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmit">Generar Acceso</button>
         </div>
       </form>
     </div>
@@ -66,12 +113,12 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <script>
-    // Inicializar EmailJS con tu User ID
     emailjs.init("F2yt1jfmdvtF48It0");
 
-    // Configuración Firebase
+    // Firebase Config (Restringir esta clave en Google Cloud Platform)
     const firebaseConfig = {
       apiKey: "AIzaSyD8lSjoGXYBRo8HDm8fQtmJWT9FQrEVtHg",
       authDomain: "cube-b5537.firebaseapp.com",
@@ -83,48 +130,51 @@
       measurementId: "G-3HVP2KTDDX"
     };
     
-    // Inicializar Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     
-    // Obtener parámetros de la URL
     const urlParams = new URLSearchParams(window.location.search);
     const idPublico = urlParams.get('idPublico'); 
     
-    // Número de guardia por defecto
-    const telefonoGuardia = '5491112345678'; 
-    
+    // Al cargar la página, verificamos quién invita y a qué barrio pertenece
     if (idPublico) {
+      document.getElementById('loadingSpinner').style.display = 'flex';
+      
       db.collection("usuarios")
         .where("idPublico", "==", idPublico)
         .limit(1)
         .get()
         .then(querySnapshot => {
+          document.getElementById('loadingSpinner').style.display = 'none';
           if (!querySnapshot.empty) {
             const data = querySnapshot.docs[0].data();
+            
+            // Asignación Dinámica Multi-Barrio
+            document.getElementById('barrioId').value = data.barrioId || 'cube'; // Fallback a cube por las dudas
+            document.getElementById('registradoPor').value = data.uid || data.id || 'desconocido';
             document.getElementById('lote').value = `${data.manzana}-${data.lote}`;
             document.getElementById('invitador').value = data.nombre;
             document.getElementById('telefonoInvitador').value = data.numerotelefono || '';
-            document.getElementById('invitador-text').textContent = `Invitado por: ${data.nombre}`;
+            
+            document.getElementById('invitador-text').innerHTML = `Autoriza el ingreso: <span class="text-primary">${data.nombre}</span> <br><small>Lote: ${data.manzana}-${data.lote}</small>`;
+            document.getElementById('invitacionForm').style.display = 'block';
           } else {
-            alert("❌ Enlace inválido o expirado.");
+            Swal.fire('Enlace inválido', 'El enlace de invitación ha expirado o no existe.', 'error');
+            document.getElementById('invitador-text').textContent = "Acceso denegado.";
           }
         })
         .catch(error => {
-          console.error("Error buscando al invitador:", error);
-          alert("❌ No se pudo cargar el invitador. Intenta más tarde.");
+          document.getElementById('loadingSpinner').style.display = 'none';
+          Swal.fire('Error', 'No se pudo verificar la invitación. Intente más tarde.', 'error');
         });
     } else {
-      alert("❌ No se encontró ID de invitador en el enlace.");
+      document.getElementById('invitador-text').textContent = "Enlace incompleto. Falta ID de autorización.";
     }
 
     document.getElementById('invitacionForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-
-      if (!document.getElementById('privacidad').checked) {
-        alert('Debes aceptar la política de privacidad');
-        return;
-      }
+      document.getElementById('loadingSpinner').style.display = 'flex';
+      document.getElementById('btnSubmit').disabled = true;
 
       const formData = {
         nombre: document.getElementById('nombre').value.trim(),
@@ -135,33 +185,28 @@
         lote: document.getElementById('lote').value,
         invitador: document.getElementById('invitador').value,
         telefonoInvitador: document.getElementById('telefonoInvitador').value,
-        fecha: new Date().toISOString(),
-        estado: 'pendiente',
-        ip: await obtenerIP(),
         
-        // CAMPOS CLAVES PARA GUARDIA AÑADIDOS
+        // Datos cruciales para la BD y el Dashboard de Guardia
+        barrioId: document.getElementById('barrioId').value,
+        registradoPor: document.getElementById('registradoPor').value,
+        fecha: new Date().toISOString(),
+        fechaCreacion: firebase.firestore.FieldValue.serverTimestamp(),
+        estado: 'pendiente',
         ingresado: false,
         fechaIngreso: null,
         fechaSalida: null
       };
 
       try {
-        // CAMBIO IMPORTANTE: Guardamos en 'invitados' para sincronizar con la App React
+        // 1. Guardar en Firestore y obtener el ID
         const docRef = await db.collection('invitados').add(formData);
+        const invitadoId = docRef.id;
 
-        // LÓGICA DE ENVÍO AUTOMÁTICO DE QR POR EMAILJS
+        // 2. Generar QR SÓLO CON EL ID DEL DOCUMENTO (Para que la guardia lo lea)
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${invitadoId}`;
+
+        // 3. Enviar correo con EmailJS
         if (formData.email) {
-          const qrData = JSON.stringify({
-            nombre: formData.nombre,
-            dni: formData.dni,
-            patente: formData.patente,
-            lote: formData.lote,
-            invitador: formData.invitador
-          });
-          
-          // Generamos una URL de imagen dinámica del QR
-          const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrData)}`;
-
           const templateParams = {
             nombre_invitado: formData.nombre,
             nombre_anfitrion: formData.invitador,
@@ -170,49 +215,35 @@
             qr_image_url: qrUrl,
             email_invitado: formData.email
           };
-
           await emailjs.send("service_invitado", "template_listainvitados", templateParams);
         }
 
-        // CONTINÚA EL FLUJO ORIGINAL HACIA WHATSAPP
+        // 4. Redirigir a WhatsApp
+        const telefonoGuardia = '5491149924327';
         const telefonoDestino = formData.telefonoInvitador || telefonoGuardia;
 
-        const mensajeWhatsApp = `📋 *Nueva Invitación Registrada* 📋
+        const mensajeWhatsApp = `✅ *Registro de Visita Completado*\n\nHola ${formData.invitador}, he completado mis datos para el ingreso:\n\n👤 *Nombre:* ${formData.nombre}\n🆔 *DNI:* ${formData.dni}\n🚗 *Patente:* ${formData.patente || 'N/A'}`;
+        
+        document.getElementById('loadingSpinner').style.display = 'none';
+        
+        await Swal.fire({
+          title: '¡Registro Exitoso!',
+          text: 'Se ha enviado un código QR a tu correo electrónico. A continuación se abrirá WhatsApp para avisarle al anfitrión.',
+          icon: 'success',
+          confirmButtonText: 'Continuar',
+          confirmButtonColor: '#2c3e50'
+        });
 
-🔹 *Invitado:* ${formData.nombre}
-🔹 *DNI:* ${formData.dni}
-🔹 *Teléfono:* ${formData.telefono}
-🔹 *Email:* ${formData.email || 'No especificado'}
-
-🚗 *Vehículo:*
-▸ Patente: ${formData.patente || 'No especificada'}
-
-🏠 *Datos de Invitación:*
-▸ Lote: ${formData.lote || 'No especificado'}
-▸ Invitado por: ${formData.invitador || 'Directo'}
-
-📅 Fecha: ${new Date().toLocaleString()}`;
-
-        const mensajeCodificado = encodeURIComponent(mensajeWhatsApp);
-        window.open(`https://wa.me/${telefonoDestino}?text=${mensajeCodificado}`, '_blank');
-
-        alert('✅ Datos registrados y QR enviado a tu correo exitosamente. Se abrirá WhatsApp para confirmación.');
         document.getElementById('invitacionForm').reset();
+        window.location.href = `https://wa.me/${telefonoDestino}?text=${encodeURIComponent(mensajeWhatsApp)}`;
+
       } catch (error) {
         console.error('Error:', error);
-        alert('❌ Ocurrió un error. Por favor intenta nuevamente.');
+        document.getElementById('loadingSpinner').style.display = 'none';
+        document.getElementById('btnSubmit').disabled = false;
+        Swal.fire('Error', 'Ocurrió un problema de conexión. Por favor intenta nuevamente.', 'error');
       }
     });
-
-    async function obtenerIP() {
-      try {
-        const response = await fetch('https://api.ipify.org?format=json');
-        const data = await response.json();
-        return data.ip;
-      } catch {
-        return 'no-disponible';
-      }
-    }
   </script>
 </body>
 </html>
