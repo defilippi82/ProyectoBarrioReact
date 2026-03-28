@@ -11,11 +11,9 @@ import { db } from "../../firebaseConfig/firebase";
 import { UserContext } from '../Services/UserContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faShieldAlt, faQrcode, faUserCheck, faSignOutAlt, 
-  faSearch, faCamera, faClock, faExclamationTriangle, faUserPlus, faTimes, faTrashAlt 
+  faSearch, faCamera, faClock, faUserPlus, faTimes 
 } from '@fortawesome/free-solid-svg-icons';
 import Swal from 'sweetalert2';
-import { Html5QrcodeScanner } from 'html5-qrcode';
 
 export const SeguridadDashboard = () => {
   const { userData } = useContext(UserContext);
@@ -34,7 +32,6 @@ export const SeguridadDashboard = () => {
   useEffect(() => {
     const limpiarHistorialViejo = async () => {
       if (!userData?.barrioId) return;
-
       const treintaDiasAtras = new Date();
       treintaDiasAtras.setDate(treintaDiasAtras.getDate() - 30);
 
@@ -47,17 +44,15 @@ export const SeguridadDashboard = () => {
       const snapshot = await getDocs(q);
       snapshot.forEach(async (documento) => {
         const data = documento.data();
-        // Verificamos si la fecha de salida fue hace más de 30 días
         if (data.fechaSalida && data.fechaSalida.toDate() < treintaDiasAtras) {
           await deleteDoc(doc(db, "invitados", documento.id));
         }
       });
     };
-
     limpiarHistorialViejo();
   }, [userData]);
 
-  // 2. Escucha en tiempo real de invitados
+  // 2. ESCUCHA EN TIEMPO REAL
   useEffect(() => {
     if (!userData?.barrioId) return;
 
@@ -81,8 +76,37 @@ export const SeguridadDashboard = () => {
     return () => { unsubscribe(); clearInterval(timer); };
   }, [userData]);
 
-  // Lógica de Escaneo y Procesamiento (Igual a la anterior)
-  // ... (procesarAcceso, handleManualEntry, calcularPermanencia se mantienen igual)
+  // 3. LÓGICA DEL ESCÁNER (CDN / GLOBAL)
+  useEffect(() => {
+    let scanner = null;
+
+    if (showScanner) {
+      // Usamos un pequeño delay para asegurar que el div "reader" esté renderizado
+      const initScanner = setTimeout(() => {
+        if (window.Html5QrcodeScanner) {
+          scanner = new window.Html5QrcodeScanner("reader", { 
+            fps: 10, 
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+          });
+
+          scanner.render((id) => {
+            procesarAcceso(id);
+            setShowScanner(false);
+          }, (error) => { /* Errores de lectura silenciosos */ });
+        } else {
+          Swal.fire("Error", "La librería de la cámara no cargó correctamente.", "error");
+        }
+      }, 300);
+
+      return () => {
+        clearTimeout(initScanner);
+        if (scanner) {
+          scanner.clear().catch(err => console.error("Error cleanup:", err));
+        }
+      };
+    }
+  }, [showScanner]);
 
   const procesarAcceso = async (idInvitado) => {
     try {
@@ -97,7 +121,7 @@ export const SeguridadDashboard = () => {
       const inv = docSnap.data();
 
       if (inv.estado === 'retirado') {
-        Swal.fire("Alerta", "Este invitado ya registró su salida anteriormente.", "warning");
+        Swal.fire("Alerta", "Este QR ya fue utilizado para salida.", "warning");
         return;
       }
 
@@ -149,7 +173,6 @@ export const SeguridadDashboard = () => {
 
   return (
     <Container fluid className="py-4 mt-5 bg-light">
-      {/* BANNERS ESTRATÉGICOS */}
       <Row className="mb-4 g-3">
         <Col md={3}>
           <Card className="text-center border-0 shadow-sm bg-info text-white py-2">
@@ -170,7 +193,7 @@ export const SeguridadDashboard = () => {
         <Col md={3}>
           <Card className="text-center border-0 shadow-sm bg-secondary text-white py-2">
             <Card.Body>
-              <h6 className="text-uppercase small fw-bold opacity-75">Salieron (Hoy)</h6>
+              <h6 className="text-uppercase small fw-bold opacity-75">Salieron</h6>
               <h2 className="display-6 fw-bold mb-0">{stats.salieron}</h2>
             </Card.Body>
           </Card>
