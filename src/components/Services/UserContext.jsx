@@ -18,46 +18,35 @@ export const UserProvider = ({ children }) => {
   }, []);
 
   // 2. Escuchar la configuración del Barrio y aplicar White Label
-  useEffect(() => {
-    if (!userData || !userData.barrioId) {
-      setLoading(false);
-      return;
+ useEffect(() => {
+  // Verificación estricta: si no hay usuario o no hay ID de barrio, no pidas nada a Firebase
+  if (!userData || !userData.barrioId) {
+    setLoading(false);
+    return;
+  }
+
+  const barrioRef = doc(db, 'configuracionBarrios', userData.barrioId);
+  
+  const unsubBarrio = onSnapshot(barrioRef, (snapshot) => {
+    if (snapshot.exists()) {
+      const data = snapshot.data();
+      setBarrioConfig({
+        id: snapshot.id,
+        ...data,
+        isStandard: data.plan === 'standard' || data.plan === 'full',
+        isSeguridad: data.plan === 'seguridad' || data.plan === 'full',
+        cupoAgotado: data.usuariosActuales >= data.limiteUsuarios
+      });
     }
+    setLoading(false);
+  }, (error) => {
+    // Esto atrapa el error de Firebase sin romper la App
+    console.warn("Esperando permisos de Firebase o barrio no encontrado...");
+    setLoading(false);
+  });
 
-    const barrioRef = doc(db, 'configuracionBarrios', userData.barrioId);
-    
-    const unsubBarrio = onSnapshot(barrioRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        
-        // --- INYECCIÓN DINÁMICA DE ESTILOS ---
-        const root = document.documentElement;
-        if (data.colorPrincipal) {
-          root.style.setProperty('--primary-color', data.colorPrincipal);
-        }
-        if (data.colorSecundario) {
-          root.style.setProperty('--secondary-color', data.colorSecundario);
-        }
-        // -------------------------------------
-
-        setBarrioConfig({
-          id: snapshot.id,
-          ...data,
-          isStandard: data.plan === 'standard' || data.plan === 'full',
-          isSeguridad: data.plan === 'seguridad' || data.plan === 'full',
-          isAdminPack: data.plan === 'administrativo' || data.plan === 'full',
-          isFull: data.plan === 'full',
-          cupoAgotado: data.usuariosActuales >= data.limiteUsuarios
-        });
-      }
-      setLoading(false);
-    }, (error) => {
-      console.error("Error en configuración de barrio:", error);
-      setLoading(false);
-    });
-
-    return () => unsubBarrio();
-  }, [userData]);
+  return () => unsubBarrio();
+}, [userData]);
 
   const logout = () => {
     localStorage.removeItem('userData');
