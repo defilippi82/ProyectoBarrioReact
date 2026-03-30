@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '/src/firebaseConfig/firebase.js';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { db, auth } from '../../firebaseConfig/firebase'; // Asegúrate de que la ruta sea correcta
 
 export const UserContext = createContext();
 
@@ -9,53 +10,92 @@ export const UserProvider = ({ children }) => {
   const [barrioConfig, setBarrioConfig] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 1. Recuperar sesión local
   useEffect(() => {
-    const savedUser = localStorage.getItem('userData');
-    if (savedUser) {
-      setUserData(JSON.parse(savedUser));
-    }
+    // 1. Escuchar el estado de autenticación real de Firebase
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // El usuario está logueado en Firebase Auth, buscamos su perfil en Firestore
+        const userRef = doc(db, 'users', user.uid);
+        
+        const unsubUser = onSnapshot(userRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setUserData({ uid: user.uid, email: user.email, ...data });
+            // Guardamos un backup en localStorage por si acaso
+            localStorage.setItem('userData', JSON.stringify({ uid: user.uid, ...data }));
+          } else {
+            console.warn("No se encontró el documento del usuario en Firestore");
+            setLoading(false);
+          }
+        }, (error) => {
+          console.error("Error de permisos en colección 'users':", error);
+          setLoading(false);
+        });
+
+        return () => unsubUser();
+      } else {
+        // No hay usuario logueado
+        setUserData(null);
+        setBarrioConfig(null);
+        localStorage.removeItem('userData');
+        setLoading(false);
+      }
+    });
+
+    return () => unsubscribeAuth();
   }, []);
 
-  // 2. Escuchar la configuración del Barrio y aplicar White Label
- useEffect(() => {
-  // Verificación estricta: si no hay usuario o no hay ID de barrio, no pidas nada a Firebase
-  if (!userData || !userData.barrioId) {
-    setLoading(false);
-    return;
-  }
-
-  const barrioRef = doc(db, 'configuracionBarrios', userData.barrioId);
-  
-  const unsubBarrio = onSnapshot(barrioRef, (snapshot) => {
-    if (snapshot.exists()) {
-      const data = snapshot.data();
-      setBarrioConfig({
-        id: snapshot.id,
-        ...data,
-        isStandard: data.plan === 'standard' || data.plan === 'full',
-        isSeguridad: data.plan === 'seguridad' || data.plan === 'full',
-        cupoAgotado: data.usuariosActuales >= data.limiteUsuarios
-      });
+  // 2. Escuchar la configuración del Barrio (White Label)
+  useEffect(() => {
+    // Solo pedimos el barrio si tenemos un userData con barrioId
+    if (!userData || !userData.barrioId) {
+      if (!userData) setLoading(false); 
+      return;
     }
-    setLoading(false);
-  }, (error) => {
-    // Esto atrapa el error de Firebase sin romper la App
-    console.warn("Esperando permisos de Firebase o barrio no encontrado...");
-    setLoading(false);
-  });
 
-  return () => unsubBarrio();
-}, [userData]);
+    const barrioRef = doc(db, 'configuracionBarrios', userData.barrioId);
+    
+    const unsubBarrio = onSnapshot(barrioRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        
+        // Seteamos la configuración extendida
+        setBarrioConfig({
+          id: snapshot.id,
+          ...data,
+          isStandard: data.plan === 'standard' || data.plan === 'full',
+          isSeguridad: data.plan === 'seguridad' || data.plan === 'full',
+          cupoAgotado: (data.usuariosActuales || 0) >= (data.limiteUsuarios || 100)
+        });
 
-  const logout = () => {
-    localStorage.removeItem('userData');
-    setUserData(null);
-    setBarrioConfig(null);
-    // Resetear colores al default
-    const root = document.documentElement;
-    root.style.setProperty('--primary-color', '#2c3e50');
-    root.style.setProperty('--secondary-color', '#18bc9c');
+        // Aplicamos los colores dinámicos al CSS global
+        const root = document.documentElement;
+        root.style.setProperty('--primary-color', data.colorPrincipal || '#2c3e50');
+        root.style.setProperty('--secondary-color', data.colorSecundario || '#18bc9c');
+      }
+      setLoading(false);
+    }, (error) => {
+      console.warn("Falta de permisos para leer barrio o ID inexistente.");
+      setLoading(false);
+    });
+
+    return () => unsubBarrio();
+  }, [userData]);
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      localStorage.removeItem('userData');
+      setUserData(null);
+      setBarrioConfig(null);
+      
+      // Resetear colores al default
+      const root = document.documentElement;
+      root.style.setProperty('--primary-color', '#2c3e50');
+      root.style.setProperty('--secondary-color', '#18bc9c');
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    }
   };
 
   return (
