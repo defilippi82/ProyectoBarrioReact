@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { collection, doc, getDoc, updateDoc, setDoc, increment } from 'firebase/firestore'; // Importes necesarios para la lógica de packs
+import { collection, doc, getDoc, updateDoc, setDoc, increment, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../../firebaseConfig/firebase';
 import { Form, Button, Row, Col, Card, Container } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { FaUserPlus, FaHome, FaPhone, FaLock, FaEnvelope } from 'react-icons/fa';
+import { FaUserPlus, FaHome, FaPhone, FaLock, FaEnvelope, FaCity } from 'react-icons/fa';
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 
@@ -14,8 +14,9 @@ export const RegistrarSocio = () => {
   const navigate = useNavigate();
   const auth = getAuth();
   
-  // ID estático para tu primer cliente
-  const BARRIO_ID = "cube";
+  // ESTADOS PARA BARRIOS
+  const [barrios, setBarrios] = useState([]);
+  const [barrioSeleccionado, setBarrioSeleccionado] = useState('');
 
   // Estados del Formulario
   const [nombre, setNombre] = useState('');
@@ -28,17 +29,33 @@ export const RegistrarSocio = () => {
   const [codPais, setCodPais] = useState('+54');
   const [contrasena, setContrasena] = useState('');
   const [repetirContrasena, setRepetirContrasena] = useState('');
+  const [rolSeleccionado, setRolSeleccionado] = useState('propietario');
+
+  // Cargar barrios disponibles al iniciar
+  useEffect(() => {
+    const obtenerBarrios = async () => {
+      try {
+        const q = query(collection(db, "configuracionBarrios"), orderBy("nombre"));
+        const snap = await getDocs(q);
+        setBarrios(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (error) {
+        console.error("Error cargando barrios:", error);
+      }
+    };
+    obtenerBarrios();
+  }, []);
 
   const rolesMap = {
     propietario: { valor: 'propietario', administrador: false, propietario: true, inquilino: false, guardia: false },
     inquilino: { valor: 'inquilino', administrador: false, propietario: false, inquilino: true, guardia: false }
   };
 
-  const [rolSeleccionado, setRolSeleccionado] = useState('propietario');
-
   const crearSocio = async (e) => {
     e.preventDefault();
 
+    if (!barrioSeleccionado) {
+      return MySwal.fire('Atención', 'Debes seleccionar un barrio para registrarte', 'warning');
+    }
     if (contrasena.length < 6) {
       return MySwal.fire('Error', 'La contraseña debe tener al menos 6 caracteres', 'error');
     }
@@ -47,21 +64,13 @@ export const RegistrarSocio = () => {
     }
 
     try {
-      // 1. VALIDACIÓN DE CUPO (Límite de 200 o el contratado)
-      const barrioRef = doc(db, "configuracionBarrios", BARRIO_ID);
+      // 1. VALIDACIÓN DE CUPO DINÁMICA
+      const barrioRef = doc(db, "configuracionBarrios", barrioSeleccionado);
       const barrioSnap = await getDoc(barrioRef);
-
-      if (!barrioSnap.exists()) {
-        throw new Error("La configuración del barrio no fue encontrada.");
-      }
-
       const config = barrioSnap.data();
+
       if (config.usuariosActuales >= config.limiteUsuarios) {
-        return MySwal.fire({
-          title: 'Cupo Alcanzado',
-          text: `El barrio ${config.nombre} ha llegado al límite de usuarios de su plan actual.`,
-          icon: 'warning'
-        });
+        return MySwal.fire('Cupo Alcanzado', `El barrio ${config.nombre} no tiene más cupos disponibles.`, 'warning');
       }
 
       // 2. CREACIÓN EN AUTH
@@ -70,8 +79,7 @@ export const RegistrarSocio = () => {
       const idPublico = `${nombre.trim()}-${manzana.trim()}-${lote.trim()}`.toLowerCase().replace(/\s+/g, '-');
       const numeroCompleto = `${codPais}${tel}`;
 
-      // 3. GUARDADO EN FIRESTORE (Usamos setDoc para vincularlo al UID de Auth)
-      // Agregamos barrioId sin tocar los campos anteriores
+      // 3. GUARDADO EN FIRESTORE
       await setDoc(doc(db, "usuarios", user.uid), {
         uid: user.uid,
         nombre,
@@ -81,23 +89,17 @@ export const RegistrarSocio = () => {
         lote,
         isla,
         rol: rolesMap[rolSeleccionado],
-        contrasena: contrasena, // Mantengo el campo como lo tenías
+        contrasena: contrasena, 
         numerotelefono: numeroCompleto,
         idPublico,
-        barrioId: BARRIO_ID, // <--- CAMPO CLAVE PARA EL USERCONTEXT
+        barrioId: barrioSeleccionado, // <--- AHORA ES DINÁMICO
         createdAt: new Date()
       });
 
-      // 4. INCREMENTO AUTOMÁTICO DEL CONTADOR DEL BARRIO
-      await updateDoc(barrioRef, {
-        usuariosActuales: increment(1)
-      });
+      // 4. INCREMENTO DEL CONTADOR
+      await updateDoc(barrioRef, { usuariosActuales: increment(1) });
 
-      MySwal.fire({
-        title: '¡Éxito!',
-        text: 'Socio registrado correctamente',
-        icon: 'success'
-      }).then(() => navigate('/login'));
+      MySwal.fire('¡Éxito!', 'Socio registrado correctamente', 'success').then(() => navigate('/login'));
 
     } catch (error) {
       MySwal.fire('Error', error.message, 'error');
@@ -117,6 +119,23 @@ export const RegistrarSocio = () => {
             <Card.Body className="p-4 p-md-5">
               <Form onSubmit={crearSocio}>
                 
+                <h5 className="text-primary mb-3 border-bottom pb-2">Asignación de Barrio</h5>
+                <Row>
+                  <Col md={12} className="mb-4">
+                    <Form.Floating>
+                      <Form.Select 
+                        value={barrioSeleccionado} 
+                        onChange={(e) => setBarrioSeleccionado(e.target.value)}
+                        required
+                      >
+                        <option value="">Seleccione el barrio donde vive...</option>
+                        {barrios.map(b => <option key={b.id} value={b.id}>{b.nombre}</option>)}
+                      </Form.Select>
+                      <label><FaCity className="me-2" /> Barrio / Urbanización</label>
+                    </Form.Floating>
+                  </Col>
+                </Row>
+
                 <h5 className="text-primary mb-3 border-bottom pb-2">Datos Personales</h5>
                 <Row>
                   <Col md={6} className="mb-3">
@@ -187,8 +206,8 @@ export const RegistrarSocio = () => {
 
                 <h5 className="text-primary mb-3 border-bottom pb-2 mt-3">Seguridad y Rol</h5>
                 <Row>
-                  <Col md={12} className="mb-3">
-                    <div className="d-flex gap-4 mb-2 ps-2">
+                  <Col md={12} className="mb-4">
+                    <div className="d-flex gap-5 mt-2 justify-content-center p-3 border rounded bg-light">
                         <Form.Check
                             type="radio"
                             label="Propietario"
@@ -196,7 +215,7 @@ export const RegistrarSocio = () => {
                             id="role-propietario"
                             checked={rolSeleccionado === 'propietario'}
                             onChange={() => setRolSeleccionado('propietario')}
-                            className="fw-bold text-secondary"
+                            className="fw-bold text-dark custom-radio"
                         />
                         <Form.Check
                             type="radio"
@@ -205,19 +224,9 @@ export const RegistrarSocio = () => {
                             id="role-inquilino"
                             checked={rolSeleccionado === 'inquilino'}
                             onChange={() => setRolSeleccionado('inquilino')}
-                            className="fw-bold text-secondary"
+                            className="fw-bold text-dark custom-radio"
                         />
                     </div>
-                    <Form.Floating>
-                      <Form.Select 
-                        value={rolSeleccionado} 
-                        onChange={(e) => setRolSeleccionado(e.target.value)}
-                      >
-                        <option value="propietario">Propietario</option>
-                        <option value="inquilino">Inquilino</option>
-                      </Form.Select>
-                      <label>Confirmar Rol</label>
-                    </Form.Floating>
                   </Col>
                 </Row>
 
@@ -249,13 +258,6 @@ export const RegistrarSocio = () => {
                     </Button>
                   </Col>
                 </Row>
-
-                <div className="text-center mt-3">
-                  <Button variant="link" onClick={() => navigate('/login')} className="text-muted small">
-                    ¿Ya tenés cuenta? Iniciá sesión
-                  </Button>
-                </div>
-
               </Form>
             </Card.Body>
           </Card>
