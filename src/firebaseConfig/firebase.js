@@ -11,29 +11,17 @@ import { getAnalytics } from "firebase/analytics";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyD8lSjoGXYBRo8HDm8fQtmJWT9FQrEVtHg",
-
-  authDomain: "cube-b5537.firebaseapp.com",
-
-  databaseURL: "https://cube-b5537-default-rtdb.firebaseio.com",
-
-  projectId: "cube-b5537",
-
-  storageBucket: "cube-b5537.appspot.com",
-
-  messagingSenderId: "746288096117",
-
-  appId: "1:746288096117:web:4a121eea0fc0e72fb5e93c",
-
-  measurementId: "G-3HVP2KTDDX"
+  
+ 
 
 
-  /*apiKey: import.meta.env.VITE_API_KEY,
+  apiKey: import.meta.env.VITE_API_KEY,
   authDomain: import.meta.env.VITE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_APP_ID*/
+  appId: import.meta.env.VITE_APP_ID,
+  measurementId: import.meta.env.VITE_MEASUREMENT_ID
 };
 
 // Initialize Firebase

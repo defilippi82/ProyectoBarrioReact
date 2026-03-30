@@ -149,6 +149,7 @@ const AppContent = () => {
   if (loading) return null;
 
   return (
+    <Router>
     <div className="App container" style={{ minHeight: '100vh', display: 'table-cell', flexDirection: 'column', padding: '0rem auto' }}>
       {/* COMPONENTE JOYRIDE PARA EL TUTORIAL */}
       <Joyride
@@ -207,15 +208,16 @@ const AppContent = () => {
       </main>
       <Footer />
     </div>
+    </Router>
   );
 };
 
 export const App = () => {
   return (
     <UserProvider>
-      <Router>
+      
         <AppContent />
-      </Router>
+      
     </UserProvider>
   );
 };

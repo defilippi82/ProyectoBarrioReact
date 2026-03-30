@@ -1,5 +1,38 @@
 /* Global Styles */
 /* Dentro de tu index.css, modifica o añade esto */
+:root {
+  /* Colores por defecto (Fallback) */
+  --primary-color: #2c3e50; 
+  --secondary-color: #18bc9c;
+}
+
+/* Forzamos a que las clases de Bootstrap usen nuestras variables */
+.bg-primary {
+  background-color: var(--primary-color) !important;
+}
+
+.text-primary {
+  color: var(--primary-color) !important;
+}
+
+.btn-primary {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.btn-outline-primary {
+  color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.btn-primary:hover, .btn-primary:active {
+  filter: brightness(0.9);
+}
+
+/* Si usas un Navbar oscuro, esto asegura que el fondo sea dinámico */
+.navbar-custom {
+  background-color: var(--primary-color) !important;
+}
 @media (max-width: 576px) {
   .container {
     padding: 1rem auto; /* Reducimos para ganar espacio */
