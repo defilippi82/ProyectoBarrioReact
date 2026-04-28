@@ -31,49 +31,66 @@ export const Login = () => {
   }, []);
 
   const login = async (e) => {
-    e.preventDefault();
-    if (!barrioSeleccionado && email !== 'f.defilippi@gmail.com') {
-      MySwal.fire("Atención", "Selecciona un barrio", "warning");
-      return;
-    }
+  e.preventDefault();
+  
+  // Exigimos que SIEMPRE se seleccione un barrio, incluso para el Super Admin
+  if (!barrioSeleccionado) {
+    MySwal.fire("Atención", "Selecciona un barrio", "warning");
+    return;
+  }
 
-    try {
-      const usuariosRef = collection(db, "usuarios");
-      let q = (email === 'f.defilippi@gmail.com') 
-        ? query(usuariosRef, where('email', '==', email))
-        : query(usuariosRef, where('email', '==', email), where('barrioId', '==', barrioSeleccionado));
+  try {
+    const usuariosRef = collection(db, "usuarios");
+    // Buscamos al usuario por email
+    const q = query(usuariosRef, where('email', '==', email));
+    const querySnapshot = await getDocs(q);
 
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        let encontrado = false;
-        querySnapshot.forEach((docSnap) => {
-          const userData = { id: docSnap.id, ...docSnap.data() };
-          if (userData.contrasena === password) {
-            encontrado = true;
-            setUserData(userData);
-            localStorage.setItem('userData', JSON.stringify(userData));
-            
-            MySwal.fire({
-              title: 'Ingreso exitoso',
-              text: '¡Bienvenido!',
-              icon: 'success',
-              timer: 1500,
-              showConfirmButton: false,
-            }).then(() => {
-              if (userData.rol === 'seguridad') navigate('/seguridad');
-              else navigate('/panico');
-            });
+    if (!querySnapshot.empty) {
+      let encontrado = false;
+      
+      querySnapshot.forEach((docSnap) => {
+        const dataOriginal = docSnap.data();
+        
+        if (dataOriginal.contrasena === password) {
+          encontrado = true;
+          
+          // Verificamos si es un usuario normal entrando a un barrio que no le corresponde
+          if (!dataOriginal.rol?.god && dataOriginal.barrioId !== barrioSeleccionado) {
+             MySwal.fire("Error", "No perteneces a este barrio", "error");
+             return;
           }
-        });
-        if (!encontrado) MySwal.fire("Error", "Contraseña incorrecta", "error");
-      } else {
-        MySwal.fire("Error", "Usuario no encontrado", "error");
-      }
-    } catch (error) {
-      MySwal.fire("Error", "Error de conexión", "error");
+
+          // Armamos el userData. Si es GOD, le inyectamos el barrio seleccionado.
+          const userData = { 
+            id: docSnap.id, 
+            ...dataOriginal,
+            barrioId: dataOriginal.rol?.god ? barrioSeleccionado : dataOriginal.barrioId
+          };
+
+          setUserData(userData);
+          localStorage.setItem('userData', JSON.stringify(userData));
+          
+          MySwal.fire({
+            title: 'Ingreso exitoso',
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false,
+          }).then(() => {
+             // Redirección usando la estructura correcta de roles
+            if (userData.rol?.seguridad) navigate('/seguridad');
+            else navigate('/novedades');
+          });
+        }
+      });
+      
+      if (!encontrado) MySwal.fire("Error", "Contraseña incorrecta", "error");
+    } else {
+      MySwal.fire("Error", "Usuario no encontrado", "error");
     }
-  };
+  } catch (error) {
+    MySwal.fire("Error", "Error de conexión", "error");
+  }
+};
 
   return (
     <>

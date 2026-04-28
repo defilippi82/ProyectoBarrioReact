@@ -1,12 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react"; // 1. Agregamos useContext
 import { Card, Row, Col, Button, Badge, Carousel, Spinner } from "react-bootstrap";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "/src/firebaseConfig/firebase";
-// 1. IMPORTAMOS LAS UTILIDADES
+import { UserContext } from "../Services/UserContext"; // 2. Importamos el Contexto
 import { formatPrecio, getOptimizedImage } from "/src/utils/formatters";
 import "../Socios/alquileres.css";
 
 export const ExplorarAlquileres = () => {
+  // 3. Extraemos userData del contexto
+  const { userData } = useContext(UserContext); 
+  
   const [alquileres, setAlquileres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [detalleAbierto, setDetalleAbierto] = useState(null);
@@ -14,8 +17,16 @@ export const ExplorarAlquileres = () => {
 
   useEffect(() => {
     const fetch = async () => {
+      // 4. Ahora userData ya existe y podemos preguntar por el barrioId
+      if (!userData?.barrioId) return; 
+
       try {
-        const snap = await getDocs(collection(db, "alquileres"));
+        const q = query(
+          collection(db, "alquileres"), 
+          where("barrioId", "==", userData.barrioId)
+        );
+
+        const snap = await getDocs(q);
         setAlquileres(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (error) {
         console.error("Error al cargar alquileres:", error);
@@ -23,8 +34,9 @@ export const ExplorarAlquileres = () => {
         setLoading(false);
       }
     };
+
     fetch();
-  }, []);
+  }, [userData?.barrioId]); // Se ejecutará cuando el ID del barrio esté disponible
 
   const renderImagen = (a) => {
     // Normalizamos las imágenes: si es vieja usa 'imagen', si es nueva usa el array 'imagenes'

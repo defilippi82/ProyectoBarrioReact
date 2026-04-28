@@ -72,7 +72,8 @@ export const NavbarComponent = ({ startTutorial }) => {
   const isGod = rol.god === true;
 
   return (
-    <Navbar bg="primary" variant="dark" expand="lg" fixed="top" className="shadow-sm">
+
+    <Navbar bg="primary" variant="dark" expand="lg" fixed="top" className="shadow-sm custom-navbar" style={{ backgroundColor: 'var(--navbar-bg)', borderBottom: '2px solid var(--secondary-color)' }}> 
       <Container fluid>
         <Navbar.Brand as={Link} to="/" className="fw-bold d-flex align-items-center">
           <FontAwesomeIcon icon={isGod ? faCrown : faEnvelope} className={isGod ? "text-warning me-2" : "me-2"} />

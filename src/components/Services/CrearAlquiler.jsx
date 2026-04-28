@@ -61,6 +61,7 @@ export const CrearAlquiler = () => {
       const nuevoAviso = {
         propietarioId: userData.id,
         propietarioNombre: userData.nombre,
+        barrioId: userData.barrioId,
         isla: userData.isla,
         manzana: userData.manzana,
         lote: userData.lote,

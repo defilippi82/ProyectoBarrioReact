@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { db, auth } from '../../firebaseConfig/firebase'; // Asegúrate de que la ruta sea correcta
+import { db, auth } from '../../firebaseConfig/firebase'; 
 
 export const UserContext = createContext();
 
@@ -10,31 +10,30 @@ export const UserProvider = ({ children }) => {
   const [barrioConfig, setBarrioConfig] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // 1. ESCUCHAR AUTENTICACIÓN Y PERFIL DE USUARIO
   useEffect(() => {
-    // 1. Escuchar el estado de autenticación real de Firebase
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
-        // El usuario está logueado en Firebase Auth, buscamos su perfil en Firestore
-        const userRef = doc(db, 'users', user.uid);
+        // Importante: Usamos la colección 'usuarios' como en el resto de tu app
+        const userRef = doc(db, 'usuarios', user.uid);
         
         const unsubUser = onSnapshot(userRef, (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();
+            // Mantenemos la estructura de 'rol' que confirmaste
             setUserData({ uid: user.uid, email: user.email, ...data });
-            // Guardamos un backup en localStorage por si acaso
             localStorage.setItem('userData', JSON.stringify({ uid: user.uid, ...data }));
           } else {
-            console.warn("No se encontró el documento del usuario en Firestore");
+            console.warn("Documento de usuario no encontrado en Firestore");
             setLoading(false);
           }
         }, (error) => {
-          console.error("Error de permisos en colección 'users':", error);
+          console.error("Error al leer perfil:", error);
           setLoading(false);
         });
 
         return () => unsubUser();
       } else {
-        // No hay usuario logueado
         setUserData(null);
         setBarrioConfig(null);
         localStorage.removeItem('userData');
@@ -45,11 +44,10 @@ export const UserProvider = ({ children }) => {
     return () => unsubscribeAuth();
   }, []);
 
-  // 2. Escuchar la configuración del Barrio (White Label)
+  // 2. ESCUCHAR CONFIGURACIÓN DEL BARRIO (Estética y Reglas)
   useEffect(() => {
-    // Solo pedimos el barrio si tenemos un userData con barrioId
-    if (!userData || !userData.barrioId) {
-      if (!userData) setLoading(false); 
+    if (!userData?.barrioId) {
+      if (!userData) setLoading(false);
       return;
     }
 
@@ -59,7 +57,6 @@ export const UserProvider = ({ children }) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
         
-        // Seteamos la configuración extendida
         setBarrioConfig({
           id: snapshot.id,
           ...data,
@@ -68,20 +65,33 @@ export const UserProvider = ({ children }) => {
           cupoAgotado: (data.usuariosActuales || 0) >= (data.limiteUsuarios || 100)
         });
 
-        // Aplicamos los colores dinámicos al CSS global
+        // --- INYECCIÓN DINÁMICA DE ESTILOS CSS ---
         const root = document.documentElement;
+        
+        // Colores principales
         root.style.setProperty('--primary-color', data.colorPrincipal || '#2c3e50');
         root.style.setProperty('--secondary-color', data.colorSecundario || '#18bc9c');
+        
+        // Navbar y Fondos
+        root.style.setProperty('--navbar-bg', data.colorNavbar || '#343a40');
+        
+        if (data.fondoUrl) {
+          root.style.setProperty('--bg-image', `url(${data.fondoUrl})`);
+        } else {
+          // Fondo degradado por defecto si no hay imagen
+          root.style.setProperty('--bg-image', 'linear-gradient(135deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%)');
+        }
       }
       setLoading(false);
     }, (error) => {
-      console.warn("Falta de permisos para leer barrio o ID inexistente.");
+      console.warn("Error al cargar configuración de barrio.");
       setLoading(false);
     });
 
     return () => unsubBarrio();
-  }, [userData]);
+  }, [userData?.barrioId]); // Solo se dispara si cambia el ID del barrio
 
+  // 3. FUNCIÓN DE CIERRE DE SESIÓN
   const logout = async () => {
     try {
       await signOut(auth);
@@ -89,10 +99,13 @@ export const UserProvider = ({ children }) => {
       setUserData(null);
       setBarrioConfig(null);
       
-      // Resetear colores al default
+      // Resetear variables CSS a valores neutros
       const root = document.documentElement;
       root.style.setProperty('--primary-color', '#2c3e50');
       root.style.setProperty('--secondary-color', '#18bc9c');
+      root.style.setProperty('--navbar-bg', '#343a40');
+      root.style.setProperty('--bg-image', 'linear-gradient(135deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%)');
+      
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
     }

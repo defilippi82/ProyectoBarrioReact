@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { 
-    collection, addDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp, updateDoc 
+    collection, addDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, where 
 } from 'firebase/firestore';
 import { db } from '/src/firebaseConfig/firebase.js';
 import { UserContext } from '../Services/UserContext';
@@ -9,7 +9,7 @@ import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { 
     FaTrashAlt, FaPhoneAlt, FaClock, FaBullhorn, FaSearch, 
-    FaMapMarkerAlt, FaUserCircle, FaFilter, FaPlus, FaTag, FaStar 
+    FaMapMarkerAlt, FaUserCircle, FaFilter, FaPlus, FaStar 
 } from 'react-icons/fa';
 import './Novedades.css';
 
@@ -25,52 +25,63 @@ const postItPalettes = [
 ];
 
 export const Novedades = () => {
-    const { userData } = useContext(UserContext);
+    // 1. Traemos barrioConfig para mostrar el nombre del barrio dinámicamente
+    const { userData, barrioConfig } = useContext(UserContext);
     const [novedades, setNovedades] = useState([]);
     const [telefonosUtiles, setTelefonosUtiles] = useState([]);
     const [campanasActivas, setCampanasActivas] = useState([]);
     const [key, setKey] = useState('novedades');
     
-    // Filtros
     const [searchTerm, setSearchTerm] = useState('');
     const [categoriaFiltro, setCategoriaFiltro] = useState('Todas');
 
-    // Modales
     const [showModalNov, setShowModalNov] = useState(false);
     const [showModalTel, setShowModalTel] = useState(false);
     const [isNuevaCat, setIsNuevaCat] = useState(false);
     
-    // Formularios
     const [nuevaNov, setNuevaNov] = useState({ titulo: '', contenido: '' });
     const [nuevoTel, setNuevoTel] = useState({ nombre: '', telefono: '', categoria: '' });
 
     useEffect(() => {
-        if (!userData) return;
+        if (!userData?.barrioId) return;
 
-        // Escucha Campañas (Alertas Admin)
-        const unsubCampanas = onSnapshot(query(collection(db, 'campanas'), orderBy('timestamp', 'desc')), (snapshot) => {
+        // 2. Filtramos Campañas por barrioId
+        const qCampanas = query(
+            collection(db, 'campanas'), 
+            where('barrioId', '==', userData.barrioId),
+            orderBy('timestamp', 'desc')
+        );
+        const unsubCampanas = onSnapshot(qCampanas, (snapshot) => {
             const filtradas = snapshot.docs
                 .map(doc => ({ id: doc.id, ...doc.data() }))
                 .filter(c => (c.islasDestino?.includes(userData.isla)) || (c.manzanasDestino?.includes(userData.manzana)));
             setCampanasActivas(filtradas);
         });
 
-        // Escucha Novedades (Post-its)
-        const unsubNovedades = onSnapshot(query(collection(db, 'novedades'), orderBy('createdAt', 'desc')), (snapshot) => {
+        // 3. Filtramos Novedades por barrioId
+        const qNovedades = query(
+            collection(db, 'novedades'), 
+            where('barrioId', '==', userData.barrioId),
+            orderBy('createdAt', 'desc')
+        );
+        const unsubNovedades = onSnapshot(qNovedades, (snapshot) => {
             setNovedades(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         });
 
-        // Escucha Teléfonos (Guía)
-        const unsubTels = onSnapshot(query(collection(db, 'telefonosUtiles')), (snapshot) => {
+        // 4. Filtramos Teléfonos por barrioId
+        const qTels = query(
+            collection(db, 'telefonosUtiles'),
+            where('barrioId', '==', userData.barrioId)
+        );
+        const unsubTels = onSnapshot(qTels, (snapshot) => {
             setTelefonosUtiles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         });
 
         return () => { unsubCampanas(); unsubNovedades(); unsubTels(); };
-    }, [userData]);
+    }, [userData?.barrioId, userData?.isla, userData?.manzana]);
 
     const categoriasExistentes = [...new Set(telefonosUtiles.map(t => t.categoria).filter(Boolean))].sort();
 
-    // --- LÓGICA DE RATING ---
     const handleRate = async (id, stars) => {
         if (!userData) return;
         const telRef = doc(db, 'telefonosUtiles', id);
@@ -88,7 +99,6 @@ export const Novedades = () => {
         } catch (error) { console.error("Error rating:", error); }
     };
 
-    // --- ACCIONES FIREBASE ---
     const handleAddNovedad = async (e) => {
         e.preventDefault();
         try {
@@ -98,6 +108,7 @@ export const Novedades = () => {
                 manzana: userData.manzana,
                 lote: userData.lote,
                 autorId: `${userData.manzana}-${userData.lote}`,
+                barrioId: userData.barrioId, // Se asegura de guardar el ID
                 createdAt: serverTimestamp()
             });
             setShowModalNov(false);
@@ -111,6 +122,7 @@ export const Novedades = () => {
         try {
             await addDoc(collection(db, 'telefonosUtiles'), {
                 ...nuevoTel,
+                barrioId: userData.barrioId, // Se asegura de guardar el ID
                 promedioRating: 0,
                 ratings: {},
                 autorId: `${userData.manzana}-${userData.lote}`
@@ -142,7 +154,6 @@ export const Novedades = () => {
 
     return (
         <Container className="py-5 mt-4 board-container">
-            {/* Campañas Críticas */}
             {campanasActivas.map(c => (
                 <div key={c.id} className="modern-announcement shadow-sm mb-3">
                     <div className="announcement-icon"><FaBullhorn /> Alerta de Administración</div>
@@ -155,12 +166,13 @@ export const Novedades = () => {
 
             <div className="text-center mb-5 board-header">
                 <h1 className="display-3 main-board-title">Tablero de la Comunidad</h1>
-                <p className="lead text-muted">CUBE: Escobar, Buenos Aires</p>
+                {/* 5. Nombre del barrio dinámico */}
+                <p className="lead text-muted text-uppercase fw-bold">
+                    {barrioConfig?.nombre || 'Cargando barrio...'}
+                </p>
             </div>
 
             <Tabs activeKey={key} onSelect={(k) => setKey(k)} className="custom-board-tabs mb-4 shadow-sm" fill>
-                
-                {/* TAB NOVEDADES */}
                 <Tab eventKey="novedades" title="📢 ANUNCIOS" className='titulo-novedades'>
                     <div className="d-flex justify-content-end my-3">
                         <Button variant="primary" className="btn-add-modern shadow btn-agregar-novedad" onClick={() => setShowModalNov(true)}>
@@ -176,7 +188,6 @@ export const Novedades = () => {
                                 <Col key={n.id} xs={12} md={6} lg={4}>
                                     <div className="post-it-card shadow-sm" style={{ backgroundColor: palette.bg, borderLeft: `8px solid ${palette.border}` }}>
                                         <div className="post-it-header">
-                                            {/* Soporte para datos viejos y nuevos de manzana/lote */}
                                             <span className="post-it-tag text-muted">
                                                 <FaMapMarkerAlt /> Mnz {n.manzana || 'S/D'} - Lote {n.lote || 'S/D'}
                                             </span>
@@ -184,12 +195,10 @@ export const Novedades = () => {
                                         </div>
                                         <div className="d-flex align-items-center gap-2 mb-2">
                                             <FaUserCircle size={20} className="text-secondary" />
-                                            {/* Compatibilidad: busca titulo o nombre */}
                                             <h5 className="post-it-title mb-0" style={{ color: palette.titleColor }}>
                                                 {n.titulo || n.nombre || "Anuncio"}
                                             </h5>
                                         </div>
-                                        {/* Compatibilidad: busca contenido o descripcion */}
                                         <div className="post-it-text text-dark mb-3">
                                             {n.contenido || n.descripcion}
                                         </div>
@@ -207,7 +216,6 @@ export const Novedades = () => {
                     </Row>
                 </Tab>
 
-                {/* TAB TELÉFONOS */}
                 <Tab eventKey="telefonos" title="📞 GUÍA ÚTIL">
                     <div className="d-flex justify-content-end my-3">
                         <Button variant="success" className="btn-add-modern shadow" onClick={() => setShowModalTel(true)}>
@@ -266,7 +274,8 @@ export const Novedades = () => {
                 </Tab>
             </Tabs>
 
-            {/* MODAL NOVEDADES */}
+            {/* MODALES IGUALES PERO ASEGURANDO QUE EL BARRIOID ESTÉ EN EL SUBMIT */}
+            {/* ... (Modales de Novedades y Teléfonos) ... */}
             <Modal show={showModalNov} onHide={() => setShowModalNov(false)} centered>
                 <Modal.Header closeButton><Modal.Title className="main-board-title h3">Nuevo Anuncio</Modal.Title></Modal.Header>
                 <Form onSubmit={handleAddNovedad}>
@@ -278,7 +287,6 @@ export const Novedades = () => {
                 </Form>
             </Modal>
 
-            {/* MODAL TELÉFONOS */}
             <Modal show={showModalTel} onHide={() => {setShowModalTel(false); setIsNuevaCat(false);}} centered>
                 <Modal.Header closeButton><Modal.Title className="main-board-title h3">Sugerir Contacto</Modal.Title></Modal.Header>
                 <Form onSubmit={handleAddTelefono}>

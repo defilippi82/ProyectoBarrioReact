@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Container, Row, Col, Card, Button, Form, Badge, Modal, InputGroup, Spinner } from 'react-bootstrap';
+ import React, { useState, useEffect, useContext } from 'react';
+import { Container, Row, Col, Card, Button, Form, Badge, Modal, Spinner } from 'react-bootstrap';
 import { collection, onSnapshot, doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebaseConfig/firebase'; 
 import { UserContext } from '../Services/UserContext';
 import Swal from 'sweetalert2';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faPalette, faPlus, faCheckCircle, faGlobe, faSave, 
-  faLayerGroup, faUsers, faShieldAlt, faFileInvoiceDollar, 
-  faEdit, faIdBadge, faLock, faExclamationTriangle, faTrashAlt
+  faPalette, faPlus, faSave, faUsers, 
+  faExclamationTriangle, faImage, faBars, faCrown 
 } from '@fortawesome/free-solid-svg-icons';
 
 export const GodPanel = () => {
@@ -17,323 +16,235 @@ export const GodPanel = () => {
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   
-  // Estados para Modales
   const [showUIModal, setShowUIModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [barrioUI, setBarrioUI] = useState(null);
 
-  // Estado para nuevo barrio (Full funcionalidades)
   const [newBarrio, setNewBarrio] = useState({
     nombre: '',
     identificador: '',
     colorPrincipal: '#2c3e50',
     colorSecundario: '#18bc9c',
+    colorNavbar: '#343a40',
+    fondoUrl: '',
     logoUrl: '',
-    plan: 'standard',
-    limiteUsuarios: 100,
-    estado: 'activo',
-    packSocios: true,
-    packSeguridad: true,
-    packExpensas: false
+    plan: 'standard'
   });
 
-  // --- 1. VALIDACIÓN DE SEGURIDAD ---
+  // 1. Verificación de Seguridad
   useEffect(() => {
-    const checkAuth = () => {
-      const godEmail = import.meta.env.VITE_GOD_EMAIL;
-      if (userData && userData.email === godEmail) {
-        setAuthorized(true);
-      } else {
-        setAuthorized(false);
-      }
-      setLoading(false);
-    };
-    checkAuth();
+    if (userData && userData.rol?.god) {
+      setAuthorized(true);
+    } else {
+      setAuthorized(false);
+    }
   }, [userData]);
 
-  // --- 2. ESCUCHA DE DATOS (Solo si está autorizado) ---
+  // 2. Escuchar Barrios
   useEffect(() => {
     if (!authorized) return;
 
-    const unsubscribe = onSnapshot(collection(db, 'configuracionBarrios'), 
-      (snapshot) => {
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setBarrios(data);
-      },
-      (error) => {
-        console.error("Error en Snapshot:", error);
-        Swal.fire("Error", "Error al conectar con la base de datos", "error");
-      }
-    );
-    return () => unsubscribe();
+    const unsub = onSnapshot(collection(db, "configuracionBarrios"), (snap) => {
+      const lista = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setBarrios(lista);
+      setLoading(false);
+    });
+    return () => unsub();
   }, [authorized]);
 
-  // --- 3. FUNCIONES DE ACTUALIZACIÓN ---
-  const updateBarrioField = async (id, field, value) => {
+  const handleUpdateUI = async (e) => {
+    e.preventDefault();
     try {
-      const docRef = doc(db, 'configuracionBarrios', id);
-      await updateDoc(docRef, { [field]: value });
+      const barrioRef = doc(db, "configuracionBarrios", barrioUI.id);
+      await updateDoc(barrioRef, {
+        nombre: barrioUI.nombre,
+        colorPrincipal: barrioUI.colorPrincipal,
+        colorSecundario: barrioUI.colorSecundario,
+        colorNavbar: barrioUI.colorNavbar || '#343a40',
+        fondoUrl: barrioUI.fondoUrl || '',
+        logoUrl: barrioUI.logoUrl || '',
+        updatedAt: serverTimestamp()
+      });
+      setShowUIModal(false);
+      Swal.fire("Actualizado", "La estética del barrio ha sido actualizada.", "success");
     } catch (error) {
-      Swal.fire("Error", "No se pudo actualizar el campo", "error");
+      Swal.fire("Error", "No se pudieron guardar los cambios.", "error");
     }
   };
 
   const handleCreateBarrio = async (e) => {
     e.preventDefault();
-    Swal.fire({
-      title: 'Creando barrio...',
-      didOpen: () => { Swal.showLoading(); }
-    });
+    if (!newBarrio.identificador) return;
 
     try {
-      const customId = newBarrio.identificador.toLowerCase().trim().replace(/\s+/g, '_');
-      
-      await setDoc(doc(db, 'configuracionBarrios', customId), {
+      await setDoc(doc(db, "configuracionBarrios", newBarrio.identificador.toLowerCase()), {
         ...newBarrio,
-        identificador: customId,
+        identificador: newBarrio.identificador.toLowerCase(),
         usuariosActuales: 0,
-        creadoEn: serverTimestamp()
+        limiteUsuarios: 100,
+        createdAt: serverTimestamp()
       });
-
-      Swal.fire("¡Éxito!", "Barrio dado de alta correctamente", "success");
       setShowCreateModal(false);
-      setNewBarrio({
-        nombre: '', identificador: '', colorPrincipal: '#2c3e50', colorSecundario: '#18bc9c',
-        logoUrl: '', plan: 'standard', limiteUsuarios: 100, estado: 'activo',
-        packSocios: true, packSeguridad: true, packExpensas: false
-      });
+      Swal.fire("Éxito", "Barrio creado correctamente.", "success");
     } catch (error) {
-      Swal.fire("Error", "No se pudo crear el documento", "error");
+      Swal.fire("Error", "Hubo un problema al crear el barrio.", "error");
     }
   };
 
-  // --- 4. RENDERIZADO CONDICIONAL ---
-  if (loading) {
-    return (
-      <Container className="d-flex justify-content-center align-items-center vh-100">
-        <div className="text-center">
-          <Spinner animation="grow" variant="primary" />
-          <p className="mt-3 fw-bold">Verificando Credenciales Maestro...</p>
-        </div>
-      </Container>
-    );
-  }
-
   if (!authorized) {
     return (
-      <Container className="text-center py-5 mt-5">
-        <div className="p-5 bg-white rounded-4 shadow-lg d-inline-block">
-          <FontAwesomeIcon icon={faLock} size="5x" className="text-danger mb-4" />
-          <h1 className="fw-bold">ACCESO RESTRINGIDO</h1>
-          <p className="text-muted">Tu cuenta no tiene privilegios para acceder al Panel Maestro.</p>
-          <Button variant="dark" size="lg" onClick={() => window.location.href = '/'}>SALIR DE AQUÍ</Button>
-        </div>
+      <Container className="mt-5 text-center">
+        {/* CORRECCIÓN: Usar FontAwesomeIcon en lugar de FaExclamationTriangle */}
+        <FontAwesomeIcon icon={faExclamationTriangle} size="3x" className="text-danger mb-3" />
+        <h3>Acceso Denegado</h3>
+        <p>No tienes permisos de Super Administrador para ver este panel.</p>
       </Container>
     );
   }
 
   return (
-    <Container className="py-5 mt-4 min-vh-100 px-lg-5" fluid>
-      {/* HEADER DASHBOARD */}
-      <div className="bg-dark text-white p-4 rounded-4 shadow-lg mb-5 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 border-bottom border-primary border-5">
+    <Container className="py-4">
+      <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2 className="fw-bold mb-1"><FontAwesomeIcon icon={faGlobe} className="me-2 text-primary"/>Terminal de Control God</h2>
-          <p className="mb-0 opacity-75">Administración central de infraestructura CUBE</p>
+          <h2 className="fw-bold mb-0">
+            <FontAwesomeIcon icon={faCrown} className="text-warning me-2" /> 
+            Panel God
+          </h2>
+          <p className="text-muted">Gestión Multi-Barrio y Configuración Global</p>
         </div>
-        <Button variant="primary" size="lg" className="fw-bold px-4 py-3 rounded-3" onClick={() => setShowCreateModal(true)}>
-          <FontAwesomeIcon icon={faPlus} className="me-2" /> REGISTRAR NUEVO BARRIO
+        <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+          <FontAwesomeIcon icon={faPlus} className="me-2" /> Nuevo Barrio
         </Button>
       </div>
 
-      <Row className="g-4">
-        {barrios.map(barrio => (
-          <Col xl={4} lg={6} md={12} key={barrio.id}>
-            <Card className="shadow border-0 rounded-4 overflow-hidden h-100 border-top border-5" style={{ borderTopColor: barrio.colorPrincipal || '#2c3e50' }}>
-              <Card.Header className="bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
-                <Badge pill className={`px-3 py-2 ${barrio.estado === 'activo' ? 'bg-success' : 'bg-danger'}`}>
-                  {(barrio.estado || 'activo').toUpperCase()}
-                </Badge>
-                <code className="text-muted"><FontAwesomeIcon icon={faIdBadge} className="me-1"/> {barrio.id}</code>
-              </Card.Header>
-
-              <Card.Body className="px-4 pb-4">
-                <h4 className="fw-bold text-dark mb-4">{barrio.nombre}</h4>
-                
-                {/* BLOQUE PLANES */}
-                <div className="bg-light p-3 rounded-4 mb-4 border">
-                  <Form.Group className="mb-3">
-                    <Form.Label className="small fw-bold text-muted">PLAN DE SERVICIO</Form.Label>
-                    <Form.Select 
-                      className="form-control-lg border-0 shadow-sm"
-                      value={barrio.plan || 'standard'} 
-                      onChange={(e) => updateBarrioField(barrio.id, 'plan', e.target.value)}
-                    >
-                      <option value="standard">Standard Pack</option>
-                      <option value="full">Full Premium</option>
-                      <option value="seguridad">Solo Seguridad</option>
-                    </Form.Select>
-                  </Form.Group>
-
-                  <Row className="g-2 text-center">
-                    <Col xs={6}>
-                      <div className="p-2 bg-white rounded border">
-                        <small className="d-block fw-bold text-muted">USUARIOS</small>
-                        <span className="h4 fw-bold text-primary">{barrio.usuariosActuales || 0}</span>
-                      </div>
-                    </Col>
-                    <Col xs={6}>
-                      <div className="p-2 bg-white rounded border">
-                        <small className="d-block fw-bold text-muted">LÍMITE</small>
-                        <Form.Control 
-                          type="number" 
-                          className="fw-bold text-center border-0 p-0"
-                          defaultValue={barrio.limiteUsuarios || 100} 
-                          onBlur={(e) => updateBarrioField(barrio.id, 'limiteUsuarios', parseInt(e.target.value))}
-                        />
-                      </div>
-                    </Col>
-                  </Row>
-                </div>
-
-                {/* GESTIÓN DE PACKS */}
-                <div className="mb-4">
-                  <h6 className="fw-bold mb-3 text-secondary border-bottom pb-2">
-                    <FontAwesomeIcon icon={faLayerGroup} className="me-2"/> Módulos Independientes
-                  </h6>
-                  <div className="d-flex flex-column gap-2">
-                    <div className="d-flex justify-content-between align-items-center p-2 rounded hover-bg-light border">
-                      <span className="small fw-semibold"><FontAwesomeIcon icon={faUsers} className="me-2 text-muted"/> Pack Socios</span>
-                      <Form.Check type="switch" checked={barrio.packSocios ?? true} onChange={(e) => updateBarrioField(barrio.id, 'packSocios', e.target.checked)} />
-                    </div>
-                    <div className="d-flex justify-content-between align-items-center p-2 rounded hover-bg-light border">
-                      <span className="small fw-semibold"><FontAwesomeIcon icon={faShieldAlt} className="me-2 text-muted"/> Pack Seguridad</span>
-                      <Form.Check type="switch" checked={barrio.packSeguridad ?? true} onChange={(e) => updateBarrioField(barrio.id, 'packSeguridad', e.target.checked)} />
-                    </div>
-                    <div className="d-flex justify-content-between align-items-center p-2 rounded hover-bg-light border">
-                      <span className="small fw-semibold"><FontAwesomeIcon icon={faFileInvoiceDollar} className="me-2 text-muted"/> Pack Expensas</span>
-                      <Form.Check type="switch" checked={barrio.packExpensas ?? false} onChange={(e) => updateBarrioField(barrio.id, 'packExpensas', e.target.checked)} />
-                    </div>
+      {loading ? (
+        <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>
+      ) : (
+        <Row className="g-4">
+          {barrios.map(barrio => (
+            <Col key={barrio.id} md={6} lg={4}>
+              <Card className="h-100 shadow-sm border-0">
+                <Card.Header className="bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+                  <Badge bg="dark" className="text-uppercase">{barrio.id}</Badge>
+                  <div className="d-flex gap-1">
+                    <div title="Principal" style={{ width: 15, height: 15, borderRadius: '50%', backgroundColor: barrio.colorPrincipal }}></div>
+                    <div title="Secundario" style={{ width: 15, height: 15, borderRadius: '50%', backgroundColor: barrio.colorSecundario }}></div>
+                    <div title="Navbar" style={{ width: 15, height: 15, borderRadius: '50%', backgroundColor: barrio.colorNavbar || '#343a40' }}></div>
                   </div>
-                </div>
-
-                <div className="d-grid gap-2">
-                  <Button variant="outline-dark" className="py-2 fw-bold" onClick={() => { setBarrioUI(barrio); setShowUIModal(true); }}>
-                    <FontAwesomeIcon icon={faPalette} className="me-2" /> PERSONALIZAR UI & NOMBRE
+                </Card.Header>
+                <Card.Body>
+                  <Card.Title className="fw-bold">{barrio.nombre}</Card.Title>
+                  <div className="small text-muted mb-3">
+                    <FontAwesomeIcon icon={faUsers} className="me-2" /> 
+                    Usuarios: {barrio.usuariosActuales || 0} / {barrio.limiteUsuarios || 100}
+                  </div>
+                  <Button 
+                    variant="outline-dark" 
+                    size="sm" 
+                    className="w-100 mb-2"
+                    onClick={() => { setBarrioUI(barrio); setShowUIModal(true); }}
+                  >
+                    <FontAwesomeIcon icon={faPalette} className="me-2" /> Personalizar Estética
                   </Button>
-                </div>
-              </Card.Body>
+                </Card.Body>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      )}
 
-              <Card.Footer className="bg-light border-0 py-3 d-flex justify-content-between align-items-center">
-                <Form.Select 
-                  size="sm" 
-                  className="w-auto border-0 bg-transparent text-muted fw-bold"
-                  value={barrio.estado || 'activo'}
-                  onChange={(e) => updateBarrioField(barrio.id, 'estado', e.target.value)}
-                >
-                  <option value="activo">ACTIVO</option>
-                  <option value="suspendido">SUSPENDIDO</option>
-                  <option value="mantenimiento">MANTENIMIENTO</option>
-                </Form.Select>
-                <small className="text-muted opacity-50">Rev. 2026</small>
-              </Card.Footer>
-            </Card>
-          </Col>
-        ))}
-      </Row>
-
-      {/* MODAL: ALTA DE BARRIO COMPLETO */}
-      <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)} size="lg" centered scrollable>
-        <Modal.Header closeButton className="bg-dark text-white border-0"><Modal.Title className="fw-bold">Alta de Nueva Instancia CUBE</Modal.Title></Modal.Header>
-        <Modal.Body className="p-4 bg-light">
-          <Form onSubmit={handleCreateBarrio}>
-            <Row className="g-3">
-              <Col md={7}>
-                <Form.Group><Form.Label className="fw-bold">Nombre del Barrio</Form.Label>
-                <Form.Control required size="lg" placeholder="Ej: Los Olivos" onChange={e => setNewBarrio({...newBarrio, nombre: e.target.value})} /></Form.Group>
-              </Col>
-              <Col md={5}>
-                <Form.Group><Form.Label className="fw-bold">ID URL (Slug)</Form.Label>
-                <Form.Control required size="lg" placeholder="ej: los_olivos" onChange={e => setNewBarrio({...newBarrio, identificador: e.target.value})} /></Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Label className="fw-bold">Color Principal</Form.Label>
-                <InputGroup><Form.Control type="color" value={newBarrio.colorPrincipal} onChange={e => setNewBarrio({...newBarrio, colorPrincipal: e.target.value})} /><Form.Control value={newBarrio.colorPrincipal} readOnly /></InputGroup>
-              </Col>
-              <Col md={6}>
-                <Form.Label className="fw-bold">Color Secundario</Form.Label>
-                <InputGroup><Form.Control type="color" value={newBarrio.colorSecundario} onChange={e => setNewBarrio({...newBarrio, colorSecundario: e.target.value})} /><Form.Control value={newBarrio.colorSecundario} readOnly /></InputGroup>
-              </Col>
-              <Col md={12}>
-                <Form.Label className="fw-bold">Logo URL (PNG Transparente)</Form.Label>
-                <Form.Control placeholder="https://..." onChange={e => setNewBarrio({...newBarrio, logoUrl: e.target.value})} />
-              </Col>
-              <Col md={6}>
-                <Form.Label className="fw-bold">Plan Inicial</Form.Label>
-                <Form.Select onChange={e => setNewBarrio({...newBarrio, plan: e.target.value})}>
-                  <option value="standard">Standard Pack</option>
-                  <option value="full">Full Premium</option>
-                  <option value="seguridad">Solo Seguridad</option>
-                </Form.Select>
-              </Col>
-              <Col md={6}>
-                <Form.Label className="fw-bold">Cupo Usuarios</Form.Label>
-                <Form.Control type="number" defaultValue="100" onChange={e => setNewBarrio({...newBarrio, limiteUsuarios: parseInt(e.target.value)})} />
-              </Col>
-            </Row>
-            <Button variant="primary" type="submit" className="w-100 mt-4 py-3 fw-bold shadow-lg">CREAR Y DESPLEGAR INSTANCIA</Button>
-          </Form>
-        </Modal.Body>
-      </Modal>
-
-      {/* MODAL: PERSONALIZAR UI & NOMBRE (CORREGIDO) */}
-      {barrioUI && (
-        <Modal show={showUIModal} onHide={() => setShowUIModal(false)} centered>
-          <Modal.Header closeButton className="border-0"><Modal.Title className="fw-bold">Editor de Identidad: {barrioUI.nombre}</Modal.Title></Modal.Header>
-          <Modal.Body className="p-4">
-            <Form onSubmit={async (e) => {
-              e.preventDefault();
-              try {
-                const docRef = doc(db, 'configuracionBarrios', barrioUI.id);
-                await updateDoc(docRef, {
-                  nombre: barrioUI.nombre || '',
-                  colorPrincipal: barrioUI.colorPrincipal || '#2c3e50',
-                  colorSecundario: barrioUI.colorSecundario || '#18bc9c',
-                  logoUrl: barrioUI.logoUrl || ''
-                });
-                Swal.fire("¡Listo!", "Identidad actualizada correctamente", "success");
-                setShowUIModal(false);
-              } catch (err) { Swal.fire("Error", "No se pudo actualizar la configuración", "error"); }
-            }}>
-              <Form.Group className="mb-3">
-                <Form.Label className="fw-bold">Nombre Visible</Form.Label>
-                <Form.Control size="lg" value={barrioUI.nombre || ''} onChange={e => setBarrioUI({...barrioUI, nombre: e.target.value})} />
-              </Form.Group>
-              
-              <Row className="g-3 mb-3">
-                <Col xs={6}>
-                  <Form.Label className="small fw-bold">Color Primario</Form.Label>
-                  <Form.Control type="color" className="w-100" value={barrioUI.colorPrincipal || '#2c3e50'} onChange={e => setBarrioUI({...barrioUI, colorPrincipal: e.target.value})} />
+      {/* MODAL PERSONALIZACIÓN */}
+      <Modal show={showUIModal} onHide={() => setShowUIModal(false)} centered size="lg">
+        <Modal.Header closeButton className="bg-light">
+          <Modal.Title><FontAwesomeIcon icon={faPalette} className="me-2" /> Estética de {barrioUI?.nombre}</Modal.Title>
+        </Modal.Header>
+        {barrioUI && (
+          <Form onSubmit={handleUpdateUI}>
+            <Modal.Body>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label className="fw-bold">Nombre a Mostrar</Form.Label>
+                    <Form.Control 
+                      value={barrioUI.nombre} 
+                      onChange={e => setBarrioUI({...barrioUI, nombre: e.target.value})} 
+                      required
+                    />
+                  </Form.Group>
                 </Col>
-                <Col xs={6}>
-                  <Form.Label className="small fw-bold">Color Secundario</Form.Label>
-                  <Form.Control type="color" className="w-100" value={barrioUI.colorSecundario || '#18bc9c'} onChange={e => setBarrioUI({...barrioUI, colorSecundario: e.target.value})} />
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label className="fw-bold">URL del Logo</Form.Label>
+                    <Form.Control 
+                      value={barrioUI.logoUrl || ''} 
+                      placeholder="https://..."
+                      onChange={e => setBarrioUI({...barrioUI, logoUrl: e.target.value})} 
+                    />
+                  </Form.Group>
                 </Col>
               </Row>
 
-              <Form.Group className="mb-4">
-                <Form.Label className="fw-bold">URL del Logo</Form.Label>
+              <Row className="g-3 mb-3">
+                <Col xs={4}>
+                  <Form.Label className="small fw-bold">Color Primario</Form.Label>
+                  <Form.Control type="color" className="w-100" value={barrioUI.colorPrincipal} onChange={e => setBarrioUI({...barrioUI, colorPrincipal: e.target.value})} />
+                </Col>
+                <Col xs={4}>
+                  <Form.Label className="small fw-bold">Color Secundario</Form.Label>
+                  <Form.Control type="color" className="w-100" value={barrioUI.colorSecundario} onChange={e => setBarrioUI({...barrioUI, colorSecundario: e.target.value})} />
+                </Col>
+                <Col xs={4}>
+                  <Form.Label className="small fw-bold"><FontAwesomeIcon icon={faBars} className="me-1"/> Color Navbar</Form.Label>
+                  <Form.Control type="color" className="w-100" value={barrioUI.colorNavbar || '#343a40'} onChange={e => setBarrioUI({...barrioUI, colorNavbar: e.target.value})} />
+                </Col>
+              </Row>
+
+              <Form.Group className="mb-3">
+                <Form.Label className="fw-bold"><FontAwesomeIcon icon={faImage} className="me-2"/> URL Imagen de Fondo</Form.Label>
                 <Form.Control 
-                  value={barrioUI.logoUrl || ''} 
-                  placeholder="https://..."
-                  onChange={e => setBarrioUI({...barrioUI, logoUrl: e.target.value})} 
+                  value={barrioUI.fondoUrl || ''} 
+                  placeholder="Ej: https://mi-imagen.jpg"
+                  onChange={e => setBarrioUI({...barrioUI, fondoUrl: e.target.value})} 
                 />
               </Form.Group>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={() => setShowUIModal(false)}>Cerrar</Button>
+              <Button variant="primary" type="submit"><FontAwesomeIcon icon={faSave} className="me-2"/> Guardar Cambios</Button>
+            </Modal.Footer>
+          </Form>
+        )}
+      </Modal>
 
-              <Button variant="dark" type="submit" className="w-100 py-3 fw-bold">GUARDAR CONFIGURACIÓN</Button>
-            </Form>
+      {/* MODAL CREAR BARRIO */}
+      <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Registrar Nuevo Barrio</Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={handleCreateBarrio}>
+          <Modal.Body>
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-bold">Identificador Único (ID)</Form.Label>
+              <Form.Control 
+                placeholder="ej: trespinos" 
+                onChange={e => setNewBarrio({...newBarrio, identificador: e.target.value})}
+                required 
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-bold">Nombre del Barrio</Form.Label>
+              <Form.Control 
+                placeholder="Ej: Club de Campo Tres Pinos" 
+                onChange={e => setNewBarrio({...newBarrio, nombre: e.target.value})}
+                required 
+              />
+            </Form.Group>
           </Modal.Body>
-        </Modal>
-      )}
+          <Modal.Footer>
+            <Button variant="primary" type="submit" className="w-100">Crear Barrio</Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
     </Container>
   );
 };

@@ -1,12 +1,26 @@
-/* Global Styles */
-/* Dentro de tu index.css, modifica o añade esto */
+/* --- VARIABLES Y RESET --- */
 :root {
-  /* Colores por defecto (Fallback) */
+  /* Fallbacks por si falla la carga del barrio */
   --primary-color: #2c3e50; 
   --secondary-color: #18bc9c;
+  --navbar-bg: #343a40;
+  --bg-image: linear-gradient(135deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%);
 }
 
-/* Forzamos a que las clases de Bootstrap usen nuestras variables */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden; /* Evita scroll horizontal molesto */
+}
+
+/* --- SOBREESCRITURA DE BOOTSTRAP (FUERZA BRUTA) --- */
+/* Esto asegura que los componentes de Bootstrap sigan el color del barrio */
+
 .bg-primary {
   background-color: var(--primary-color) !important;
 }
@@ -18,6 +32,7 @@
 .btn-primary {
   background-color: var(--primary-color) !important;
   border-color: var(--primary-color) !important;
+  color: white !important;
 }
 
 .btn-outline-primary {
@@ -26,347 +41,126 @@
 }
 
 .btn-primary:hover, .btn-primary:active {
-  filter: brightness(0.9);
+  filter: brightness(1.2);
+  transform: translateY(-1px);
 }
 
-/* Si usas un Navbar oscuro, esto asegura que el fondo sea dinámico */
-.navbar-custom {
-  background-color: var(--primary-color) !important;
-}
-@media (max-width: 576px) {
-  .container {
-    padding: 1rem auto; /* Reducimos para ganar espacio */
-  }
-  
-  /* IMPORTANTE: No fuerces el width auto aquí si usas Floating Labels */
-  .form-control {
-    width: 100% !important; 
-    margin: 0.5rem 0 !important;
-  }
+/* --- NAVBAR DINÁMICO --- */
 
-  .buttons {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    gap: 10px;
-  }
-}
-body {
-  background-image: url("../img/ingreso.png");
-  background-size: cover;
-  background-repeat: no-repeat;
-  text-align: center;
-}
 .custom-navbar {
-  background-color: #343a40; /* Color de fondo de la barra de navegación */
+  background-color: var(--navbar-bg) !important;
+}
+
+.navbar-collapse {
+  /* En móviles, el fondo del menú desplegable */
+  background-color: var(--navbar-bg); 
+  border-radius: 0 0 10px 10px;
+  padding: 10px;
+}
+
+.navlinks {
+  color: #ffffff !important;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.navlinks:hover {
+  color: var(--secondary-color) !important;
 }
 
 .brand {
   display: flex;
   align-items: center;
+  gap: 10px;
 }
 
-.user-name {
-  margin-left: 10px; /* Espaciado entre el nombre de usuario y el texto anterior */
-  color: #050404; /* Color del texto del nombre de usuario */
-}
-.html{
-  background: #375DDB;
-  background: -moz-linear-gradient(-45deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%);
-  background: -webkit-linear-gradient(-45deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%);
-  background: linear-gradient(135deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%);
-  background-size:contain;
-  background-repeat: no-repeat;
-  display: flex;
-  align-items: center
+/* --- CONTENEDORES Y CARDS --- */
+
+.container-main {
+  margin: 20px auto;
+  padding: 20px;
+  border-radius: 15px;
+  background-color: rgba(255, 255, 255, 0.9); /* Fondo semi-transparente */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  color: #333;
 }
 
-.navbar-collapse {
-  background-color: #6388ad; /* Color de fondo del menú desplegable */
-}
-
-.navlinks {
-  color: #ffffff !important; /* Color de los enlaces del menú */
-}
-
-.navlinks:hover {
-  color: #ffc107 !important; /* Color al pasar el cursor sobre los enlaces */
-}
-
-.logout-button {
-  margin-left: 10px;
-  margin-top: 8px;
-}
-
-.footer{
-  
-  background-size: cover;
-  background-position: center;
-  color: #000000;
-  padding: 0.1px;
-  border-radius: 20px;
-  font-style: italic;
-  font-size: x-small;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-.navlinks .badge {
-  position: relative;
-  top: -10px;
-  right: 10px;
-}
-
-.navbar-collapse {
-  display: flex;
-  align-items: center;
-  /*white-space: nowrap;*/ /* Evita que el texto se divida en varias líneas */
-}
-
-.navbar-collapse strong {
-  margin-right: 10px;
-}
-
-.navbar-collapse em {
-  font-style: normal;
-  color: #007bff; /* Color azul para destacar el nombre del usuario */
-}
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 1rem auto;
-  text-align: center;
-  background-position-y: center;
-}
-
-.container {
-  /*max-width: 90%;*/
-  margin: 0 auto;
-  padding: 1rem auto;
-  border-radius: 8px;
-  background-color: #3e8ac484;
-  color: #eee;
-  text-align: center;
-}
-
-h1 {
-  text-align: center;
-  margin-top: 20px;
-  margin-bottom: 40px;
-  color: #fff;
-}
-
-/* Navbar Styles */
-.navbar-collapse {
-  /*width: 90%;*/
-  margin: 0 auto;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.navlinks {
-  color: rgb(33, 238, 98);
-  font-size: 0.9rem;
-  margin-top: 2px;
-  margin-right: 10px;
-}
-
-.navlinks:hover {
-  color: rgb(14, 14, 3);
-}
-
-/* Login Styles */
-.login-key {
-  margin-bottom: 40px;
-}
-
-.form-label {
-  font-weight: bold;
-}
-
-.form-control {
-  width: auto;
-  padding: 5px;
-  margin-left: 5px;
-  margin-bottom: 25px;
-  border-radius: 5px !important;
-  background-color: #aecdb4c0;
-  color: #070701;
-}
-
-.input-group {
-  max-width: 500px;
-}
-
-.labels {
-  width: 150px;
-}
-
-.no-outline:focus {
-  outline: none !important;
-  border-color: #aecdb4c0;
-  box-shadow: none !important;
-}
-
-/* Button Styles */
-.btn-primary {
-  display: grid;
-  max-width: 100px;
-  padding: 10px;
-  border: none;
-  border-radius: 5px;
-  background-color: #008dca;
-  color: white;
-  text-align: center;
-  cursor: pointer;
-}
-
-.btn-primary:hover {
-  background-color: #0056b3;
-}
-
-.btn-link {
-  text-decoration: none;
-  color: #007bff;
-}
-
-.btn-link:hover {
-  text-decoration: underline;
-}
-
-.btn {
-  padding: 0.5rem 2rem;
-  transition: all 500ms;
-}
-
-.btn:hover {
-  transform: scale(1.25);
-}
-
-/* Card Styles */
 .card {
-  box-shadow: #070701;
-  max-height: fit-content;
-  height: auto;
-  align-content: center;
-  align-items: center;
-  background-color: aqua;
-}
-
-.card-img-top {
-  transition: all 500ms;
+  border: none !important;
+  border-radius: 12px !important;
+  transition: transform 0.3s ease;
+  background-color: white !important; /* Quitamos el 'aqua' para que sea profesional */
 }
 
 .card-img-top:hover {
-  transform: scale(1.20);
+  transform: scale(1.05);
 }
 
-.form-group,
-.elem-group {
-  color: #070701;
+/* --- FORMULARIOS --- */
+
+.form-label {
+  font-weight: 600;
+  color: #444;
+  margin-bottom: 5px;
+  display: block;
+  text-align: left;
 }
 
-/* Animation */
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.form-control {
+  width: 100% !important; /* Corregido: Siempre ocupa el ancho de su contenedor */
+  padding: 10px !important;
+  border-radius: 8px !important;
+  border: 1px solid #ddd !important;
+  background-color: #fff !important;
+  color: #333 !important;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.form-control:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 0.2rem rgba(var(--primary-color), 0.15) !important;
 }
 
-/* Media Queries */
-@media (max-width: 576px) {
-  .container {
-    padding: 0rem auto;
-  }
-  .navlinks {
-    font-size: small;
-    margin-right: 2px;
-  }
-  .form-control {
-    width: 100%;
-    margin-left: 0;
-  }
-  .labels {
-    width: 100%;
-    text-align: left;
-  }
-  .buttons {
-    flex-direction: column;
-    gap: 1em;
-  }
-}
-@media (max-width: 768px) {
-  .navbar-brand {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+/* --- FOOTER --- */
 
-  .navbar-brand strong {
-    margin-bottom: 5px;
-  }
-@media (min-width: 577px) and (max-width: 768px) {
-  .container {
-    padding: 1rem auto;
-  }
-  .navlinks {
-    font-size: 0.9rem;
-    margin-right: 5px;
-  }
-  .form-control {
-    width: 100%;
-  }
-  .labels {
-    width: 120px;
-  }
-  .buttons {
-    gap: 1.5em;
-  }
-}
-
-@media (min-width: 769px) {
-  .container {
-    padding: 20px;
-  }
-  .Nav.Links {
-    font-size: medium;
-    margin-right: 5px;
-  }
-  .form-control {
-    width: auto;
-  }
-  .labels {
-    width: 150px;
-  }
-  .buttons {
-    gap: 2em;
-  }
-}
-
-/* Footer Styles */
 .footer {
-  background-color: #3e8ac484;
-  padding: 0.1%;
-  text-align: center;
-  position: inherit;
-  bottom: 0;
+  background-color: var(--navbar-bg) !important;
+  color: white !important;
+  padding: 20px 0;
+  margin-top: auto;
   width: 100%;
-  color: antiquewhite;
-}
-
-.footer .rodapie {
-  margin-bottom: 0.5%;
+  border-top: 3px solid var(--secondary-color);
 }
 
 .footer .eslogan {
-  font-size: 14px;
-  color: #fafafa;
+  font-size: 0.8rem;
+  opacity: 0.8;
+  font-style: italic;
 }
+
+/* --- MEDIA QUERIES (RESPONSIVIDAD) --- */
+
+@media (max-width: 768px) {
+  .navbar-brand {
+    font-size: 1.1rem;
+  }
+  
+  .navlinks {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .btn {
+    width: 100%; /* Botones grandes en móvil */
+    margin-bottom: 10px;
+  }
+}
+
+/* Animación de Logo */
+@keyframes logo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.logo-animated {
+  animation: logo-spin infinite 20s linear;
 }

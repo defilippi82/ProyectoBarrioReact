@@ -1,56 +1,130 @@
-/* src/App.css - Versión Corregida y Simplificada */
+/* src/App.css - Configuración Dinámica y Responsiva */
+
+:root {
+  /* Valores por defecto en caso de que el Contexto tarde en cargar */
+  --primary-color: #2c3e50;
+  --secondary-color: #18bc9c;
+  --navbar-bg: #343a40;
+  --bg-image: linear-gradient(135deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%);
+}
 
 #root {
-  max-width: 1280px;
+  max-width: 100%; /* Cambiado de 1280px a 100% para mejor fluidez */
   margin: 0 auto;
-  /* Eliminado padding excesivo */
   text-align: center;
-}
-
-/* Global Styles */
-
-body {
-  /* Fondo limpio o degradado suave, la imagen 'ingreso.png' puede cargar mucho el fondo si está en toda la app */
-  background: #375DDB;
-  background: linear-gradient(135deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%);
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-attachment: fixed; /* Mantiene el fondo quieto al hacer scroll */
-  min-height: 100vh;
-  margin: 0;
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
 }
 
-/* CORRECCIÓN CRÍTICA DE FORMULARIOS */
-/* Eliminamos los width: auto que comprimen los inputs */
+/* --- ESTILOS GLOBALES --- */
+
+body {
+  /* Usamos la variable inyectada desde el God Panel / UserContext */
+  background: var(--bg-image);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position: center;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  transition: background 0.5s ease-in-out; /* Transición suave al cambiar de barrio */
+}
+
+/* Contenedor principal para que el Footer siempre quede abajo */
+main {
+  flex: 1;
+  padding-bottom: 2rem;
+}
+
+/* --- NAVBAR DINÁMICO --- */
+
+.custom-navbar {
+  background-color: var(--navbar-bg) !important;
+  border-bottom: 2px solid var(--secondary-color);
+  transition: background-color 0.4s ease;
+}
+
+/* --- BOTONES Y ELEMENTOS DINÁMICOS --- */
+
+/* Sobrescribimos las clases de Bootstrap para que usen los colores del barrio */
+.btn-primary {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: #fff !important;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.btn-outline-primary {
+  color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary-color) !important;
+  color: #fff !important;
+}
+
+/* --- FORMULARIOS --- */
+
 .form-control, .form-select {
   border-radius: 8px !important;
   border: 1px solid #ced4da;
-  /* Bootstrap manejará el width: 100% por defecto */
+  padding: 0.75rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-/* Estilos de botones corregidos para que no se compriman */
-.btn {
-  border-radius: 8px;
-  font-weight: 500;
-  transition: all 0.2s ease-in-out;
-  /* Eliminado el scale excesivo que puede romper el layout */
+.form-control:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 0.25rem rgba(var(--primary-color), 0.25);
 }
 
-.btn:hover {
-  transform: translateY(-2px);
+/* --- TARJETAS (CARDS) --- */
+
+.card {
+  border: none !important;
+  border-radius: 15px !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.95); /* Un toque de transparencia */
 }
 
-/* Media Queries para responsividad general */
+/* --- RESPONSIVIDAD (MEDIA QUERIES) --- */
+
 @media (max-width: 768px) {
   .container {
-    max-width: 100%;
-    padding: 0rem auto; /* Reducimos el padding para ganar espacio en móviles */
+    padding-left: 10px;
+    padding-right: 10px;
   }
-  
-  /* Inputs al 100% en mobile */
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  /* Aseguramos que los formularios ocupen todo el ancho en móviles */
   .form-control, .form-select {
     width: 100% !important;
+    font-size: 16px; /* Evita el zoom automático en iOS al hacer focus */
   }
+
+  .btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* --- UTILIDADES --- */
+
+.text-primary-custom {
+  color: var(--primary-color) !important;
+}
+
+.bg-secondary-custom {
+  background-color: var(--secondary-color) !important;
 }
