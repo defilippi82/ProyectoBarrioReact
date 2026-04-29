@@ -1,15 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  collection, addDoc, serverTimestamp, query, where, 
-  onSnapshot, deleteDoc, doc, updateDoc 
-} from 'firebase/firestore'; 
+import { collection, addDoc, serverTimestamp, query, where, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore'; 
 import { db } from '/src/firebaseConfig/firebase.js';
 import Swal from 'sweetalert2';
 import { Table, Button, Form, Modal, Row, Col, Card, Spinner } from 'react-bootstrap';
-import { 
-  FaWhatsapp, FaCopy, FaList, FaPlusCircle, FaEnvelope, 
-  FaQrcode, FaTrash, FaEdit, FaUserMinus 
-} from 'react-icons/fa';
+import {  FaWhatsapp, FaCopy, FaList, FaPlusCircle, FaEnvelope, FaQrcode, FaTrash, FaEdit, FaUserMinus } from 'react-icons/fa';
 import QRCode from 'qrcode';
 
 export const Invitados = () => {
@@ -36,32 +30,43 @@ export const Invitados = () => {
   } = state;
 
   // 1. Carga de usuario y Listeners
-  useEffect(() => {
-    const userDataFromStorage = localStorage.getItem('userData');
-    if (userDataFromStorage) {
-      const user = JSON.parse(userDataFromStorage);
-      setState(prev => ({ ...prev, userData: user, loading: false }));
+ useEffect(() => {
+  const userDataFromStorage = localStorage.getItem('userData');
+  if (userDataFromStorage) {
+    const user = JSON.parse(userDataFromStorage); // 1. Extraemos los datos
+    setState(prev => ({ ...prev, userData: user, loading: false }));
 
-      const userId = user.uid || user.id;
+    const userId = user.uid || user.id;
+    const bId = user.barrioId; // 2. Usamos esta variable local
 
-      // Escuchar Invitados Individuales (Orden Alfabético)
-      const qInv = query(collection(db, 'invitados'), where('registradoPor', '==', userId));
-      const unsubInv = onSnapshot(qInv, (snap) => {
-        const ordenada = snap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .sort((a, b) => a.nombre.localeCompare(b.nombre));
-        setState(prev => ({ ...prev, invitados: ordenada }));
-      });
+    // Escuchar Invitados Individuales
+    const qInv = query(
+      collection(db, 'invitados'), 
+      where('registradoPor', '==', userId),
+      where('barrioId', '==', bId) // <--- CAMBIO AQUÍ: bId en lugar de userData.barrioId
+    );
+    
+    const unsubInv = onSnapshot(qInv, (snap) => {
+      const ordenada = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre));
+      setState(prev => ({ ...prev, invitados: ordenada }));
+    });
 
-      // Escuchar Listas
-      const qList = query(collection(db, 'listasInvitados'), where('registradoPor', '==', userId));
-      const unsubList = onSnapshot(qList, (snap) => {
-        setState(prev => ({ ...prev, listas: snap.docs.map(d => ({ id: d.id, ...d.data() })) }));
-      });
+    // Escuchar Listas
+    const qList = query(
+      collection(db, 'listasInvitados'), 
+      where('registradoPor', '==', userId),
+      where('barrioId', '==', bId) // <--- CAMBIO AQUÍ: bId en lugar de userData.barrioId
+    );
+    
+    const unsubList = onSnapshot(qList, (snap) => {
+      setState(prev => ({ ...prev, listas: snap.docs.map(d => ({ id: d.id, ...d.data() })) }));
+    });
 
-      return () => { unsubInv(); unsubList(); };
-    }
-  }, []);
+    return () => { unsubInv(); unsubList(); };
+  }
+}, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -90,6 +95,7 @@ export const Invitados = () => {
         lote: `${userData.manzana}-${userData.lote}`,
         invitador: userData.nombre,
         registradoPor: userData.uid || userData.id,
+        barrioId: userData.barrioId,
         ingresado: false
       });
       setState(prev => ({ ...prev, formData: { nombre: '', dni: '', patente: '', email: '', telefono: '' } }));
@@ -103,7 +109,8 @@ export const Invitados = () => {
           isEditingList: false, 
           // Solo reseteamos el nombre, pero MANTENEMOS los invitados que ya clickeaste
           nuevaLista: { 
-            nombre: `Evento ${new Date().toLocaleDateString()}`, 
+            nombre: `Evento ${new Date().toLocaleDateString()}`,
+            barrioId: userData.barrioId, 
             invitados: prev.nuevaLista.invitados 
           },
           showListModal: true 
@@ -120,6 +127,7 @@ export const Invitados = () => {
       const data = {
         nombre: nuevaLista.nombre, invitados: invitadosLimpios,
         registradoPor: userData.uid || userData.id,
+        barrioId: userData.barrioId,
         lote: `${userData.manzana}-${userData.lote}`,
         ultimaModificacion: serverTimestamp()
       };
