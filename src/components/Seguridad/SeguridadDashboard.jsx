@@ -112,7 +112,9 @@ export const SeguridadDashboard = () => {
           scanner.render((id) => {
             procesarAcceso(id);
             setShowScanner(false);
-          }, (error) => { /* Errores de lectura ignorados */ });
+          }, (error) => { 
+            // Errores de lectura continuos se ignoran para no saturar la consola
+          });
         } else {
           Swal.fire("Error", "La librería de la cámara no cargó.", "error");
         }
@@ -121,7 +123,7 @@ export const SeguridadDashboard = () => {
       return () => {
         clearTimeout(initScanner);
         if (scanner) {
-          scanner.clear().catch(err => console.error(err));
+          scanner.clear().catch(err => console.error("Error al limpiar el scanner:", err));
         }
       };
     }
@@ -216,7 +218,10 @@ export const SeguridadDashboard = () => {
       {/* CABECERA Y BOTÓN MANUAL */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
-          <h2 className="fw-bold text-dark m-0"><FontAwesomeIcon icon={faShieldAlt} className="me-2 text-primary"/>Control de Accesos</h2>
+          <h2 className="fw-bold text-dark m-0">
+            <FontAwesomeIcon icon={faShieldAlt} className="me-2 text-primary"/>
+            Control de Accesos
+          </h2>
           <p className="text-muted small m-0">Supervisión en tiempo real del predio</p>
         </div>
         <Button variant="success" size="lg" className="fw-bold px-4 shadow-sm" onClick={() => setShowManualModal(true)}>
@@ -315,7 +320,11 @@ export const SeguridadDashboard = () => {
                     </thead>
                     <tbody>
                       {invitadosFiltrados.filter(i => i.estado === 'adentro').length === 0 ? (
-                        <tr><td colSpan="4" className="text-center py-5 text-muted">No hay personas en el predio que coincidan con la búsqueda.</td></tr>
+                        <tr>
+                          <td colSpan="4" className="text-center py-5 text-muted">
+                            No hay personas en el predio que coincidan con la búsqueda.
+                          </td>
+                        </tr>
                       ) : (
                         invitadosFiltrados.filter(i => i.estado === 'adentro').map(inv => {
                           const p = calcularPermanencia(inv.fechaIngreso);
@@ -323,7 +332,9 @@ export const SeguridadDashboard = () => {
                             <tr key={inv.id} className={p.exceso ? 'table-danger' : ''}>
                               <td className="ps-4">
                                 <div className="fw-bold text-dark">{inv.nombre}</div>
-                                <small className="text-muted"><Badge bg="light" text="dark">DNI: {inv.dni}</Badge> | {inv.patente || 'S/Patente'}</small>
+                                <small className="text-muted">
+                                  <Badge bg="light" text="dark" className="border">DNI: {inv.dni}</Badge> | {inv.patente || 'S/Patente'}
+                                </small>
                               </td>
                               <td>
                                 <div className="fw-bold">Lote {inv.lote}</div>
@@ -331,7 +342,7 @@ export const SeguridadDashboard = () => {
                               </td>
                               <td className={p.exceso ? 'text-danger fw-bold' : 'text-secondary'}>
                                 <FontAwesomeIcon icon={faClock} className="me-1 opacity-75"/> {p.texto}
-                                {p.exceso && <small className="d-block text-danger" style={{fontSize: '0.7rem'}}>¡Alerta Exceso!</small>}
+                                {p.exceso && <small className="d-block text-danger mt-1" style={{fontSize: '0.75rem'}}>¡Alerta Exceso!</small>}
                               </td>
                               <td className="text-end pe-4">
                                 <Button size="sm" variant="outline-danger" className="fw-bold px-3" onClick={() => procesarAcceso(inv.id)}>
@@ -360,7 +371,11 @@ export const SeguridadDashboard = () => {
                     </thead>
                     <tbody>
                       {invitadosFiltrados.filter(i => i.estado !== 'retirado' && !i.ingresado).length === 0 ? (
-                        <tr><td colSpan="3" className="text-center py-5 text-muted">No hay invitados en espera.</td></tr>
+                        <tr>
+                          <td colSpan="3" className="text-center py-5 text-muted">
+                            No hay invitados en espera.
+                          </td>
+                        </tr>
                       ) : (
                         invitadosFiltrados.filter(i => i.estado !== 'retirado' && !i.ingresado).map(inv => (
                           <tr key={inv.id}>
@@ -373,7 +388,7 @@ export const SeguridadDashboard = () => {
                               <small className="text-muted">Por: {inv.invitador}</small>
                             </td>
                             <td className="text-end pe-4">
-                              <Button size="sm" variant="success" className="fw-bold px-3" onClick={() => procesarAcceso(inv.id)}>
+                              <Button size="sm" variant="success" className="fw-bold px-3 shadow-sm" onClick={() => procesarAcceso(inv.id)}>
                                 DAR INGRESO
                               </Button>
                             </td>
@@ -392,30 +407,32 @@ export const SeguridadDashboard = () => {
       {/* MODAL INGRESO MANUAL */}
       <Modal show={showManualModal} onHide={() => setShowManualModal(false)} centered backdrop="static">
         <Modal.Header closeButton className="border-0 bg-success text-white">
-          <Modal.Title className="fw-bold"><FontAwesomeIcon icon={faUserPlus} className="me-2"/> Ingreso Excepcional</Modal.Title>
+          <Modal.Title className="fw-bold">
+            <FontAwesomeIcon icon={faUserPlus} className="me-2"/> Ingreso Excepcional
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body className="p-4 bg-light">
           <Form onSubmit={handleManualEntry}>
             <Row className="g-3">
               <Col md={12}>
                 <Form.Label className="small fw-bold text-muted text-uppercase">Nombre Completo</Form.Label>
-                <Form.Control size="lg" required placeholder="Ej: Juan Pérez" onChange={e => setManualData({...manualData, nombre: e.target.value})}/>
+                <Form.Control size="lg" required placeholder="Ej: Juan Pérez" value={manualData.nombre} onChange={e => setManualData({...manualData, nombre: e.target.value})}/>
               </Col>
               <Col md={6}>
                 <Form.Label className="small fw-bold text-muted text-uppercase">DNI</Form.Label>
-                <Form.Control required placeholder="Sin puntos" onChange={e => setManualData({...manualData, dni: e.target.value})}/>
+                <Form.Control required placeholder="Sin puntos" value={manualData.dni} onChange={e => setManualData({...manualData, dni: e.target.value})}/>
               </Col>
               <Col md={6}>
                 <Form.Label className="small fw-bold text-muted text-uppercase">Patente</Form.Label>
-                <Form.Control placeholder="Opcional" onChange={e => setManualData({...manualData, patente: e.target.value})}/>
+                <Form.Control placeholder="Opcional" value={manualData.patente} onChange={e => setManualData({...manualData, patente: e.target.value})}/>
               </Col>
               <Col md={6}>
                 <Form.Label className="small fw-bold text-muted text-uppercase">Lote Destino</Form.Label>
-                <Form.Control required placeholder="Ej: 14B" onChange={e => setManualData({...manualData, lote: e.target.value})}/>
+                <Form.Control required placeholder="Ej: 14B" value={manualData.lote} onChange={e => setManualData({...manualData, lote: e.target.value})}/>
               </Col>
               <Col md={6}>
                 <Form.Label className="small fw-bold text-muted text-uppercase">¿Quién autoriza?</Form.Label>
-                <Form.Control required placeholder="Nombre del propietario" onChange={e => setManualData({...manualData, invitador: e.target.value})}/>
+                <Form.Control required placeholder="Nombre del propietario" value={manualData.invitador} onChange={e => setManualData({...manualData, invitador: e.target.value})}/>
               </Col>
             </Row>
             <Button variant="success" type="submit" className="w-100 mt-4 py-3 fw-bold shadow">
