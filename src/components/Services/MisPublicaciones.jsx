@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from "react";
 import { collection, getDocs, query, where, deleteDoc, doc } from "firebase/firestore";
-import { db } from "/src/firebaseConfig/firebase";
+import { db } from "../../firebaseConfig/firebase";
 import { UserContext } from "./UserContext";
 import { Card, Button, Badge, Table } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";

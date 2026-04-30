@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState, useCallback } from 'react';
 import { Container, Button, Nav, Navbar, Badge, Offcanvas, ProgressBar } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { UserContext } from '../Services/UserContext';
-import { db } from '/src/firebaseConfig/firebase.js';
+import { db } from '../../firebaseConfig/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 

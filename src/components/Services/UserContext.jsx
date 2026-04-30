@@ -1,34 +1,49 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { db, auth } from '../../firebaseConfig/firebase'; 
+import { db, auth } from '../../firebaseConfig/firebase';
 
 export const UserContext = createContext();
 
-export const UserProvider = ({ children }) => {
-  const [userData, setUserData] = useState(null);
-  const [barrioConfig, setBarrioConfig] = useState(null);
-  const [loading, setLoading] = useState(true);
+// ─── Valores CSS por defecto (única fuente de verdad) ────────────────────────
+const CSS_DEFAULTS = {
+  '--primary-color':   '#2c3e50',
+  '--secondary-color': '#18bc9c',
+  '--navbar-bg':       '#343a40',
+  '--bg-image':        'linear-gradient(135deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%)',
+  '--bg-footer':       'linear-gradient(135deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%)',
+};
 
-  // 1. ESCUCHAR AUTENTICACIÓN Y PERFIL DE USUARIO
+const aplicarCSSDefaults = () => {
+  const root = document.documentElement;
+  Object.entries(CSS_DEFAULTS).forEach(([prop, val]) => root.style.setProperty(prop, val));
+};
+
+export const UserProvider = ({ children }) => {
+  const [userData, setUserData]       = useState(null);
+  const [barrioConfig, setBarrioConfig] = useState(null);
+  const [loading, setLoading]         = useState(true);
+
+  // ── 1. Autenticación + perfil de usuario ─────────────────────────────────
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
-        // Importante: Usamos la colección 'usuarios' como en el resto de tu app
         const userRef = doc(db, 'usuarios', user.uid);
-        
+
         const unsubUser = onSnapshot(userRef, (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();
-            // Mantenemos la estructura de 'rol' que confirmaste
-            setUserData({ uid: user.uid, email: user.email, ...data });
-            localStorage.setItem('userData', JSON.stringify({ uid: user.uid, ...data }));
+            const perfil = { uid: user.uid, email: user.email, ...data };
+            setUserData(perfil);
+            // FIX: setLoading(false) también cuando el documento existe
+            setLoading(false);
+            localStorage.setItem('userData', JSON.stringify(perfil));
           } else {
-            console.warn("Documento de usuario no encontrado en Firestore");
+            console.warn('Documento de usuario no encontrado en Firestore');
             setLoading(false);
           }
         }, (error) => {
-          console.error("Error al leer perfil:", error);
+          console.error('Error al leer perfil:', error);
           setLoading(false);
         });
 
@@ -44,71 +59,60 @@ export const UserProvider = ({ children }) => {
     return () => unsubscribeAuth();
   }, []);
 
-  // 2. ESCUCHAR CONFIGURACIÓN DEL BARRIO (Estética y Reglas)
+  // ── 2. Configuración del barrio (estética + feature flags) ───────────────
   useEffect(() => {
-    if (!userData?.barrioId) {
-      if (!userData) setLoading(false);
-      return;
-    }
+    if (!userData?.barrioId) return;
 
     const barrioRef = doc(db, 'configuracionBarrios', userData.barrioId);
-    
+
     const unsubBarrio = onSnapshot(barrioRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
-        
+
         setBarrioConfig({
           id: snapshot.id,
           ...data,
-          isStandard: data.plan === 'standard' || data.plan === 'full',
-          isSeguridad: data.plan === 'seguridad' || data.plan === 'full',
-          cupoAgotado: (data.usuariosActuales || 0) >= (data.limiteUsuarios || 100)
+          // FIX: isAdminPack agregado — lo consumía Navbar pero nunca se calculaba
+          isStandard:   data.plan === 'standard' || data.plan === 'full',
+          isSeguridad:  data.plan === 'seguridad' || data.plan === 'full',
+          isAdminPack:  data.plan === 'admin'     || data.plan === 'full',
+          cupoAgotado:  (data.usuariosActuales || 0) >= (data.limiteUsuarios || 100),
         });
 
-        // --- INYECCIÓN DINÁMICA DE ESTILOS CSS ---
+        // Inyección dinámica de estilos CSS
         const root = document.documentElement;
-        
-        // Colores principales
-        root.style.setProperty('--primary-color', data.colorPrincipal || '#2c3e50');
-        root.style.setProperty('--secondary-color', data.colorSecundario || '#18bc9c');
-        
-        // Navbar y Fondos
-        root.style.setProperty('--navbar-bg', data.colorNavbar || '#343a40');
-        
-        if (data.fondoUrl) {
-          root.style.setProperty('--bg-image', `url(${data.fondoUrl})`);
-        } else {
-          // Fondo degradado por defecto si no hay imagen
-          root.style.setProperty('--bg-image', 'linear-gradient(135deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%)');
-        }
+        root.style.setProperty('--primary-color',   data.colorPrincipal  || CSS_DEFAULTS['--primary-color']);
+        root.style.setProperty('--secondary-color', data.colorSecundario || CSS_DEFAULTS['--secondary-color']);
+        root.style.setProperty('--navbar-bg',       data.colorNavbar     || CSS_DEFAULTS['--navbar-bg']);
+        root.style.setProperty('--bg-image',
+          data.fondoUrl
+            ? `url(${data.fondoUrl})`
+            : CSS_DEFAULTS['--bg-image']
+        );
+        root.style.setProperty('--bg-footer',
+          data.fondoUrl ? 'transparent' : CSS_DEFAULTS['--bg-footer']
+        );
       }
       setLoading(false);
     }, (error) => {
-      console.warn("Error al cargar configuración de barrio.");
+      console.warn('Error al cargar configuración de barrio:', error);
       setLoading(false);
     });
 
     return () => unsubBarrio();
-  }, [userData?.barrioId]); // Solo se dispara si cambia el ID del barrio
+  }, [userData?.barrioId]);
 
-  // 3. FUNCIÓN DE CIERRE DE SESIÓN
+  // ── 3. Cierre de sesión ───────────────────────────────────────────────────
   const logout = async () => {
     try {
       await signOut(auth);
       localStorage.removeItem('userData');
       setUserData(null);
       setBarrioConfig(null);
-      
-      // Resetear variables CSS a valores neutros
-      const root = document.documentElement;
-      root.style.setProperty('--primary-color', '#2c3e50');
-      root.style.setProperty('--secondary-color', '#18bc9c');
-      root.style.setProperty('--navbar-bg', '#343a40');
-      root.style.setProperty('--bg-image', 'linear-gradient(135deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%)');
-      root.style.setProperty('--bg-footer', data.fondoUrl ? 'transparent' : 'linear-gradient(135deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%)');
-      
+      // FIX: eliminada referencia a 'data' que no existía en este scope
+      aplicarCSSDefaults();
     } catch (error) {
-      console.error("Error al cerrar sesión:", error);
+      console.error('Error al cerrar sesión:', error);
     }
   };
 

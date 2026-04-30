@@ -1,7 +1,7 @@
 import React, { useState, useContext } from "react";
 import { Form, Button, Card, Row, Col, Spinner, InputGroup } from "react-bootstrap";
 import { addDoc, collection } from "firebase/firestore";
-import { db } from "/src/firebaseConfig/firebase";
+import { db } from "../../firebaseConfig/firebase";
 import { UserContext } from "./UserContext";
 
 export const CrearAlquiler = () => {

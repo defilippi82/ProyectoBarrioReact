@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { 
     collection, addDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, where 
 } from 'firebase/firestore';
-import { db } from '/src/firebaseConfig/firebase.js';
+import { db } from '../../firebaseConfig/firebase';
 import { UserContext } from '../Services/UserContext';
 import { Button, Tabs, Tab, Row, Col, Container, Badge, InputGroup, Form, Modal } from 'react-bootstrap';
 import Swal from 'sweetalert2';

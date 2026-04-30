@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from "react"; // 1. Agregamos useContext
 import { Card, Row, Col, Button, Badge, Carousel, Spinner } from "react-bootstrap";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "/src/firebaseConfig/firebase";
+import { db } from "../../firebaseConfig/firebase";
 import { UserContext } from "../Services/UserContext"; // 2. Importamos el Contexto
 import { formatPrecio, getOptimizedImage } from "/src/utils/formatters";
 import "../Socios/alquileres.css";
