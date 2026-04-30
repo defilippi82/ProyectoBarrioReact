@@ -187,21 +187,54 @@ export const Invitados = () => {
   return (
     <div className="container mt-4 pb-5">
       
-      {/* 1. SECCIÓN LINK ORIGINAL */}
-      <Card className="mb-4 border-0 shadow-sm">
-        <Card.Body className="text-center py-4">
-          <h5 className="mb-3">Solicitar datos al invitado</h5>
-          <div className="d-flex justify-content-center gap-3">
-            <Button variant="outline-primary" onClick={() => {
-              navigator.clipboard.writeText(`${window.location.origin}/pages/invitacion.html?idPublico=${userData.idPublico}`);
-              Swal.fire('Copiado', 'Enlace copiado al portapapeles', 'success');
-            }}><FaCopy className="me-2"/>Copiar Link</Button>
-            <Button variant="success" onClick={() => window.open(`https://wa.me/?text=Hola! Por favor registrate aquí para tu ingreso: ${window.location.origin}/pages/invitacion.html?idPublico=${userData.idPublico}`)}>
-              <FaWhatsapp className="me-2"/>WhatsApp
-            </Button>
-          </div>
-        </Card.Body>
-      </Card>
+      {/* 1. SECCIÓN LINK ACTUALIZADA */}
+<Card className="mb-4 border-0 shadow-sm">
+  <Card.Body className="text-center py-4">
+    <h5 className="mb-3 fw-bold">Solicitar datos al invitado</h5>
+    
+    {/* Construimos la URL base con todos los parámetros necesarios */}
+    {(() => {
+      const baseUrl = `${window.location.origin}/pages/invitacion.html`;
+      const params = new URLSearchParams({
+        barrioId: userData?.barrioId || '', // Fundamental para la estética
+        invitador: userData?.nombre || '',
+        lote: userData?.lote || '',
+        telefono: userData?.telefono || '' // Para que el invitado le responda al dueño
+      }).toString();
+      
+      const fullLink = `${baseUrl}?${params}`;
+
+      return (
+        <div className="d-flex justify-content-center gap-3">
+          <Button 
+            variant="outline-primary" 
+            onClick={() => {
+              navigator.clipboard.writeText(fullLink);
+              Swal.fire({
+                title: '¡Enlace Copiado!',
+                text: 'Ya podés pegarlo en cualquier chat.',
+                icon: 'success',
+                confirmButtonColor: userData?.colorPrincipal || '#308CA4'
+              });
+            }}
+          >
+            <FaCopy className="me-2"/>Copiar Link
+          </Button>
+
+          <Button 
+            variant="success" 
+            onClick={() => {
+              const mensajeWA = encodeURIComponent(`¡Hola! 👋 Para agilizar tu ingreso, por favor registrate en este link: ${fullLink}`);
+              window.open(`https://wa.me/?text=${mensajeWA}`);
+            }}
+          >
+            <FaWhatsapp className="me-2"/>WhatsApp
+          </Button>
+        </div>
+      );
+    })()}
+  </Card.Body>
+</Card>
 
       {/* 2. FORMULARIO DE CARGA */}
       <Card className="mb-4 border-0 shadow-sm">
