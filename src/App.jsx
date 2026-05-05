@@ -53,7 +53,7 @@ const AppContent = () => {
   const [steps] = useState([
   {
     target: '.navbar', // Clase CSS del elemento
-    content: 'Bienvenido a CUBE. Esta es tu barra principal.',
+    content: 'Bienvenido a Portal-Barrios. Esta es tu barra principal.',
     placement: 'bottom',
     disableBeacon: true,
   },
