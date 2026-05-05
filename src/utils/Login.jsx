@@ -100,7 +100,7 @@ export const Login = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, #8ea5da 0%, #1e3a8a 100%);
+          background: linear-gradient(135deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%);
           padding: 20px;
         }
         .login-card {

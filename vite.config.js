@@ -8,8 +8,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: "App CUBE Escobar",
-        short_name: "CUBEApp",
+        name: "App Portal Barrios",
+        short_name: "Portal-Barrios",
         description: 'Aplicación para gestión de barrios cerrados',
         start_url: '/',
         display: "standalone",
