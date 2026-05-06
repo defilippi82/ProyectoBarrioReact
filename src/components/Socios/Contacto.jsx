@@ -13,12 +13,13 @@ export const Contacto = () => {
     consulta: '',
     destino: 'Administracion'
   });
+  
   const [contacto, setContacto] = useState({ email: '', telefono: '' });
+  const [loading, setLoading] = useState(false);
   const [metodosContacto, setMetodosContacto] = useState({
     whatsapp: false,
     correo: false
   });
-  const [loading, setLoading] = useState(false);
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const destinos = [
@@ -27,16 +28,32 @@ export const Contacto = () => {
     { value: 'ControlDeObras', label: '🏗️ Control de Obras' }
   ];
 
-  const fetchContacto = async (destino) => {
+ const storedUserData = JSON.parse(localStorage.getItem('user')); // O tu lógica de Auth
+    if (storedUserData?.barrioId) {
+      setBarrioId(storedUserData.barrioId);
+    }
+  
+
+  const fetchContacto = async (destinoSeleccionado) => {
+    if (!barrioId) return; // No buscamos si no sabemos el barrio
+
     setLoading(true);
     try {
-      const q = query(collection(db, 'contactos'), where('departamento', '==', destino),where("barrioId", "==", userData.barrioId));
+      // Corregimos la consulta usando la variable barrioId local
+      const q = query(
+        collection(db, 'contactos'), 
+        where('departamento', '==', destinoSeleccionado),
+        where("barrioId", "==", barrioId)
+      );
+
       const querySnapshot = await getDocs(q);
+      
       if (!querySnapshot.empty) {
         const data = querySnapshot.docs[0].data();
         setContacto({ email: data.email, telefono: data.telefono });
       } else {
         setContacto({ email: '', telefono: '' });
+        console.warn(`No se encontró contacto para ${destinoSeleccionado} en el barrio ${barrioId}`);
       }
     } catch (err) {
       console.error("Error al obtener contacto:", err);
@@ -45,9 +62,13 @@ export const Contacto = () => {
     }
   };
 
+  // 2. El useEffect debe dispararse cuando cambie el destino O el barrioId
   useEffect(() => {
-    if (formData.destino) fetchContacto(formData.destino);
-  }, [formData.destino]);
+    if (formData.destino && barrioId) {
+      fetchContacto(formData.destino);
+    }
+  }, [formData.destino, barrioId]);
+ 
 
   const handleSubmit = (e) => {
     e.preventDefault();
