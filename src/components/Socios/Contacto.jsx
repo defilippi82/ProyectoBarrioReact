@@ -17,10 +17,7 @@ export const Contacto = () => {
   
   const [contacto, setContacto] = useState({ email: '', telefono: '' });
   const [loading, setLoading] = useState(false);
-  const [metodosContacto, setMetodosContacto] = useState({
-    whatsapp: false,
-    correo: false
-  });
+  const [metodosContacto, setMetodosContacto] = useState({ whatsapp: false, correo: false });
 
   const destinos = [
     { value: 'Administracion', label: '📂 Administración' },
