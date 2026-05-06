@@ -30,7 +30,7 @@ export const Contacto = () => {
   const fetchContacto = async (destino) => {
     setLoading(true);
     try {
-      const q = query(collection(db, 'contactos'), where('departamento', '==', destino));
+      const q = query(collection(db, 'contactos'), where('departamento', '==', destino),where("barrioId", "==", userData.barrioId));
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
         const data = querySnapshot.docs[0].data();
