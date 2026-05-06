@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Form, Button, Row, Col, Card, Alert, Spinner, InputGroup } from 'react-bootstrap';
-import { FaWhatsapp, FaEnvelope, FaPaperPlane, FaUser, FaHome, FaCommentAlt, FaUsersCog } from 'react-icons/fa';
+import { Container, Form, Button, Row, Col, Card, Spinner } from 'react-bootstrap';
+import { FaPaperPlane, FaUser, FaHome, FaCommentAlt, FaUsersCog } from 'react-icons/fa';
 import { collection, query, getDocs, where } from 'firebase/firestore';
 import { db } from '../../firebaseConfig/firebase';
 import Swal from 'sweetalert2';
 import { useMediaQuery } from 'react-responsive';
 
 export const Contacto = () => {
+  // 1. Definición de estados
+  const [barrioId, setBarrioId] = useState(null);
   const [formData, setFormData] = useState({
     nombre: '',
     lote: '',
@@ -20,6 +22,7 @@ export const Contacto = () => {
     whatsapp: false,
     correo: false
   });
+
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
   const destinos = [
@@ -28,18 +31,26 @@ export const Contacto = () => {
     { value: 'ControlDeObras', label: '🏗️ Control de Obras' }
   ];
 
- const storedUserData = JSON.parse(localStorage.getItem('user')); // O tu lógica de Auth
-    if (storedUserData?.barrioId) {
-      setBarrioId(storedUserData.barrioId);
+  // 2. Obtener el barrioId al montar el componente
+  useEffect(() => {
+    try {
+      const storedUserData = JSON.parse(localStorage.getItem('user'));
+      if (storedUserData?.barrioId) {
+        setBarrioId(storedUserData.barrioId);
+      } else {
+        console.warn("No se encontró el barrioId en el almacenamiento local.");
+      }
+    } catch (error) {
+      console.error("Error al leer localStorage:", error);
     }
-  
+  }, []);
 
+  // 3. Función para buscar el contacto en Firestore
   const fetchContacto = async (destinoSeleccionado) => {
-    if (!barrioId) return; // No buscamos si no sabemos el barrio
+    if (!barrioId) return;
 
     setLoading(true);
     try {
-      // Corregimos la consulta usando la variable barrioId local
       const q = query(
         collection(db, 'contactos'), 
         where('departamento', '==', destinoSeleccionado),
@@ -50,10 +61,14 @@ export const Contacto = () => {
       
       if (!querySnapshot.empty) {
         const data = querySnapshot.docs[0].data();
-        setContacto({ email: data.email, telefono: data.telefono });
+        setContacto({ 
+          email: data.email || '', 
+          telefono: data.telefono || '' 
+        });
       } else {
         setContacto({ email: '', telefono: '' });
-        console.warn(`No se encontró contacto para ${destinoSeleccionado} en el barrio ${barrioId}`);
+        // Reseteamos métodos si no hay datos
+        setMetodosContacto({ whatsapp: false, correo: false });
       }
     } catch (err) {
       console.error("Error al obtener contacto:", err);
@@ -62,13 +77,12 @@ export const Contacto = () => {
     }
   };
 
-  // 2. El useEffect debe dispararse cuando cambie el destino O el barrioId
+  // 4. Actualizar contacto cuando cambie el destino o el barrioId
   useEffect(() => {
     if (formData.destino && barrioId) {
       fetchContacto(formData.destino);
     }
   }, [formData.destino, barrioId]);
- 
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -77,8 +91,8 @@ export const Contacto = () => {
       return;
     }
     
-    // Aquí iría tu lógica de envío (WhatsApp o Email)
-    Swal.fire('Enviado', 'Tu consulta ha sido procesada correctamente', 'success');
+    // Lógica de envío simulada
+    Swal.fire('Enviado', `Consulta enviada a ${formData.destino} correctamente`, 'success');
   };
 
   return (
@@ -163,7 +177,7 @@ export const Contacto = () => {
                           type="switch"
                           id="check-whatsapp"
                           label="WhatsApp"
-                          disabled={!contacto.telefono}
+                          disabled={!contacto.telefono || loading}
                           checked={metodosContacto.whatsapp}
                           onChange={(e) => setMetodosContacto({...metodosContacto, whatsapp: e.target.checked})}
                           className="d-inline-block fw-bold text-success"
@@ -174,7 +188,7 @@ export const Contacto = () => {
                           type="switch"
                           id="check-email"
                           label="Correo"
-                          disabled={!contacto.email}
+                          disabled={!contacto.email || loading}
                           checked={metodosContacto.correo}
                           onChange={(e) => setMetodosContacto({...metodosContacto, correo: e.target.checked})}
                           className="d-inline-block fw-bold text-warning"
