@@ -49,7 +49,7 @@ export const Contacto = () => {
   setLoading(true);
   try {
     const q = query(
-      collection(db, 'contactos'), 
+      collection(db, 'usuarios'), 
       // IMPORTANTE: Asegúrate de que destinoSeleccionado sea igual al de la DB
       where('departamento', '==', destinoSeleccionado),
       where("barrioId", "==", barrioId) 
