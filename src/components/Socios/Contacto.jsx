@@ -60,7 +60,7 @@ export const Contacto = () => {
         const data = querySnapshot.docs[0].data();
         setContacto({ 
           email: data.email || '', 
-          telefono: data.telefono || '' 
+          telefono: data.numerotelefono || '' 
         });
       } else {
         setContacto({ email: '', telefono: '' });
@@ -165,7 +165,7 @@ export const Contacto = () => {
                         type="switch"
                         id="sw-ws"
                         label="WhatsApp"
-                        disabled={!contacto.telefono || loading}
+                        disabled={!contacto.numerotelefono || loading}
                         checked={metodosContacto.whatsapp}
                         onChange={(e) => setMetodosContacto({...metodosContacto, whatsapp: e.target.checked})}
                       />
@@ -178,7 +178,7 @@ export const Contacto = () => {
                         onChange={(e) => setMetodosContacto({...metodosContacto, correo: e.target.checked})}
                       />
                     </div>
-                    {(!contacto.telefono && !contacto.email && !loading) && (
+                    {(!contacto.numerotelefono && !contacto.email && !loading) && (
                       <small className="text-danger d-block mt-2">
                         No hay datos de contacto para este departamento en tu barrio.
                       </small>
