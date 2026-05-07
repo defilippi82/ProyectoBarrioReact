@@ -12,74 +12,74 @@ export const Contacto = () => {
     nombre: '',
     lote: '',
     consulta: '',
-    destino: 'Administracion'
+    destino: 'AtencionAlPropietario' // Valor inicial basado en idPublico
   });
   
+  // Normalizamos el nombre del campo a 'numerotelefono' para que coincida con tu DB
   const [contacto, setContacto] = useState({ email: '', numerotelefono: '' });
   const [loading, setLoading] = useState(false);
   const [metodosContacto, setMetodosContacto] = useState({ whatsapp: false, correo: false });
 
+  // 2. Definición de destinos usando idPublico como 'value'
   const destinos = [
-    { value: 'Administracion', label: '📂 Administración' },
+    { value: 'AtencionAlPropietario', label: '📂 Administración' },
     { value: 'Facturacion', label: '💳 Facturación' },
     { value: 'ControlDeObras', label: '🏗️ Control de Obras' }
   ];
 
-  // 2. EFECTO INICIAL: Cargar barrioId (SOLO UNA VEZ)
+  // 3. Cargar barrioId desde localStorage
   useEffect(() => {
     const data = localStorage.getItem('user');
     if (data) {
       try {
         const storedUserData = JSON.parse(data);
         if (storedUserData?.barrioId) {
-          setBarrioId(storedUserData.barrioId);
-        } else {
-          console.error("El usuario en localStorage no tiene barrioId");
+          // Lo guardamos en minúsculas para asegurar coincidencia con la DB ("cube")
+          setBarrioId(storedUserData.barrioId.toLowerCase().trim());
         }
       } catch (e) {
         console.error("Error parseando user de localStorage", e);
       }
     }
-  }, []); // El array vacío asegura que solo corra al montar el componente
+  }, []);
 
-  // 3. FUNCIÓN DE BÚSQUEDA
-  const fetchContacto = async (destinoSeleccionado) => {
-  if (!barrioId) return;
+  // 4. Función de búsqueda por idPublico en la colección 'usuarios'
+  const fetchContacto = async (idSeleccionado) => {
+    if (!barrioId) return;
 
-  setLoading(true);
-  try {
-    const q = query(
-      collection(db, 'usuarios'), 
-      // IMPORTANTE: Asegúrate de que destinoSeleccionado sea igual al de la DB
-      where('departamento', '==', destinoSeleccionado),
-      where("barrioId", "==", barrioId) 
-    );
-
-    const querySnapshot = await getDocs(q);
-    
-    if (!querySnapshot.empty) {
-      const data = querySnapshot.docs[0].data();
+    setLoading(true);
+    try {
+      console.log(`Buscando idPublico: ${idSeleccionado} en barrio: ${barrioId}`);
       
-      // CAMBIO AQUÍ: Usamos numerotelefono que es el nombre real en tu DB
-      setContacto({ 
-        email: data.email?.trim() || '', 
-        numerotelefono: data.numerotelefono || '' 
-      });
+      const q = query(
+        collection(db, 'usuarios'), 
+        where('idPublico', '==', idSeleccionado),
+        where("barrioId", "==", barrioId) 
+      );
 
-      console.log("Contacto encontrado:", data.numerotelefono);
-    } else {
-      console.warn("No se encontró el documento para:", destinoSeleccionado, barrioId);
-      setContacto({ email: '', numerotelefono: '' });
-      setMetodosContacto({ whatsapp: false, correo: false });
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const data = querySnapshot.docs[0].data();
+        
+        setContacto({ 
+          email: data.email?.trim() || '', 
+          numerotelefono: data.numerotelefono || '' 
+        });
+        console.log("✅ Contacto encontrado:", data.email);
+      } else {
+        console.warn("⚠️ No se encontró el contacto en la colección 'usuarios'");
+        setContacto({ email: '', numerotelefono: '' });
+        setMetodosContacto({ whatsapp: false, correo: false });
+      }
+    } catch (err) {
+      console.error("❌ Error al obtener contacto:", err);
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error("Error al obtener contacto:", err);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
-  // 4. EFECTO: Buscar contacto cuando cambie destino o barrioId
+  // 5. Efecto: Buscar cuando cambie el destino o el barrio
   useEffect(() => {
     if (barrioId && formData.destino) {
       fetchContacto(formData.destino);
@@ -89,11 +89,12 @@ export const Contacto = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!metodosContacto.whatsapp && !metodosContacto.correo) {
-      Swal.fire('Atención', 'Selecciona un método de contacto (WhatsApp o Correo)', 'warning');
+      Swal.fire('Atención', 'Selecciona un método de contacto', 'warning');
       return;
     }
     
-    Swal.fire('Enviado', 'Tu consulta ha sido procesada', 'success');
+    // Aquí podrías agregar la lógica para disparar el mail o abrir WhatsApp
+    Swal.fire('Enviado', 'Tu consulta ha sido procesada con éxito', 'success');
   };
 
   return (
@@ -170,6 +171,7 @@ export const Contacto = () => {
                         type="switch"
                         id="sw-ws"
                         label="WhatsApp"
+                        // Validamos contra el nombre correcto del campo
                         disabled={!contacto.numerotelefono || loading}
                         checked={metodosContacto.whatsapp}
                         onChange={(e) => setMetodosContacto({...metodosContacto, whatsapp: e.target.checked})}
@@ -185,7 +187,7 @@ export const Contacto = () => {
                     </div>
                     {(!contacto.numerotelefono && !contacto.email && !loading) && (
                       <small className="text-danger d-block mt-2">
-                        No hay datos de contacto para este departamento en tu barrio.
+                        No hay datos de contacto para este departamento.
                       </small>
                     )}
                   </Card.Body>
@@ -194,7 +196,7 @@ export const Contacto = () => {
                 {loading && (
                   <div className="text-center mb-3">
                     <Spinner animation="border" variant="success" size="sm" />
-                    <span className="ms-2 text-muted">Sincronizando...</span>
+                    <span className="ms-2 text-muted">Buscando...</span>
                   </div>
                 )}
 
