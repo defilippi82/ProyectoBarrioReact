@@ -44,35 +44,40 @@ export const Contacto = () => {
 
   // 3. FUNCIÓN DE BÚSQUEDA
   const fetchContacto = async (destinoSeleccionado) => {
-    if (!barrioId) return;
+  if (!barrioId) return;
 
-    setLoading(true);
-    try {
-      const q = query(
-        collection(db, 'contactos'), 
-        where('departamento', '==', destinoSeleccionado),
-        where("barrioId", "==", barrioId)
-      );
+  setLoading(true);
+  try {
+    const q = query(
+      collection(db, 'contactos'), 
+      // IMPORTANTE: Asegúrate de que destinoSeleccionado sea igual al de la DB
+      where('departamento', '==', destinoSeleccionado),
+      where("barrioId", "==", barrioId) 
+    );
 
-      const querySnapshot = await getDocs(q);
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+      const data = querySnapshot.docs[0].data();
       
-      if (!querySnapshot.empty) {
-        const data = querySnapshot.docs[0].data();
-        setContacto({ 
-          email: data.email || '', 
-          telefono: data.numerotelefono || '' 
-        });
-      } else {
-        setContacto({ email: '', telefono: '' });
-        // Si no hay datos, desmarcamos los métodos de contacto
-        setMetodosContacto({ whatsapp: false, correo: false });
-      }
-    } catch (err) {
-      console.error("Error al obtener contacto:", err);
-    } finally {
-      setLoading(false);
+      // CAMBIO AQUÍ: Usamos numerotelefono que es el nombre real en tu DB
+      setContacto({ 
+        email: data.email?.trim() || '', 
+        telefono: data.numerotelefono || '' 
+      });
+
+      console.log("Contacto encontrado:", data.numerotelefono);
+    } else {
+      console.warn("No se encontró el documento para:", destinoSeleccionado, barrioId);
+      setContacto({ email: '', telefono: '' });
+      setMetodosContacto({ whatsapp: false, correo: false });
     }
-  };
+  } catch (err) {
+    console.error("Error al obtener contacto:", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // 4. EFECTO: Buscar contacto cuando cambie destino o barrioId
   useEffect(() => {
