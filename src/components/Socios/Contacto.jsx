@@ -63,7 +63,7 @@ export const Contacto = () => {
       // CAMBIO AQUÍ: Usamos numerotelefono que es el nombre real en tu DB
       setContacto({ 
         email: data.email?.trim() || '', 
-        telefono: data.numerotelefono || '' 
+        numerotelefono: data.numerotelefono || '' 
       });
 
       console.log("Contacto encontrado:", data.numerotelefono);
