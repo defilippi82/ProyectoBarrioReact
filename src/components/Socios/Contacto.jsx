@@ -15,7 +15,7 @@ export const Contacto = () => {
     destino: 'Administracion'
   });
   
-  const [contacto, setContacto] = useState({ email: '', telefono: '' });
+  const [contacto, setContacto] = useState({ email: '', numerotelefono: '' });
   const [loading, setLoading] = useState(false);
   const [metodosContacto, setMetodosContacto] = useState({ whatsapp: false, correo: false });
 
@@ -69,7 +69,7 @@ export const Contacto = () => {
       console.log("Contacto encontrado:", data.numerotelefono);
     } else {
       console.warn("No se encontró el documento para:", destinoSeleccionado, barrioId);
-      setContacto({ email: '', telefono: '' });
+      setContacto({ email: '', numerotelefono: '' });
       setMetodosContacto({ whatsapp: false, correo: false });
     }
   } catch (err) {
