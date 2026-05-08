@@ -103,6 +103,51 @@ export const Contacto = () => {
     e.preventDefault();
     Swal.fire('Enviado', 'Tu consulta ha sido recibida.', 'success');
   };
+  // 6. LÓGICA DE ENVÍO
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const { nombre, lote, consulta, destino } = formData;
+    const { email, numerotelefono } = contacto;
+
+    // Obtener el label del destino para el cuerpo del mensaje
+    const destinoLabel = destinos.find(d => d.value === destino)?.label || destino;
+
+    // Construcción del mensaje base
+    const mensajeBase = `*Nueva Consulta - Barrio Cube*\n\n` +
+                        `👤 *Nombre:* ${nombre}\n` +
+                        `🏡 *Lote/Unidad:* ${lote}\n` +
+                        `🏢 *Sector:* ${destinoLabel}\n` +
+                        `💬 *Consulta:* ${consulta}`;
+
+    // A. LÓGICA WHATSAPP
+    if (metodosContacto.whatsapp && numerotelefono) {
+      // Limpiamos el número por si tiene espacios o caracteres raros
+      const phoneClean = numerotelefono.replace(/\D/g, '');
+      const waUrl = `https://api.whatsapp.com/send?phone=${phoneClean}&text=${encodeURIComponent(mensajeBase)}`;
+      window.open(waUrl, '_blank');
+    }
+
+    // B. LÓGICA CORREO (mailto)
+    if (metodosContacto.correo && email) {
+      const subject = `Consulta de ${nombre} - Lote ${lote}`;
+      // Usamos %0D%0A para saltos de línea en mailto
+      const bodyEmail = mensajeBase.replace(/\*/g, ''); // Quitamos los asteriscos de negrita de WhatsApp
+      const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyEmail)}`;
+      
+      // Abrimos el correo (usamos un timeout pequeño por si se disparan ambos)
+      setTimeout(() => {
+        window.location.href = mailtoUrl;
+      }, 500);
+    }
+
+    Swal.fire({
+      title: '¡Procesado!',
+      text: 'Se han abierto las aplicaciones de contacto seleccionadas.',
+      icon: 'success',
+      confirmButtonColor: '#198754'
+    });
+  };
 // Agregá esto antes del return para ver la verdad en la consola
 console.log("VALORES ACTUALES - Barrio:", barrioId, "| Destino:", formData.destino);
   return (
@@ -203,7 +248,7 @@ console.log("VALORES ACTUALES - Barrio:", barrioId, "| Destino:", formData.desti
                   className="w-100 fw-bold shadow-sm"
                   disabled={loading || (!metodosContacto.whatsapp && !metodosContacto.correo)}
                 >
-                  {loading ? <Spinner size="sm" /> : <><FaPaperPlane className="me-2" /> ENVIAR CONSULTA</>}
+                  {loading ? <Spinner size="sm" /> : <><FaPaperPlane className="me-2" /> INICIAR CONTACTO</>}
                 </Button>
               </Form>
             </Card.Body>
