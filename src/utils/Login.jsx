@@ -1,182 +1,126 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Form, Button, Row, Col, Card, Spinner } from 'react-bootstrap';
-import { FaPaperPlane, FaUser, FaHome, FaCommentAlt, FaUsersCog, FaWhatsapp, FaEnvelope } from 'react-icons/fa';
-import { collection, query, getDocs, where } from 'firebase/firestore';
-import { db } from '../../firebaseConfig/firebase';
-import Swal from 'sweetalert2';
+import React, { useState, useEffect, useContext } from 'react';
+import { Link, useNavigate } from "react-router-dom";
+import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
+// Ruta corregida para el build
+import { db } from "../firebaseConfig/firebase"; 
+import { UserContext } from "../components/Services/UserContext";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
 
-export const Contacto = () => {
-  const [barrioId, setBarrioId] = useState(null);
-  const [formData, setFormData] = useState({
-    nombre: '',
-    lote: '',
-    consulta: '',
-    destino: 'AtencionAlPropietario' 
-  });
-  
-  const [contacto, setContacto] = useState({ email: '', numerotelefono: '' });
-  const [loading, setLoading] = useState(false);
-  const [metodosContacto, setMetodosContacto] = useState({ whatsapp: false, correo: false });
+const MySwal = withReactContent(Swal);
 
-  const destinos = [
-    { value: 'AtencionAlPropietario', label: '📂 Administración' },
-    { value: 'Facturacion', label: '💳 Facturación' },
-    { value: 'ControlDeObras', label: '🏗️ Control de Obras' }
-  ];
+export const Login = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [barrios, setBarrios] = useState([]);
+  const [barrioSeleccionado, setBarrioSeleccionado] = useState('');
+  const { setUserData } = useContext(UserContext);
+  const navigate = useNavigate();
 
-  // --- CORRECCIÓN AQUÍ: Cambiamos 'user' por 'userData' ---
   useEffect(() => {
-    const data = localStorage.getItem('userData'); // <--- Antes decía 'user'
-    console.log("Intentando leer de localStorage.userData:", data);
-
-    if (data) {
+    const obtenerBarrios = async () => {
       try {
-        const storedUserData = JSON.parse(data);
-        if (storedUserData?.barrioId) {
-          const idNormalizado = String(storedUserData.barrioId).toLowerCase().trim();
-          setBarrioId(idNormalizado);
-          console.log("📍 Barrio detectado correctamente:", idNormalizado);
-        }
-      } catch (e) {
-        console.error("Error al parsear userData:", e);
+        const q = query(collection(db, "configuracionBarrios"), orderBy("nombre"));
+        const snap = await getDocs(q);
+        const lista = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setBarrios(lista);
+      } catch (error) {
+        console.error("Error barrios:", error);
       }
-    }
+    };
+    obtenerBarrios();
   }, []);
 
-  const fetchContacto = async (idPublicoSeleccionado) => {
-    if (!barrioId) return;
-
-    setLoading(true);
-    try {
-      const q = query(
-        collection(db, 'usuarios'), 
-        where('idPublico', '==', idPublicoSeleccionado),
-        where("barrioId", "==", barrioId) 
-      );
-
-      const querySnapshot = await getDocs(q);
-      
-      if (!querySnapshot.empty) {
-        const docEncontrado = querySnapshot.docs[0].data();
-        setContacto({ 
-          email: docEncontrado.email || '', 
-          numerotelefono: docEncontrado.numerotelefono || '' 
-        });
-        setMetodosContacto({
-          whatsapp: !!docEncontrado.numerotelefono,
-          correo: !!docEncontrado.email
-        });
-      } else {
-        setContacto({ email: '', numerotelefono: '' });
-        setMetodosContacto({ whatsapp: false, correo: false });
-      }
-    } catch (err) {
-      console.error("Error Firebase:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (barrioId && formData.destino) {
-      fetchContacto(formData.destino);
-    }
-  }, [formData.destino, barrioId]);
-
-  const handleSubmit = (e) => {
+  const login = async (e) => {
     e.preventDefault();
-    Swal.fire('Enviado', 'Tu consulta ha sido procesada.', 'success');
+    if (!barrioSeleccionado) {
+      MySwal.fire("Atención", "Selecciona un barrio", "warning");
+      return;
+    }
+
+    try {
+      const usuariosRef = collection(db, "usuarios");
+      const q = query(usuariosRef, where('email', '==', email));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        let encontrado = false;
+        
+        querySnapshot.forEach((docSnap) => {
+          const dataOriginal = docSnap.data();
+          if (dataOriginal.contrasena === password) {
+            encontrado = true;
+            
+            if (!dataOriginal.rol?.god && dataOriginal.barrioId !== barrioSeleccionado) {
+               MySwal.fire("Error", "No perteneces a este barrio", "error");
+               return;
+            }
+
+            const userData = { 
+              id: docSnap.id, 
+              ...dataOriginal,
+              barrioId: dataOriginal.rol?.god ? barrioSeleccionado : dataOriginal.barrioId
+            };
+
+            setUserData(userData);
+            // Guardamos como 'userData' para que sea consistente en toda la app
+            localStorage.setItem('userData', JSON.stringify(userData));
+            
+            MySwal.fire({
+              title: 'Ingreso exitoso',
+              icon: 'success',
+              timer: 1500,
+              showConfirmButton: false,
+            }).then(() => {
+              if (userData.rol?.seguridad) navigate('/seguridad');
+              else navigate('/novedades');
+            });
+          }
+        });
+        if (!encontrado) MySwal.fire("Error", "Contraseña incorrecta", "error");
+      } else {
+        MySwal.fire("Error", "Usuario no encontrado", "error");
+      }
+    } catch (error) {
+      MySwal.fire("Error", "Error de conexión", "error");
+    }
   };
 
   return (
-    <Container className="py-4">
-      <Row className="justify-content-center">
-        <Col xs={12} lg={7}>
-          <Card className="shadow-lg border-0 rounded-4 overflow-hidden">
-            <Card.Header className="bg-success text-white text-center py-4">
-              <FaUsersCog size={40} className="mb-2" />
-              <h3 className="fw-bold mb-0">Contacto</h3>
-            </Card.Header>
-            <Card.Body className="p-4 bg-white">
-              <Form onSubmit={handleSubmit}>
-                <Row className="g-3 mb-4">
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label className="small fw-bold text-muted">NOMBRE</Form.Label>
-                      <Form.Control 
-                        type="text" 
-                        value={formData.nombre}
-                        onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-                        required 
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label className="small fw-bold text-muted">LOTE</Form.Label>
-                      <Form.Control 
-                        type="text" 
-                        value={formData.lote}
-                        onChange={(e) => setFormData({...formData, lote: e.target.value})}
-                        required 
-                      />
-                    </Form.Group>
-                  </Col>
-                </Row>
-
-                <Form.Group className="mb-3">
-                  <Form.Label className="small fw-bold text-muted">DESTINO</Form.Label>
-                  <Form.Select 
-                    value={formData.destino}
-                    onChange={(e) => setFormData({...formData, destino: e.target.value})}
-                  >
-                    {destinos.map(d => (
-                      <option key={d.value} value={d.value}>{d.label}</option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-
-                <Form.Group className="mb-4">
-                  <Form.Label className="small fw-bold text-muted">CONSULTA</Form.Label>
-                  <Form.Control 
-                    as="textarea" 
-                    rows={3}
-                    value={formData.consulta}
-                    onChange={(e) => setFormData({...formData, consulta: e.target.value})}
-                    required
-                  />
-                </Form.Group>
-
-                <div className="d-flex justify-content-around mb-4 p-3 bg-light rounded shadow-sm">
-                  <Form.Check 
-                    type="switch"
-                    label="WhatsApp"
-                    disabled={!contacto.numerotelefono || loading}
-                    checked={metodosContacto.whatsapp}
-                    onChange={(e) => setMetodosContacto({...metodosContacto, whatsapp: e.target.checked})}
-                  />
-                  <Form.Check 
-                    type="switch"
-                    label="Correo"
-                    disabled={!contacto.email || loading}
-                    checked={metodosContacto.correo}
-                    onChange={(e) => setMetodosContacto({...metodosContacto, correo: e.target.checked})}
-                  />
-                </div>
-
-                <Button 
-                  variant="success" 
-                  type="submit" 
-                  className="w-100 fw-bold py-2"
-                  disabled={loading || (!metodosContacto.whatsapp && !metodosContacto.correo)}
-                >
-                  {loading ? <Spinner size="sm" /> : "ENVIAR CONSULTA"}
-                </Button>
-              </Form>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
+    <div className="login-master-wrapper" style={{ 
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'linear-gradient(135deg, #375DDB 0%, #308CA4 50%, #F7FEFF 100%)', padding: '20px'
+    }}>
+      <div className="login-card text-center" style={{
+        background: 'rgba(255, 255, 255, 0.95)', borderRadius: '15px', padding: '40px',
+        width: '100%', maxWidth: '450px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)'
+      }}>
+        <div className="login-icon" style={{ color: '#1e3a8a', marginBottom: '20px' }}>
+          <i className="fa fa-user-circle fa-5x"></i>
+        </div>
+        <h2 className="fw-bold mb-4" style={{ color: '#1e293b' }}>Ingresar</h2>
+        <form onSubmit={login} className="text-start">
+          <div className="mb-3">
+            <label className="form-label fw-bold">Barrio o Comunidad</label>
+            <select className="form-select" value={barrioSeleccionado} onChange={(e) => setBarrioSeleccionado(e.target.value)}>
+              <option value="">Seleccione su barrio...</option>
+              {barrios.map(b => <option key={b.id} value={b.id}>{b.nombre}</option>)}
+            </select>
+          </div>
+          <div className="mb-3">
+            <label className="form-label fw-bold">Correo electrónico</label>
+            <input className='form-control' type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </div>
+          <div className="mb-4">
+            <label className="form-label fw-bold">Contraseña</label>
+            <input className='form-control' type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          </div>
+          <div className="d-grid gap-2">
+            <button type="submit" className="btn btn-primary fw-bold py-2" style={{ backgroundColor: '#1e3a8a' }}>INGRESAR</button>
+            <Link to="/socios/create" className="text-center text-muted text-decoration-none small mt-2">¿No tienes cuenta? Regístrate</Link>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 };
