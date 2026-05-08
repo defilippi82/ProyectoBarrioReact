@@ -1,85 +1,98 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Form, Button, Row, Col, Card, Spinner } from 'react-bootstrap';
-import { FaPaperPlane, FaUser, FaHome, FaCommentAlt, FaUsersCog } from 'react-icons/fa';
+import { FaPaperPlane, FaUser, FaHome, FaCommentAlt, FaUsersCog, FaWhatsapp, FaEnvelope } from 'react-icons/fa';
 import { collection, query, getDocs, where } from 'firebase/firestore';
 import { db } from '../../firebaseConfig/firebase';
 import Swal from 'sweetalert2';
 
 export const Contacto = () => {
-  // 1. Estados
+  // 1. ESTADOS
   const [barrioId, setBarrioId] = useState(null);
   const [formData, setFormData] = useState({
     nombre: '',
     lote: '',
     consulta: '',
-    destino: 'AtencionAlPropietario' // Valor inicial basado en idPublico
+    destino: 'AtencionAlPropietario' // Valor inicial que coincide con tu idPublico en DB
   });
   
-  // Normalizamos el nombre del campo a 'numerotelefono' para que coincida con tu DB
   const [contacto, setContacto] = useState({ email: '', numerotelefono: '' });
   const [loading, setLoading] = useState(false);
   const [metodosContacto, setMetodosContacto] = useState({ whatsapp: false, correo: false });
 
-  // 2. Definición de destinos usando idPublico como 'value'
+  // 2. DESTINOS (IMPORTANTE: El 'value' debe ser idPublico de Firestore)
   const destinos = [
     { value: 'AtencionAlPropietario', label: '📂 Administración' },
     { value: 'Facturacion', label: '💳 Facturación' },
     { value: 'ControlDeObras', label: '🏗️ Control de Obras' }
   ];
 
-  // 3. Cargar barrioId desde localStorage
+ // 3. CARGA INICIAL DEL BARRIO (Mejorada para diagnóstico)
   useEffect(() => {
     const data = localStorage.getItem('user');
+    console.log("Contenido de localStorage.user:", data); // Ver qué hay realmente
+
     if (data) {
       try {
         const storedUserData = JSON.parse(data);
-        if (storedUserData?.barrioId) {
-          // Lo guardamos en minúsculas para asegurar coincidencia con la DB ("cube")
-          setBarrioId(storedUserData.barrioId.toLowerCase().trim());
+        if (storedUserData && storedUserData.barrioId) {
+          const idNormalizado = String(storedUserData.barrioId).toLowerCase().trim();
+          setBarrioId(idNormalizado);
+        } else {
+          console.error("❌ El objeto 'user' existe pero NO tiene la propiedad 'barrioId'");
         }
       } catch (e) {
-        console.error("Error parseando user de localStorage", e);
+        console.error("❌ Error al parsear el JSON de localStorage:", e);
       }
+    } else {
+      console.error("❌ No existe la clave 'user' en localStorage. El usuario no está logueado correctamente.");
     }
   }, []);
 
-  // 4. Función de búsqueda por idPublico en la colección 'usuarios'
-  const fetchContacto = async (idSeleccionado) => {
+  // 4. FUNCIÓN DE BÚSQUEDA EN FIRESTORE
+  const fetchContacto = async (idPublicoSeleccionado) => {
     if (!barrioId) return;
 
     setLoading(true);
     try {
-      console.log(`Buscando idPublico: ${idSeleccionado} en barrio: ${barrioId}`);
+      console.log(`🔍 Buscando en 'usuarios' donde idPublico == '${idPublicoSeleccionado}' y barrioId == '${barrioId}'`);
       
       const q = query(
         collection(db, 'usuarios'), 
-        where('idPublico', '==', idSeleccionado),
+        where('idPublico', '==', idPublicoSeleccionado),
         where("barrioId", "==", barrioId) 
       );
 
       const querySnapshot = await getDocs(q);
       
       if (!querySnapshot.empty) {
-        const data = querySnapshot.docs[0].data();
-        
+        const docEncontrado = querySnapshot.docs[0].data();
+        console.log("✅ Datos encontrados:", docEncontrado);
+
         setContacto({ 
-          email: data.email?.trim() || '', 
-          numerotelefono: data.numerotelefono || '' 
+          email: docEncontrado.email || '', 
+          numerotelefono: docEncontrado.numerotelefono || '' 
         });
-        console.log("✅ Contacto encontrado:", data.email);
+
+        // Auto-activar métodos si existen los datos
+        setMetodosContacto({
+          whatsapp: !!docEncontrado.numerotelefono,
+          correo: !!docEncontrado.email
+        });
+
       } else {
-        console.warn("⚠️ No se encontró el contacto en la colección 'usuarios'");
+        console.warn("⚠️ No se encontró ningún documento coincidente en Firestore.");
         setContacto({ email: '', numerotelefono: '' });
         setMetodosContacto({ whatsapp: false, correo: false });
       }
     } catch (err) {
-      console.error("❌ Error al obtener contacto:", err);
+      console.error("❌ Error de Firebase:", err);
+      // Si ves un error de "index" aquí, haz clic en el link que te da la consola
     } finally {
       setLoading(false);
     }
   };
 
-  // 5. Efecto: Buscar cuando cambie el destino o el barrio
+  // 5. DISPARADOR DE BÚSQUEDA
   useEffect(() => {
     if (barrioId && formData.destino) {
       fetchContacto(formData.destino);
@@ -88,59 +101,52 @@ export const Contacto = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!metodosContacto.whatsapp && !metodosContacto.correo) {
-      Swal.fire('Atención', 'Selecciona un método de contacto', 'warning');
-      return;
-    }
-    
-    // Aquí podrías agregar la lógica para disparar el mail o abrir WhatsApp
-    Swal.fire('Enviado', 'Tu consulta ha sido procesada con éxito', 'success');
+    Swal.fire('Enviado', 'Tu consulta ha sido recibida.', 'success');
   };
-
+// Agregá esto antes del return para ver la verdad en la consola
+console.log("VALORES ACTUALES - Barrio:", barrioId, "| Destino:", formData.destino);
   return (
     <Container className="py-4">
       <Row className="justify-content-center">
-        <Col xs={12} lg={8}>
-          <Card className="shadow-lg border-0">
+        <Col xs={12} lg={7}>
+          <Card className="shadow-lg border-0 rounded-4 overflow-hidden">
             <Card.Header className="bg-success text-white text-center py-4">
               <FaUsersCog size={40} className="mb-2" />
-              <h3 className="fw-bold mb-0">Contacto</h3>
+              <h3 className="fw-bold mb-0">Centro de Contacto</h3>
             </Card.Header>
 
-            <Card.Body className="p-4 bg-light">
+            <Card.Body className="p-4 bg-white">
               <Form onSubmit={handleSubmit}>
                 
-                <h5 className="text-success mb-3">Tu Información</h5>
                 <Row className="g-3 mb-4">
                   <Col md={6}>
-                    <Form.Floating>
+                    <Form.Group>
+                      <Form.Label className="small fw-bold text-muted">NOMBRE</Form.Label>
                       <Form.Control 
                         type="text" 
-                        placeholder="Nombre" 
                         value={formData.nombre}
                         onChange={(e) => setFormData({...formData, nombre: e.target.value})}
                         required 
                       />
-                      <label><FaUser className="me-2" />Nombre Completo</label>
-                    </Form.Floating>
+                    </Form.Group>
                   </Col>
                   <Col md={6}>
-                    <Form.Floating>
+                    <Form.Group>
+                      <Form.Label className="small fw-bold text-muted">LOTE / UNIDAD</Form.Label>
                       <Form.Control 
                         type="text" 
-                        placeholder="Lote" 
                         value={formData.lote}
                         onChange={(e) => setFormData({...formData, lote: e.target.value})}
                         required 
                       />
-                      <label><FaHome className="me-2" />Lote / Manzana</label>
-                    </Form.Floating>
+                    </Form.Group>
                   </Col>
                 </Row>
 
-                <h5 className="text-success mb-3">Detalles de la Consulta</h5>
-                <Form.Floating className="mb-3">
+                <Form.Group className="mb-3">
+                  <Form.Label className="small fw-bold text-muted">DEPARTAMENTO DESTINO</Form.Label>
                   <Form.Select 
+                    className="form-select-lg"
                     value={formData.destino}
                     onChange={(e) => setFormData({...formData, destino: e.target.value})}
                   >
@@ -148,55 +154,45 @@ export const Contacto = () => {
                       <option key={d.value} value={d.value}>{d.label}</option>
                     ))}
                   </Form.Select>
-                  <label>Departamento</label>
-                </Form.Floating>
+                </Form.Group>
 
-                <Form.Floating className="mb-4">
+                <Form.Group className="mb-4">
+                  <Form.Label className="small fw-bold text-muted">MENSAJE</Form.Label>
                   <Form.Control 
                     as="textarea" 
-                    placeholder="Mensaje"
-                    style={{ height: '120px' }}
+                    rows={4}
                     value={formData.consulta}
                     onChange={(e) => setFormData({...formData, consulta: e.target.value})}
                     required
                   />
-                  <label><FaCommentAlt className="me-2" />Tu mensaje</label>
-                </Form.Floating>
+                </Form.Group>
 
-                <Card className="border-0 shadow-sm mb-4">
-                  <Card.Body className="text-center">
-                    <h6 className="fw-bold mb-3">Método de contacto:</h6>
-                    <div className="d-flex justify-content-around">
+                <Card className="bg-light border-0 mb-4">
+                  <Card.Body className="py-3">
+                    <div className="d-flex justify-content-around align-items-center">
                       <Form.Check 
                         type="switch"
-                        id="sw-ws"
-                        label="WhatsApp"
-                        // Validamos contra el nombre correcto del campo
+                        id="ws-switch"
+                        label={<span><FaWhatsapp className="text-success me-1"/> WhatsApp</span>}
                         disabled={!contacto.numerotelefono || loading}
                         checked={metodosContacto.whatsapp}
                         onChange={(e) => setMetodosContacto({...metodosContacto, whatsapp: e.target.checked})}
                       />
                       <Form.Check 
                         type="switch"
-                        id="sw-mail"
-                        label="Correo"
+                        id="mail-switch"
+                        label={<span><FaEnvelope className="text-primary me-1"/> Correo</span>}
                         disabled={!contacto.email || loading}
                         checked={metodosContacto.correo}
                         onChange={(e) => setMetodosContacto({...metodosContacto, correo: e.target.checked})}
                       />
                     </div>
-                    {(!contacto.numerotelefono && !contacto.email && !loading) && (
-                      <small className="text-danger d-block mt-2">
-                        No hay datos de contacto para este departamento.
-                      </small>
-                    )}
                   </Card.Body>
                 </Card>
 
-                {loading && (
-                  <div className="text-center mb-3">
-                    <Spinner animation="border" variant="success" size="sm" />
-                    <span className="ms-2 text-muted">Buscando...</span>
+                {(!contacto.numerotelefono && !contacto.email && !loading) && (
+                  <div className="alert alert-warning py-2 text-center small">
+                    ⚠️ No se encontraron canales de contacto para este sector.
                   </div>
                 )}
 
@@ -204,10 +200,10 @@ export const Contacto = () => {
                   variant="success" 
                   type="submit" 
                   size="lg" 
-                  className="w-100 fw-bold"
+                  className="w-100 fw-bold shadow-sm"
                   disabled={loading || (!metodosContacto.whatsapp && !metodosContacto.correo)}
                 >
-                  <FaPaperPlane className="me-2" /> ENVIAR
+                  {loading ? <Spinner size="sm" /> : <><FaPaperPlane className="me-2" /> ENVIAR CONSULTA</>}
                 </Button>
               </Form>
             </Card.Body>
