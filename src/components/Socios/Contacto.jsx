@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Form, Button, Row, Col, Card, Spinner } from 'react-bootstrap';
-import { FaPaperPlane, FaUser, FaHome, FaCommentAlt, FaUsersCog, FaWhatsapp, FaEnvelope } from 'react-icons/fa';
+import { FaPaperPlane, FaUsersCog, FaWhatsapp, FaEnvelope } from 'react-icons/fa';
 import { collection, query, getDocs, where } from 'firebase/firestore';
 import { db } from '../../firebaseConfig/firebase';
 import Swal from 'sweetalert2';
@@ -12,144 +12,112 @@ export const Contacto = () => {
     nombre: '',
     lote: '',
     consulta: '',
-    destino: 'AtencionAlPropietario' // Valor inicial que coincide con tu idPublico en DB
+    destino: 'AtencionAlPropietario'
   });
   
   const [contacto, setContacto] = useState({ email: '', numerotelefono: '' });
   const [loading, setLoading] = useState(false);
   const [metodosContacto, setMetodosContacto] = useState({ whatsapp: false, correo: false });
 
-  // 2. DESTINOS (IMPORTANTE: El 'value' debe ser idPublico de Firestore)
+  // 2. DESTINOS
   const destinos = [
     { value: 'AtencionAlPropietario', label: '📂 Administración' },
     { value: 'Facturacion', label: '💳 Facturación' },
     { value: 'ControlDeObras', label: '🏗️ Control de Obras' }
   ];
 
- // 3. CARGA INICIAL DEL BARRIO (Mejorada para diagnóstico)
+  // 3. CARGA DE SESIÓN (Unificada)
   useEffect(() => {
-    const data = localStorage.getItem('userData');
-    console.log("Contenido de localStorage.userData:", data); // Ver qué hay realmente
-
+    const data = localStorage.getItem('userData') || localStorage.getItem('user');
     if (data) {
       try {
-        const storedUserData = JSON.parse(data);
-        if (storedUserData && storedUserData.barrioId) {
-          const idNormalizado = String(storedUserData.barrioId).toLowerCase().trim();
-          setBarrioId(idNormalizado);
-        } else {
-          console.error("❌ El objeto 'userData' existe pero NO tiene la propiedad 'barrioId'");
+        const stored = JSON.parse(data);
+        if (stored?.barrioId) {
+          setBarrioId(String(stored.barrioId).toLowerCase().trim());
         }
       } catch (e) {
-        console.error("❌ Error al parsear el JSON de localStorage:", e);
+        console.error("Error sesión:", e);
       }
-    } else {
-      console.error("❌ No existe la clave 'user' en localStorage. El usuario no está logueado correctamente.");
     }
   }, []);
 
-  // 4. FUNCIÓN DE BÚSQUEDA EN FIRESTORE
+  // 4. BÚSQUEDA DE DATOS DE CONTACTO
   const fetchContacto = async (idPublicoSeleccionado) => {
     if (!barrioId) return;
-
     setLoading(true);
     try {
-      console.log(`🔍 Buscando en 'usuarios' donde idPublico == '${idPublicoSeleccionado}' y barrioId == '${barrioId}'`);
-      
       const q = query(
         collection(db, 'usuarios'), 
         where('idPublico', '==', idPublicoSeleccionado),
         where("barrioId", "==", barrioId) 
       );
-
       const querySnapshot = await getDocs(q);
       
       if (!querySnapshot.empty) {
         const docEncontrado = querySnapshot.docs[0].data();
-        console.log("✅ Datos encontrados:", docEncontrado);
-
         setContacto({ 
           email: docEncontrado.email || '', 
           numerotelefono: docEncontrado.numerotelefono || '' 
         });
-
-        // Auto-activar métodos si existen los datos
         setMetodosContacto({
           whatsapp: !!docEncontrado.numerotelefono,
           correo: !!docEncontrado.email
         });
-
       } else {
-        console.warn("⚠️ No se encontró ningún documento coincidente en Firestore.");
         setContacto({ email: '', numerotelefono: '' });
         setMetodosContacto({ whatsapp: false, correo: false });
       }
     } catch (err) {
-      console.error("❌ Error de Firebase:", err);
-      // Si ves un error de "index" aquí, haz clic en el link que te da la consola
+      console.error("Error Firebase:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // 5. DISPARADOR DE BÚSQUEDA
   useEffect(() => {
     if (barrioId && formData.destino) {
       fetchContacto(formData.destino);
     }
   }, [formData.destino, barrioId]);
 
+  // 5. LÓGICA DE ENVÍO (Única declaración)
   const handleSubmit = (e) => {
     e.preventDefault();
-    Swal.fire('Enviado', 'Tu consulta ha sido recibida.', 'success');
-  };
-  // 6. LÓGICA DE ENVÍO
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
     const { nombre, lote, consulta, destino } = formData;
     const { email, numerotelefono } = contacto;
-
-    // Obtener el label del destino para el cuerpo del mensaje
     const destinoLabel = destinos.find(d => d.value === destino)?.label || destino;
 
-    // Construcción del mensaje base
     const mensajeBase = `*Nueva Consulta - Barrio Cube*\n\n` +
                         `👤 *Nombre:* ${nombre}\n` +
                         `🏡 *Lote/Unidad:* ${lote}\n` +
                         `🏢 *Sector:* ${destinoLabel}\n` +
                         `💬 *Consulta:* ${consulta}`;
 
-    // A. LÓGICA WHATSAPP
+    // WhatsApp
     if (metodosContacto.whatsapp && numerotelefono) {
-      // Limpiamos el número por si tiene espacios o caracteres raros
       const phoneClean = numerotelefono.replace(/\D/g, '');
       const waUrl = `https://api.whatsapp.com/send?phone=${phoneClean}&text=${encodeURIComponent(mensajeBase)}`;
       window.open(waUrl, '_blank');
     }
 
-    // B. LÓGICA CORREO (mailto)
+    // Correo
     if (metodosContacto.correo && email) {
       const subject = `Consulta de ${nombre} - Lote ${lote}`;
-      // Usamos %0D%0A para saltos de línea en mailto
-      const bodyEmail = mensajeBase.replace(/\*/g, ''); // Quitamos los asteriscos de negrita de WhatsApp
+      const bodyEmail = mensajeBase.replace(/\*/g, ''); 
       const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyEmail)}`;
-      
-      // Abrimos el correo (usamos un timeout pequeño por si se disparan ambos)
       setTimeout(() => {
         window.location.href = mailtoUrl;
       }, 500);
     }
 
     Swal.fire({
-      title: '¡Procesado!',
-      text: 'Se han abierto las aplicaciones de contacto seleccionadas.',
+      title: '¡Consulta Iniciada!',
+      text: 'Se están abriendo los canales de contacto seleccionados.',
       icon: 'success',
       confirmButtonColor: '#198754'
     });
   };
-// Agregá esto antes del return para ver la verdad en la consola
-console.log("VALORES ACTUALES - Barrio:", barrioId, "| Destino:", formData.destino);
+
   return (
     <Container className="py-4">
       <Row className="justify-content-center">
@@ -157,12 +125,11 @@ console.log("VALORES ACTUALES - Barrio:", barrioId, "| Destino:", formData.desti
           <Card className="shadow-lg border-0 rounded-4 overflow-hidden">
             <Card.Header className="bg-success text-white text-center py-4">
               <FaUsersCog size={40} className="mb-2" />
-              <h3 className="fw-bold mb-0">Centro de Contacto</h3>
+              <h3 className="fw-bold mb-0">Contacto</h3>
             </Card.Header>
 
             <Card.Body className="p-4 bg-white">
               <Form onSubmit={handleSubmit}>
-                
                 <Row className="g-3 mb-4">
                   <Col md={6}>
                     <Form.Group>
@@ -191,7 +158,6 @@ console.log("VALORES ACTUALES - Barrio:", barrioId, "| Destino:", formData.desti
                 <Form.Group className="mb-3">
                   <Form.Label className="small fw-bold text-muted">DEPARTAMENTO DESTINO</Form.Label>
                   <Form.Select 
-                    className="form-select-lg"
                     value={formData.destino}
                     onChange={(e) => setFormData({...formData, destino: e.target.value})}
                   >
@@ -235,12 +201,6 @@ console.log("VALORES ACTUALES - Barrio:", barrioId, "| Destino:", formData.desti
                   </Card.Body>
                 </Card>
 
-                {(!contacto.numerotelefono && !contacto.email && !loading) && (
-                  <div className="alert alert-warning py-2 text-center small">
-                    ⚠️ No se encontraron canales de contacto para este sector.
-                  </div>
-                )}
-
                 <Button 
                   variant="success" 
                   type="submit" 
@@ -248,7 +208,7 @@ console.log("VALORES ACTUALES - Barrio:", barrioId, "| Destino:", formData.desti
                   className="w-100 fw-bold shadow-sm"
                   disabled={loading || (!metodosContacto.whatsapp && !metodosContacto.correo)}
                 >
-                  {loading ? <Spinner size="sm" /> : <><FaPaperPlane className="me-2" /> INICIAR CONTACTO</>}
+                  {loading ? <Spinner size="sm" /> : <><FaPaperPlane className="me-2" /> ENVIAR CONSULTA</>}
                 </Button>
               </Form>
             </Card.Body>
