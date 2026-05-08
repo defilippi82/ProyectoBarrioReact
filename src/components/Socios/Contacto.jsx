@@ -28,7 +28,7 @@ export const Contacto = () => {
 
   // 3. CARGA DE SESIÓN (Unificada)
   useEffect(() => {
-    const data = localStorage.getItem('userData') || localStorage.getItem('user');
+    const data = localStorage.getItem('userData') || localStorage.getItem('userData');
     if (data) {
       try {
         const stored = JSON.parse(data);
