@@ -28,8 +28,8 @@ export const Contacto = () => {
 
  // 3. CARGA INICIAL DEL BARRIO (Mejorada para diagnóstico)
   useEffect(() => {
-    const data = localStorage.getItem('user');
-    console.log("Contenido de localStorage.user:", data); // Ver qué hay realmente
+    const data = localStorage.getItem('userData');
+    console.log("Contenido de localStorage.userData:", data); // Ver qué hay realmente
 
     if (data) {
       try {
@@ -38,7 +38,7 @@ export const Contacto = () => {
           const idNormalizado = String(storedUserData.barrioId).toLowerCase().trim();
           setBarrioId(idNormalizado);
         } else {
-          console.error("❌ El objeto 'user' existe pero NO tiene la propiedad 'barrioId'");
+          console.error("❌ El objeto 'userData' existe pero NO tiene la propiedad 'barrioId'");
         }
       } catch (e) {
         console.error("❌ Error al parsear el JSON de localStorage:", e);
