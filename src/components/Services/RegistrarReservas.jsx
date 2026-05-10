@@ -127,7 +127,7 @@ export const RegistrarReserva = () => {
       <form onSubmit={crearReserva} className="card card-body shadow-lg border-0 p-4">
         
         {/* Selección de Cancha */}
-        <div className='form-floating mb-3'>
+        <div className='form mb-3'>
           <select 
             className="form-select"
             id="cancha"
@@ -144,7 +144,7 @@ export const RegistrarReserva = () => {
         </div>
 
         {/* Fecha */}
-        <div className='form-floating mb-3'>
+        <div className='form mb-3'>
           <input 
             className='form-control'
             type="date"
@@ -157,7 +157,7 @@ export const RegistrarReserva = () => {
         </div>
 
         {/* Hora */}
-        <div className='form-floating mb-3'>
+        <div className='form mb-3'>
           <select 
             className="form-select"
             id="hora"
@@ -174,7 +174,7 @@ export const RegistrarReserva = () => {
         </div>
 
         {/* Responsable (Apellido) */}
-        <div className='form-floating mb-3'>
+        <div className='form mb-3'>
           <input 
             className='form-control'
             type="text"

@@ -10,7 +10,7 @@ import { db } from "../../firebaseConfig/firebase";
 import { UserContext } from '../Services/UserContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faPenToSquare, faTrash, faUserPlus, faCalendarPlus, faUsers, faCalendarCheck, faSync 
+  faPenToSquare, faTrash, faUserPlus, faCalendarPlus, faUsers, faCalendarCheck 
 } from '@fortawesome/free-solid-svg-icons';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
@@ -24,19 +24,47 @@ export const Administracion = () => {
   const [reservas, setReservas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Extraemos y normalizamos el barrioId de forma segura
+  const [barrioIdSeguro, setBarrioIdSeguro] = useState(null);
+  
   const navigate = useNavigate();
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
-  // 1. OBTENER DATOS FILTRADOS POR BARRIO
+  // 1. CARGA SEGURA DE SESIÓN Y DATOS
   useEffect(() => {
     const fetchData = async () => {
-      if (!userData?.barrioId) return;
+      // Intentamos sacar los datos del Context o del LocalStorage (anti-F5)
+      const localData = localStorage.getItem('userData') || localStorage.getItem('user');
+      let currentBarrioId = null;
+
+      if (userData?.barrioId) {
+        currentBarrioId = String(userData.barrioId).toLowerCase().trim();
+      } else if (localData) {
+        try {
+          const parsed = JSON.parse(localData);
+          if (parsed.barrioId) {
+            currentBarrioId = String(parsed.barrioId).toLowerCase().trim();
+          }
+        } catch (e) {
+          console.error("Error leyendo localStorage:", e);
+        }
+      }
+
+      if (!currentBarrioId) {
+        setError("No se detectó la comunidad. Por favor, vuelva a iniciar sesión.");
+        setLoading(false);
+        return;
+      }
+
+      setBarrioIdSeguro(currentBarrioId);
 
       try {
         setLoading(true);
-        // Filtramos para que el admin solo vea los datos de SU barrio
-        const sociosQuery = query(collection(db, "usuarios"), where("barrioId", "==", userData.barrioId));
-        const reservasQuery = query(collection(db, "reservas"), where("barrioId", "==", userData.barrioId));
+        
+        // Consultas estrictamente filtradas por el barrio normalizado
+        const sociosQuery = query(collection(db, "usuarios"), where("barrioId", "==", currentBarrioId));
+        const reservasQuery = query(collection(db, "reservas"), where("barrioId", "==", currentBarrioId));
 
         const [sociosSnapshot, reservasSnapshot] = await Promise.all([
           getDocs(sociosQuery),
@@ -44,13 +72,20 @@ export const Administracion = () => {
         ]);
 
         setSocios(sociosSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-        setReservas(reservasSnapshot.docs.map(doc => ({
-            ...doc.data(),
-            id: doc.id,
-            fechaFormateada: doc.data().fecha instanceof Timestamp
-              ? doc.data().fecha.toDate().toLocaleString()
-              : new Date(doc.data().fecha).toLocaleString()
-          })));
+        
+        setReservas(reservasSnapshot.docs.map(doc => {
+          const data = doc.data();
+          // Manejo robusto de fechas por si vienen de un string viejo o un Timestamp nuevo
+          let fechaFormateada = "Fecha no disponible";
+          if (data.fecha) {
+            fechaFormateada = data.fecha instanceof Timestamp
+              ? data.fecha.toDate().toLocaleString()
+              : new Date(data.fecha).toLocaleString();
+          }
+
+          return { ...data, id: doc.id, fechaFormateada };
+        }));
+
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Error al cargar los datos del barrio");
@@ -62,7 +97,7 @@ export const Administracion = () => {
     fetchData();
   }, [userData]);
 
-  // 2. FUNCIÓN DE ELIMINACIÓN (CON CONTROL DE CUPO)
+  // 2. FUNCIÓN DE ELIMINACIÓN SEGURA
   const confirmDelete = async (id, type) => {
     try {
       const result = await MySwal.fire({
@@ -83,11 +118,13 @@ export const Administracion = () => {
         await deleteDoc(doc(db, type === 'socio' ? "usuarios" : "reservas", id));
         
         if (type === 'socio') {
-          // RESTAR CUPO EN EL BARRIO
-          const barrioRef = doc(db, "configuracionBarrios", userData.barrioId);
-          await updateDoc(barrioRef, {
-            usuariosActuales: increment(-1)
-          });
+          // RESTAR CUPO EN EL BARRIO asegurando usar el ID correcto
+          if (barrioIdSeguro) {
+             const barrioRef = doc(db, "configuracionBarrios", barrioIdSeguro);
+             await updateDoc(barrioRef, {
+               usuariosActuales: increment(-1)
+             });
+          }
           setSocios(socios.filter((socio) => socio.id !== id));
         } else {
           setReservas(reservas.filter((reserva) => reserva.id !== id));
@@ -105,11 +142,24 @@ export const Administracion = () => {
     }
   };
 
+  // 3. ESTADOS DE CARGA Y ERROR
+  if (error) {
+    return (
+      <Container className="d-flex justify-content-center align-items-center" style={{ height: '70vh' }}>
+        <Alert variant="danger" className="text-center">
+          <h4>Acceso Denegado</h4>
+          <p>{error}</p>
+          <Button variant="outline-danger" onClick={() => navigate('/login')}>Ir al Login</Button>
+        </Alert>
+      </Container>
+    );
+  }
+
   if (loading) {
     return (
       <div className="d-flex flex-column justify-content-center align-items-center" style={{ height: '70vh' }}>
         <Spinner animation="border" variant="primary" />
-        <span className="mt-3 text-muted fw-bold">Accediendo al Panel de {userData?.barrioId?.toUpperCase()}...</span>
+        <span className="mt-3 text-muted fw-bold">Accediendo al Panel de Administración...</span>
       </div>
     );
   }
@@ -122,7 +172,7 @@ export const Administracion = () => {
         <Row className="mb-4">
           <Col md={4}>
             <Card className="shadow-sm border-0 bg-dark text-white p-3">
-              <small className="text-muted text-uppercase fw-bold">Estado del Cupo</small>
+              <small className="text-muted text-uppercase fw-bold">Estado del Cupo ({barrioIdSeguro?.toUpperCase()})</small>
               <h4 className="mb-2">{barrioConfig.usuariosActuales} / {barrioConfig.limiteUsuarios} <small className="fs-6">SOCIOS</small></h4>
               <ProgressBar 
                 variant={barrioConfig.usuariosActuales >= barrioConfig.limiteUsuarios * 0.9 ? "danger" : "success"} 
@@ -167,7 +217,7 @@ export const Administracion = () => {
                           {socio.rol?.administrador && <Badge bg="danger" className="me-1">Admin</Badge>}
                           {socio.rol?.propietario && <Badge bg="info" className="me-1">Propietario</Badge>}
                           {socio.rol?.inquilino && <Badge bg="secondary" className="me-1">Inquilino</Badge>}
-                          {socio.rol?.seguridad && <Badge bg="secondary" className="me-1">Seguridad</Badge>}
+                          {socio.rol?.seguridad && <Badge bg="warning" text="dark" className="me-1">Seguridad</Badge>}
                         </td>
                       )}
                       <td className="text-center">
@@ -183,7 +233,7 @@ export const Administracion = () => {
                     </tr>
                   ))
                 ) : (
-                  <tr><td colSpan={isMobile ? 3 : 4} className="text-center py-4">No hay socios en este barrio.</td></tr>
+                  <tr><td colSpan={isMobile ? 3 : 4} className="text-center py-4">No hay socios registrados en esta comunidad.</td></tr>
                 )}
               </tbody>
             </Table>
@@ -209,7 +259,7 @@ export const Administracion = () => {
                 <tr>
                   <th>Apellido</th>
                   <th>Fecha y Hora</th>
-                  <th>Cancha / Lugar</th>
+                  <th>Instalación</th>
                   <th className="text-center">Acciones</th>
                 </tr>
               </thead>

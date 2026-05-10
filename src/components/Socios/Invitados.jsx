@@ -91,24 +91,49 @@ export const Invitados = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   }, []);
 
-  const agregarInvitado = async (e) => {
-    e.preventDefault();
-    try {
-      await addDoc(collection(db, 'invitados'), {
-        ...formData,
-        fechaCreacion: serverTimestamp(),
-        lote:          getLoteCompleto(userData),
-        invitador:     userData.nombre,
-        registradoPor: userData.uid || userData.id,
-        barrioId:      userData.barrioId,
-        ingresado:     false
-      });
-      setFormData({ nombre: '', dni: '', patente: '', email: '', telefono: '' });
-      Swal.fire('Agregado', 'Invitado guardado correctamente', 'success');
-    } catch {
-      Swal.fire('Error', 'No se pudo guardar', 'error');
-    }
-  };
+  const getLoteCompleto = (user) => {
+  if (!user?.manzana || !user?.lote) return "N/A"; 
+  return `${user.manzana}-${user.lote}`;
+};
+
+const agregarInvitado = async (e) => {
+  e.preventDefault();
+
+  // 1. Normalización de datos para búsqueda precisa
+  const barrioIdNormalizado = userData?.barrioId 
+    ? String(userData.barrioId).toLowerCase().trim() 
+    : '';
+    
+  const loteIdentificador = getLoteCompleto(userData);
+
+  try {
+    // 2. Creación del documento en la colección 'invitados'
+    await addDoc(collection(db, 'invitados'), {
+      ...formData,
+      fechaCreacion: serverTimestamp(),
+      lote: loteIdentificador,       // Se guarda como "14-205" (Manzana-Lote)
+      invitador: `${userData.nombre} ${userData.apellido}`, // Nombre completo para auditoría
+      registradoPor: userData.uid || userData.id,
+      barrioId: barrioIdNormalizado, // Filtro de seguridad por barrio
+      ingresado: false
+    });
+
+    // 3. Reset del formulario y feedback
+    setFormData({ nombre: '', dni: '', patente: '', email: '', telefono: '' });
+    
+    Swal.fire({
+      title: 'Invitado Agregado',
+      text: `Registrado para el lote ${loteIdentificador}`,
+      icon: 'success',
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+  } catch (error) {
+    console.error("Error al guardar invitado:", error);
+    Swal.fire('Error', 'No se pudo procesar el registro', 'error');
+  }
+};
 
   // ── Eliminar con validación de colección ────────────────────────────
   const eliminarDoc = async (id, coleccion) => {
@@ -315,6 +340,7 @@ export const Invitados = () => {
             <tr>
               <th>Nombre</th>
               <th>DNI</th>
+              <th>Patente</th>
               <th className="text-end">Acciones</th>
             </tr>
           </thead>
@@ -323,6 +349,7 @@ export const Invitados = () => {
               <tr key={inv.id} className="align-middle">
                 <td>{inv.nombre}</td>
                 <td>{inv.dni}</td>
+                <td>{inv.patente}</td>
                 <td className="text-end">
                   <Button
                     variant="link" className="text-success p-1 me-2"
@@ -390,7 +417,7 @@ export const Invitados = () => {
                     title="Enviar lista a guardia"
                     onClick={() => {
                       const msg = `*LISTA EVENTO:* ${lista.nombre}\n` +
-                        lista.invitados.map(i => `- ${i.nombre} (DNI: ${i.dni})`).join('\n');
+                        lista.invitados.map(i => `- ${i.nombre} (DNI: ${i.dni}) (Patente: ${i.patente})`).join('\n');
                       window.open(`https://wa.me/${TELEFONO_GUARDIA}?text=${encodeURIComponent(msg)}`);
                     }}
                   >
