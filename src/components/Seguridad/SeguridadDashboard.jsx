@@ -130,37 +130,53 @@ export const SeguridadDashboard = () => {
   }, [showScanner]);
 
   const procesarAcceso = async (idInvitado) => {
-    try {
-      const docRef = doc(db, "invitados", idInvitado);
-      const docSnap = await getDoc(docRef);
+  try {
+    const docRef = doc(db, "invitados", idInvitado);
+    const docSnap = await getDoc(docRef);
 
-      if (!docSnap.exists()) {
-        Swal.fire("No encontrado", "QR inválido o invitado eliminado.", "error");
-        return;
-      }
+    if (!docSnap.exists()) {
+      Swal.fire("No encontrado", "QR inválido o invitado eliminado.", "error");
+      return;
+    }
 
-      const inv = docSnap.data();
+    const inv = docSnap.data();
 
-      if (inv.estado === 'retirado') {
-        Swal.fire("Alerta", "Este código QR ya fue utilizado para salir.", "warning");
-        return;
-      }
+    // --- NUEVA VALIDACIÓN DE SEGURIDAD ---
+    // Verificamos que el invitado pertenezca al mismo barrio que el guardia
+    if (inv.barrioId !== userData.barrioId) {
+      Swal.fire({
+        title: "Acceso Denegado",
+        text: `Este invitado pertenece a otro barrio (${inv.barrioId}). No puede ingresar aquí.`,
+        icon: "error"
+      });
+      return;
+    }
+    // -------------------------------------
 
-      // Si no ha ingresado -> DA ENTRADA
-      if (!inv.ingresado) {
-        await updateDoc(docRef, {
-          ingresado: true,
-          fechaIngreso: serverTimestamp(),
-          estado: 'adentro'
-        });
-        Swal.fire({
-          title: "¡ACCESO PERMITIDO!",
-          text: `Ingresando: ${inv.nombre} | Lote: ${inv.lote}`,
-          icon: "success",
-          timer: 2000,
-          showConfirmButton: false
-        });
-      } 
+    if (inv.estado === 'retirado') {
+      Swal.fire("Alerta", "Este código QR ya fue utilizado para salir.", "warning");
+      return;
+    }
+
+    // Si no ha ingresado -> DA ENTRADA
+    if (!inv.ingresado) {
+      await updateDoc(docRef, {
+        ingresado: true,
+        fechaIngreso: serverTimestamp(),
+        estado: 'adentro',
+        // Opcional: registrar quién le dio entrada físicamente
+        validadoPor: userData.uid 
+      });
+      
+      Swal.fire({
+        title: "¡ACCESO PERMITIDO!",
+        text: `Ingresando: ${inv.nombre} | Lote: ${inv.lote}`,
+        icon: "success",
+        timer: 2000,
+        showConfirmButton: false
+      });
+    } 
+  
       // Si ya está adentro -> DA SALIDA
       else {
         await updateDoc(docRef, {
