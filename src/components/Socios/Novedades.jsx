@@ -1,16 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { 
-    collection, addDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, where 
-} from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { db } from '../../firebaseConfig/firebase';
 import { UserContext } from '../Services/UserContext';
 import { Button, Tabs, Tab, Row, Col, Container, Badge, InputGroup, Form, Modal } from 'react-bootstrap';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import { 
-    FaTrashAlt, FaPhoneAlt, FaClock, FaBullhorn, FaSearch, 
-    FaMapMarkerAlt, FaUserCircle, FaFilter, FaPlus, FaStar 
-} from 'react-icons/fa';
+import {  FaTrashAlt, FaPhoneAlt, FaClock, FaBullhorn, FaSearch, 
+    FaMapMarkerAlt, FaUserCircle, FaFilter, FaPlus, FaStar } from 'react-icons/fa';
 import './Novedades.css';
 
 const MySwal = withReactContent(Swal);
@@ -25,7 +21,6 @@ const postItPalettes = [
 ];
 
 export const Novedades = () => {
-    // 1. Traemos barrioConfig para mostrar el nombre del barrio dinámicamente
     const { userData, barrioConfig } = useContext(UserContext);
     const [novedades, setNovedades] = useState([]);
     const [telefonosUtiles, setTelefonosUtiles] = useState([]);
@@ -42,10 +37,12 @@ export const Novedades = () => {
     const [nuevaNov, setNuevaNov] = useState({ titulo: '', contenido: '' });
     const [nuevoTel, setNuevoTel] = useState({ nombre: '', telefono: '', categoria: '' });
 
+    // Extraemos las etiquetas que ya guardamos en el Contexto al loguearse
+    const etiquetas = userData?.etiquetas || { distribucion: 'Isla', unidad: 'Lote', bloque: 'Manzana' };
+
     useEffect(() => {
         if (!userData?.barrioId) return;
 
-        // 2. Filtramos Campañas por barrioId
         const qCampanas = query(
             collection(db, 'campanas'), 
             where('barrioId', '==', userData.barrioId),
@@ -58,7 +55,6 @@ export const Novedades = () => {
             setCampanasActivas(filtradas);
         });
 
-        // 3. Filtramos Novedades por barrioId
         const qNovedades = query(
             collection(db, 'novedades'), 
             where('barrioId', '==', userData.barrioId),
@@ -68,7 +64,6 @@ export const Novedades = () => {
             setNovedades(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         });
 
-        // 4. Filtramos Teléfonos por barrioId
         const qTels = query(
             collection(db, 'telefonosUtiles'),
             where('barrioId', '==', userData.barrioId)
@@ -108,7 +103,7 @@ export const Novedades = () => {
                 manzana: userData.manzana,
                 lote: userData.lote,
                 autorId: `${userData.manzana}-${userData.lote}`,
-                barrioId: userData.barrioId, // Se asegura de guardar el ID
+                barrioId: userData.barrioId,
                 createdAt: serverTimestamp()
             });
             setShowModalNov(false);
@@ -122,7 +117,7 @@ export const Novedades = () => {
         try {
             await addDoc(collection(db, 'telefonosUtiles'), {
                 ...nuevoTel,
-                barrioId: userData.barrioId, // Se asegura de guardar el ID
+                barrioId: userData.barrioId,
                 promedioRating: 0,
                 ratings: {},
                 autorId: `${userData.manzana}-${userData.lote}`
@@ -166,9 +161,9 @@ export const Novedades = () => {
 
             <div className="text-center mb-5 board-header">
                 <h1 className="display-3 main-board-title">Tablero de la Comunidad</h1>
-                {/* 5. Nombre del barrio dinámico */}
+                {/* Fallback doble por si la config del contexto demora: usamos el que guardamos en Login */}
                 <p className="lead text-muted text-uppercase fw-bold">
-                    {barrioConfig?.nombre || 'Cargando barrio...'}
+                    {barrioConfig?.nombre || userData?.nombreBarrio || 'Cargando comunidad...'}
                 </p>
             </div>
 
@@ -188,8 +183,9 @@ export const Novedades = () => {
                                 <Col key={n.id} xs={12} md={6} lg={4}>
                                     <div className="post-it-card shadow-sm" style={{ backgroundColor: palette.bg, borderLeft: `8px solid ${palette.border}` }}>
                                         <div className="post-it-header">
+                                            {/* Implementación de las etiquetas dinámicas en el Post-it */}
                                             <span className="post-it-tag text-muted">
-                                                <FaMapMarkerAlt /> Mnz {n.manzana || 'S/D'} - Lote {n.lote || 'S/D'}
+                                                <FaMapMarkerAlt /> {etiquetas.bloque} {n.manzana || 'S/D'} - {etiquetas.unidad} {n.lote || 'S/D'}
                                             </span>
                                             {canDelete && <FaTrashAlt className="delete-btn text-danger" onClick={() => handleDelete(n.id, 'novedades')} />}
                                         </div>
@@ -274,8 +270,6 @@ export const Novedades = () => {
                 </Tab>
             </Tabs>
 
-            {/* MODALES IGUALES PERO ASEGURANDO QUE EL BARRIOID ESTÉ EN EL SUBMIT */}
-            {/* ... (Modales de Novedades y Teléfonos) ... */}
             <Modal show={showModalNov} onHide={() => setShowModalNov(false)} centered>
                 <Modal.Header closeButton><Modal.Title className="main-board-title h3">Nuevo Anuncio</Modal.Title></Modal.Header>
                 <Form onSubmit={handleAddNovedad}>

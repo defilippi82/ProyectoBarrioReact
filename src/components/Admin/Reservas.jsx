@@ -78,7 +78,7 @@ export const Reservas = ()=>{
                         <tbody>
                             {reservas.map((reserva) => (
                             <tr key={reserva.id}>
-                                <td>{reserva.nombre}</td>
+                                <td>{reserva.apellido}</td>
                                 <td>{reserva.fecha}</td>
                                 <td>{reserva.cancha}</td>
                                 <td>

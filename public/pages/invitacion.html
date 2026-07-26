@@ -152,14 +152,22 @@
           if (!querySnapshot.empty) {
             const data = querySnapshot.docs[0].data();
             
-            // Asignación Dinámica Multi-Barrio
-            document.getElementById('barrioId').value = data.barrioId || 'cube'; // Fallback a cube por las dudas
-            document.getElementById('registradoPor').value = data.uid || data.id || 'desconocido';
+            // --- NUEVO: Etiquetas dinámicas ---
+            const etiquetas = data.etiquetas || { bloque: 'Manzana', unidad: 'Lote' };
+            const loteTexto = `${etiquetas.bloque} ${data.manzana} - ${etiquetas.unidad} ${data.lote}`;
+            
+            // Asignación Dinámica
+            document.getElementById('barrioId').value = data.barrioId || 'cube';
+            document.getElementById('registradoPor').value = data.idPublico || data.id || 'desconocido';
             document.getElementById('lote').value = `${data.manzana}-${data.lote}`;
-            document.getElementById('invitador').value = data.nombre;
+            document.getElementById('invitador').value = data.apellido;
             document.getElementById('telefonoInvitador').value = data.numerotelefono || '';
             
-            document.getElementById('invitador-text').innerHTML = `Autoriza el ingreso: <span class="text-primary">${data.nombre}</span> <br><small>Lote: ${data.manzana}-${data.lote}</small>`;
+            // Actualizamos el texto con las etiquetas correctas
+            document.getElementById('invitador-text').innerHTML = 
+              `Autoriza el ingreso: <span class="text-primary">${data.apellido}</span> <br>` +
+              `<small>${loteTexto}</small>`;
+              
             document.getElementById('invitacionForm').style.display = 'block';
           } else {
             Swal.fire('Enlace inválido', 'El enlace de invitación ha expirado o no existe.', 'error');

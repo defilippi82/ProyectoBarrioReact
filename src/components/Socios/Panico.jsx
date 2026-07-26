@@ -18,26 +18,29 @@ export const Panico = () => {
     showConfirm: false,
     actionType: null,
     error: null,
-    incidencias: [] // Nuevo estado para el registro
+    incidencias: [] 
   });
 
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
-  // --- CORRECCIÓN DE SONIDO ---
+  // Extraemos las etiquetas dinámicas guardadas en el Contexto
+  const etiquetas = userData?.etiquetas || { distribucion: 'Isla', unidad: 'Lote', bloque: 'Manzana' };
+
   const playAlertSound = useCallback((tipo) => {
-    // Se elimina '/public' de la ruta para compatibilidad con Vercel
     const audioSrc = tipo === 'alerta' ? '/Sound/siren.mp3' : '/Sound/mensaje.mp3';
     const audio = new Audio(audioSrc);
     audio.play().catch(err => console.log("Reproducción automática bloqueada por el navegador"));
   }, []);
 
-  // --- CARGA DE INCIDENCIAS Y NOTIFICACIONES ---
   useEffect(() => {
+    if (!userData?.barrioId) return;
+
     const db = getFirestore();
     
-    // Escuchar incidencias recientes del barrio (últimas 5)
+    // Escuchar incidencias recientes solo del barrio actual
     const qIncidencias = query(
       collection(db, 'mensajes'),
+      where('barrioId', '==', userData.barrioId),
       where('source', '==', 'alerta'),
       orderBy('timestamp', 'desc'),
       limit(5)
@@ -57,9 +60,9 @@ export const Panico = () => {
 
     return () => {
       unsubscribeIncidencias();
-      unsubscribeFCM();
+      if (unsubscribeFCM) unsubscribeFCM();
     };
-  }, [playAlertSound]);
+  }, [userData?.barrioId, playAlertSound]);
 
   const obtenerUbicacion = useCallback(() => {
     return new Promise((resolve) => {
@@ -73,7 +76,7 @@ export const Panico = () => {
   }, []);
 
   const dispararAlerta = async (tipo) => {
-    if (!userData?.manzana || !userData?.lote) return;
+    if (!userData?.manzana || !userData?.lote || !userData?.barrioId) return;
 
     setState(prev => ({ ...prev, isLoading: true, showConfirm: false }));
     const db = getFirestore();
@@ -85,17 +88,22 @@ export const Panico = () => {
       let prioridad = "media";
 
       if (tipo === 'alerta') {
+        // Filtramos por isla y por barrio, y buscamos a seguridad del mismo barrio
         const [snapIsla, snapGuardia] = await Promise.all([
-          getDocs(query(collection(db, 'usuarios'), where('isla', '==', userData.isla))),
-          getDocs(query(collection(db, 'usuarios'), where('rol.guardia', '==', true)))
+          getDocs(query(collection(db, 'usuarios'), where('barrioId', '==', userData.barrioId), where('isla', '==', userData.isla))),
+          getDocs(query(collection(db, 'usuarios'), where('barrioId', '==', userData.barrioId), where('rol.seguridad', '==', true)))
         ]);
         usuariosDestino = [...snapIsla.docs, ...snapGuardia.docs].map(d => d.data());
-        mensaje = `🚨 EMERGENCIA en Lote ${userData.manzana}-${userData.lote}`;
+        mensaje = `🚨 EMERGENCIA en ${etiquetas.bloque} ${userData.manzana} - ${etiquetas.unidad} ${userData.lote}`;
         prioridad = "alta";
       } else {
-        const snapManzana = await getDocs(query(collection(db, 'usuarios'), where('manzana', '==', userData.manzana)));
+        const snapManzana = await getDocs(query(
+            collection(db, 'usuarios'), 
+            where('barrioId', '==', userData.barrioId), 
+            where('manzana', '==', userData.manzana)
+        ));
         usuariosDestino = snapManzana.docs.map(d => d.data());
-        mensaje = `⚠️ Ruidos sospechosos cerca del Lote ${userData.manzana}-${userData.lote}`;
+        mensaje = `⚠️ Ruidos sospechosos cerca de ${etiquetas.bloque} ${userData.manzana} - ${etiquetas.unidad} ${userData.lote}`;
       }
 
       const batchPromises = usuariosDestino
@@ -108,23 +116,27 @@ export const Panico = () => {
           ubicacion: currentLoc,
           timestamp: serverTimestamp(),
           read: false,
-          source: 'alerta'
+          source: 'alerta',
+          barrioId: userData.barrioId // Fundamental guardar a qué barrio pertenece la alerta
         }));
 
       await Promise.all(batchPromises);
-      playAlertSound('alerta'); // Sonar al enviar
+      playAlertSound('alerta'); 
       setState(prev => ({ ...prev, location: currentLoc, isLoading: false }));
-      Swal.fire('Enviado', 'Alerta distribuida', 'success');
+      Swal.fire('Enviado', 'Alerta distribuida correctamente', 'success');
       
     } catch (err) {
       console.error(err);
       setState(prev => ({ ...prev, isLoading: false }));
+      Swal.fire('Error', 'Hubo un problema al enviar la alerta', 'error');
     }
   };
 
   return (
     <Container className="py-4">
-      <h2 className="text-center mb-4 fw-bold text-primary">Seguridad CUBE</h2>
+      <h2 className="text-center mb-4 fw-bold text-black">
+        Seguridad {userData?.nombreBarrio || 'Comunidad'}
+      </h2>
       
       <Row className="g-3 mb-5">
         <Col xs={12} md={4}>
@@ -156,7 +168,6 @@ export const Panico = () => {
         </Col>
       </Row>
 
-      {/* --- REGISTRO DE INCIDENCIAS --- */}
       <Card className="shadow-sm border-0 bg-light">
         <Card.Body>
           <Card.Title className="d-flex align-items-center mb-3">
@@ -166,7 +177,7 @@ export const Panico = () => {
             <thead>
               <tr>
                 <th>Hora</th>
-                <th>Origen</th>
+                <th>Origen ({etiquetas.bloque}-{etiquetas.unidad})</th>
                 <th>Evento</th>
               </tr>
             </thead>
@@ -182,7 +193,7 @@ export const Panico = () => {
                   </td>
                 </tr>
               )) : (
-                <tr><td colSpan="3" className="text-center text-muted">No hay incidencias hoy</td></tr>
+                <tr><td colSpan="3" className="text-center text-muted">No hay incidencias registradas</td></tr>
               )}
             </tbody>
           </Table>
@@ -191,11 +202,11 @@ export const Panico = () => {
 
       <Modal show={state.showConfirm} onHide={() => setState(p => ({ ...p, showConfirm: false }))} centered>
         <Modal.Body className="text-center p-4">
-          <h5>¿Confirmas el envío de alerta?</h5>
+          <h5>¿Confirmás el envío de la alerta a Seguridad y a tu zona?</h5>
           <div className="d-flex justify-content-center gap-3 mt-4">
             <Button variant="outline-secondary" onClick={() => setState(p => ({ ...p, showConfirm: false }))}>Cancelar</Button>
             <Button variant={state.actionType === 'alerta' ? 'danger' : 'warning'} onClick={() => dispararAlerta(state.actionType)}>
-              Confirmar
+              Confirmar Alerta
             </Button>
           </div>
         </Modal.Body>

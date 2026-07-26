@@ -124,8 +124,12 @@ export const ExplorarAlquileres = () => {
               {/* DESPLEGABLE CONTACTO */}
               {contactoAbierto === a.id && (
                 <div className="mt-3 border-top pt-2 fade-in bg-light p-2 rounded">
-                  <p className="mb-1 small"><strong>📍 Isla:</strong> {a.isla}</p>
-                  <p className="mb-1 small"><strong>🏠 Ubicación:</strong> {a.manzana}-{a.lote}</p>
+                 <p className="mb-1 small">
+                    <strong>{a.ubicacion?.distribucion || 'Ubicación'}:</strong> {a.ubicacion?.isla || 'N/A'}
+                  </p>
+                  <p className="mb-1 small">
+                    <strong>{a.ubicacion?.bloque || 'Sector'}:</strong> {a.ubicacion?.manzana || 'N/A'} - {a.ubicacion?.unidad || 'N/A'}
+                  </p>
                   <p className="mb-0 small"><strong>📞 Tel:</strong> {a.contacto?.telefono}</p>
                 </div>
               )}

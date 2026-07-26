@@ -56,16 +56,30 @@ export const Login = () => {
 
             // Validación de pertenencia al barrio (excepto si es cuenta 'god')
             if (!dataOriginal.rol?.god && dataOriginal.barrioId !== barrioSeleccionado) {
-              MySwal.fire("Error", "No tienes permisos para acceder a este barrio", "error");
+              MySwal.fire("Error", "No tenés permisos para acceder a este barrio", "error");
               return;
             }
 
-            // Consolidamos el objeto de usuario
-            // Si es 'god', le asignamos el barrio que eligió en el select
+            // Identificamos qué barrio usará en esta sesión
+            const barrioIdFinal = dataOriginal.rol?.god ? barrioSeleccionado : dataOriginal.barrioId;
+            
+            // Buscamos la configuración de ese barrio en el estado que ya cargamos
+            const infoBarrio = barrios.find(b => b.id === barrioIdFinal);
+            
+            // Si el barrio tiene etiquetas personalizadas las usamos, sino van las por defecto
+            const etiquetas = infoBarrio?.etiquetas || { 
+                distribucion: 'Isla', 
+                unidad: 'Lote', 
+                bloque: 'Manzana' 
+            };
+
+            // Consolidamos el objeto de usuario sumando las etiquetas y el nombre del barrio
             const userData = {
               id: docSnap.id,
               ...dataOriginal,
-              barrioId: dataOriginal.rol?.god ? barrioSeleccionado : dataOriginal.barrioId
+              barrioId: barrioIdFinal,
+              nombreBarrio: infoBarrio?.nombre || 'Barrio Desconocido',
+              etiquetas: etiquetas
             };
 
             // Actualizamos Context y LocalStorage (Clave única: userData)
@@ -194,7 +208,7 @@ export const Login = () => {
                 INGRESAR AL SISTEMA
               </button>
               <Link to="/socios/create" className="btn btn-link text-muted text-decoration-none small mt-2">
-                ¿Sos nuevo? Regístrate acá
+                ¿Sos nuevo? Registrate acá
               </Link>
             </div>
           </form>

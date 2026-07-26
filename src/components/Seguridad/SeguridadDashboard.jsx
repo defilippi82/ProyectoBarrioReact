@@ -1,24 +1,16 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { 
-  Container, Row, Col, Card, Button, Table, Badge, 
-  InputGroup, Form, Tab, Tabs, Modal 
-} from 'react-bootstrap';
-import { 
-  collection, query, where, onSnapshot, doc, updateDoc, 
-  serverTimestamp, getDoc, addDoc, getDocs, deleteDoc 
-} from 'firebase/firestore';
+import { Container, Row, Col, Card, Button, Table, Badge, InputGroup, Form, Tab, Tabs, Modal } from 'react-bootstrap';
+import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp, getDoc, addDoc, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from "../../firebaseConfig/firebase";
 import { UserContext } from '../Services/UserContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faSearch, faCamera, faClock, faUserPlus, faTimes, faShieldAlt
-} from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faCamera, faClock, faUserPlus, faTimes, faShieldAlt} from '@fortawesome/free-solid-svg-icons';
 import Swal from 'sweetalert2';
 
 export const SeguridadDashboard = () => {
   const { userData } = useContext(UserContext);
   const [invitados, setInvitados] = useState([]);
-  const [stats, setStats] = useState({ enEspera: 0, adentro: 0, ingresaronHoy: 0, salieronHoy: 0 });
+  const [stats, setStats] = useState({ enEspera: 0, ingresado: 0, ingresaronHoy: 0, salieronHoy: 0 });
   const [filtro, setFiltro] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [showManualModal, setShowManualModal] = useState(false);
@@ -82,13 +74,13 @@ export const SeguridadDashboard = () => {
 
       // Cálculo de las 4 tarjetas
       const enEspera = docs.filter(i => !i.ingresado && i.estado !== 'retirado').length;
-      const adentro = docs.filter(i => i.estado === 'adentro').length;
+      const ingresado = docs.filter(i => i.estado === 'ingresado').length;
       
       // Contadores diarios (se "borran" visualmente al día siguiente)
       const ingresaronHoy = docs.filter(i => esHoy(i.fechaIngreso)).length;
       const salieronHoy = docs.filter(i => esHoy(i.fechaSalida)).length;
 
-      setStats({ enEspera, adentro, ingresaronHoy, salieronHoy });
+      setStats({ enEspera, ingresado, ingresaronHoy, salieronHoy });
     });
 
     // Reloj interno para calcular permanencias
@@ -163,9 +155,9 @@ export const SeguridadDashboard = () => {
       await updateDoc(docRef, {
         ingresado: true,
         fechaIngreso: serverTimestamp(),
-        estado: 'adentro',
+        estado: 'ingresado',
         // Opcional: registrar quién le dio entrada físicamente
-        validadoPor: userData.uid 
+        validadoPor: userData?.uid || userData?.id || "Guardia"
       });
       
       Swal.fire({
@@ -177,7 +169,7 @@ export const SeguridadDashboard = () => {
       });
     } 
   
-      // Si ya está adentro -> DA SALIDA
+      // Si ya está ingresado -> DA SALIDA
       else {
         await updateDoc(docRef, {
           ingresado: false,
@@ -205,7 +197,7 @@ export const SeguridadDashboard = () => {
         barrioId: userData.barrioId,
         ingresado: true,
         fechaIngreso: serverTimestamp(),
-        estado: 'adentro'
+        estado: 'ingresado'
       });
       setShowManualModal(false);
       setManualData({ nombre: '', dni: '', patente: '', lote: '', invitador: '' });
@@ -258,8 +250,8 @@ export const SeguridadDashboard = () => {
         <Col md={6} lg={3}>
           <Card className="text-center border-0 shadow-sm py-2 h-100 bg-primary text-white">
             <Card.Body>
-              <h6 className="text-uppercase small fw-bold opacity-75">En el Predio (Adentro)</h6>
-              <h2 className="display-5 fw-bold mb-0">{stats.adentro}</h2>
+              <h6 className="text-uppercase small fw-bold opacity-75">En el Predio (ingresado)</h6>
+              <h2 className="display-5 fw-bold mb-0">{stats.ingresado}</h2>
             </Card.Body>
           </Card>
         </Col>
@@ -320,10 +312,10 @@ export const SeguridadDashboard = () => {
         {/* PANEL PRINCIPAL: TABLAS */}
         <Col lg={8}>
           <Card className="shadow-sm border-0 h-100">
-            <Tabs defaultActiveKey="adentro" className="custom-tabs border-bottom-0 pt-2 px-2">
+            <Tabs defaultActiveKey="ingresado" className="custom-tabs border-bottom-0 pt-2 px-2">
               
               {/* PESTAÑA 1: GENTE EN EL PREDIO */}
-              <Tab eventKey="adentro" title={`Adentro (${stats.adentro})`} className="p-0">
+              <Tab eventKey="ingresado" title={`ingresado (${stats.ingresado})`} className="p-0">
                 <div className="table-responsive">
                   <Table hover className="align-middle mb-0">
                     <thead className="bg-light">
@@ -335,14 +327,14 @@ export const SeguridadDashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {invitadosFiltrados.filter(i => i.estado === 'adentro').length === 0 ? (
+                      {invitadosFiltrados.filter(i => i.estado === 'ingresado').length === 0 ? (
                         <tr>
                           <td colSpan="4" className="text-center py-5 text-muted">
                             No hay personas en el predio que coincidan con la búsqueda.
                           </td>
                         </tr>
                       ) : (
-                        invitadosFiltrados.filter(i => i.estado === 'adentro').map(inv => {
+                        invitadosFiltrados.filter(i => i.estado === 'ingresado').map(inv => {
                           const p = calcularPermanencia(inv.fechaIngreso);
                           return (
                             <tr key={inv.id} className={p.exceso ? 'table-danger' : ''}>

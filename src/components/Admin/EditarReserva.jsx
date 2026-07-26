@@ -51,7 +51,7 @@ export const EditarReserva = () => {
           }
         } else {
           MySwal.fire("Error", "La reserva no existe", "error");
-          navigate('/administracion');
+          navigate('/reservas');
         }
       } catch (error) {
         console.error("Error al obtener reserva:", error);
@@ -78,7 +78,7 @@ export const EditarReserva = () => {
         showConfirmButton: false,
         timer: 1500
       }).then(() => {
-        navigate('/administracion');
+        navigate('/reservas');
       });
     } catch (error) {
       MySwal.fire('Error', error.message, 'error');
@@ -172,7 +172,7 @@ export const EditarReserva = () => {
         </div>
 
         <div className="d-flex gap-2">
-          <button type="button" className="btn btn-secondary flex-grow-1" onClick={() => navigate('/administracion')}>
+          <button type="button" className="btn btn-secondary flex-grow-1" onClick={() => navigate('/reservas')}>
             Cancelar
           </button>
           <button type="submit" className="btn btn-primary flex-grow-1">

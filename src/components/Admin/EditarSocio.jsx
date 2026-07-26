@@ -12,6 +12,13 @@ export const EditarSocio = () => {
     const { id } = useParams();
     const navigate = useNavigate();
 
+    // 1. ESTADO PARA ETIQUETAS DINÁMICAS
+    const [etiquetas, setEtiquetas] = useState({
+        distribucion: 'Isla',
+        unidad: 'Lote',
+        bloque: 'Manzana'
+    });
+
     const [socio, setSocio] = useState({
         nombre: "",
         apellido: "",
@@ -23,7 +30,7 @@ export const EditarSocio = () => {
         isla: "",
         numerotelefono: "",
         idPublico: "",
-        barrioId: "", // Incorporado al estado inicial
+        barrioId: "", 
         rol: { valor: 'propietario', administrador: false, propietario: true, inquilino: false, seguridad: false }
     });
 
@@ -35,12 +42,32 @@ export const EditarSocio = () => {
     ]);
 
     useEffect(() => {
-        const fetchSocio = async () => {
+        const fetchSocioYBarrio = async () => {
             try {
+                // Primero traemos el documento del socio
                 const docRef = doc(db, "usuarios", id);
                 const docSocio = await getDoc(docRef);
+                
                 if (docSocio.exists()) {
-                    setSocio(docSocio.data());
+                    const socioData = docSocio.data();
+                    setSocio(socioData);
+
+                    // Si el socio tiene un barrio asignado, traemos su configuración para las etiquetas
+                    if (socioData.barrioId) {
+                        const barrioRef = doc(db, "configuracionBarrios", socioData.barrioId);
+                        const barrioSnap = await getDoc(barrioRef);
+                        
+                        if (barrioSnap.exists()) {
+                            const configBarrio = barrioSnap.data();
+                            if (configBarrio.etiquetas) {
+                                setEtiquetas({
+                                    distribucion: configBarrio.etiquetas.distribucion || 'Isla',
+                                    unidad:       configBarrio.etiquetas.unidad       || 'Lote',
+                                    bloque:       configBarrio.etiquetas.bloque       || 'Manzana'
+                                });
+                            }
+                        }
+                    }
                 } else {
                     MySwal.fire("Error", "No se encontró el socio", "error");
                     navigate('/administracion');
@@ -49,7 +76,7 @@ export const EditarSocio = () => {
                 console.error("Error al traer documento", error);
             }
         };
-        fetchSocio();
+        fetchSocioYBarrio();
     }, [id, navigate]);
 
     const actualizarSocio = (e) => {
@@ -63,9 +90,13 @@ export const EditarSocio = () => {
     const editarSubmit = async (e) => {
         e.preventDefault();
         try {
-            // Firestore actualizará todo el objeto. 
-            // Como no hay un input que modifique socio.barrioId, este se mantendrá intacto.
-            await updateDoc(doc(db, "usuarios", id), socio);
+            // Aseguramos que la isla se guarde como número antes de enviar a Firestore
+            const datosParaActualizar = {
+                ...socio,
+                isla: Number(socio.isla)
+            };
+
+            await updateDoc(doc(db, "usuarios", id), datosParaActualizar);
             
             MySwal.fire({
                 title: 'Socio actualizado',
@@ -165,19 +196,21 @@ export const EditarSocio = () => {
                     <Col md={4} className="mb-3">
                         <div className="form">
                             <input type="number" className="form-control" id="manzana" name="manzana" value={socio.manzana} onChange={actualizarSocio} required />
-                            <label htmlFor="manzana">Manzana</label>
+                            <label htmlFor="manzana">{etiquetas.bloque}</label>
                         </div>
                     </Col>
                     <Col md={4} className="mb-3">
                         <div className="form">
-                            <input type="number" className="form-control" id="lote" name="lote" value={socio.lote} onChange={actualizarSocio} required />
-                            <label htmlFor="lote">Lote</label>
+                            {/* Pasado a type="text" para admitir letras y guiones */}
+                            <input type="text" className="form-control" id="lote" name="lote" value={socio.lote} onChange={actualizarSocio} required />
+                            <label htmlFor="lote">{etiquetas.unidad}</label>
                         </div>
                     </Col>
                     <Col md={4} className="mb-3">
                         <div className="form">
+                            {/* Isla se mantiene como number */}
                             <input type="number" className="form-control" id="isla" name="isla" value={socio.isla} onChange={actualizarSocio} required />
-                            <label htmlFor="isla">Isla</label>
+                            <label htmlFor="isla">{etiquetas.distribucion}</label>
                         </div>
                     </Col>
                 </Row>

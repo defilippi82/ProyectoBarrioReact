@@ -1,20 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { 
-  Container, Card, Button, Form, Badge, ListGroup, 
-  Row, Col, Spinner, Stack, InputGroup 
-} from 'react-bootstrap';
-import { 
-  collection, query, where, orderBy, onSnapshot, 
-  addDoc, updateDoc, deleteDoc, doc, serverTimestamp 
-} from 'firebase/firestore';
+import { Container, Card, Button, Form, Badge, ListGroup, Row, Col, Spinner, Stack, InputGroup } from 'react-bootstrap';
+import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '/src/firebaseConfig/firebase.js';
 import { UserContext } from '../Services/UserContext';
 import { MessageDetail } from './MessageDetail';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faPaperPlane, faEnvelope, faEnvelopeOpen, 
-  faTrash, faMapMarkedAlt, faUser 
-} from '@fortawesome/free-solid-svg-icons';
+import { faPaperPlane, faEnvelope, faEnvelopeOpen, faTrash, faMapMarkedAlt, faUser } from '@fortawesome/free-solid-svg-icons';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useMediaQuery } from 'react-responsive';
@@ -33,13 +24,22 @@ export const Mensajeria = () => {
   const [showDetail, setShowDetail] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Extraemos las etiquetas del Contexto (o valores por defecto si no están)
+  const etiquetas = {
+  distribucion: 'Isla',
+  unidad: 'Lote',
+  bloque: 'Manzana',
+  ...(userData?.etiquetas || {}) // <--- Esto sobrescribe lo anterior
+  };  
   const socioActual = `${userData?.manzana}-${userData?.lote}`;
 
   useEffect(() => {
-    if (!userData?.manzana || !userData?.lote) return;
+    // Es crítico verificar también que tengamos el barrioId
+    if (!userData?.manzana || !userData?.lote || !userData?.barrioId) return;
 
     const q = query(
       collection(db, 'mensajes'),
+      where('barrioId', '==', userData.barrioId), // Aislamiento por barrio
       where('receiver', '==', socioActual),
       orderBy('timestamp', 'desc')
     );
@@ -49,12 +49,12 @@ export const Mensajeria = () => {
       setMessages(docs);
       setLoading(false);
     }, (err) => {
-      console.error("Error:", err);
+      console.error("Error al cargar mensajes:", err);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [userData, socioActual]);
+  }, [userData?.barrioId, socioActual]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -68,13 +68,15 @@ export const Mensajeria = () => {
         content: newMessage.trim(),
         timestamp: serverTimestamp(),
         read: false,
-        source: 'chat'
+        source: 'chat',
+        barrioId: userData.barrioId // Vinculamos el mensaje al barrio
       });
       setNewMessage('');
       setReceiverManzana('');
       setReceiverLote('');
       MySwal.fire({ icon: 'success', title: 'Mensaje enviado', timer: 1500, showConfirmButton: false });
     } catch (err) {
+      console.error("Error enviando mensaje:", err);
       MySwal.fire('Error', 'No se pudo enviar el mensaje', 'error');
     }
   };
@@ -96,6 +98,7 @@ export const Mensajeria = () => {
         await deleteDoc(doc(db, 'mensajes', id));
         MySwal.fire({ icon: 'success', title: 'Eliminado', timer: 1000, showConfirmButton: false });
       } catch (error) {
+        console.error("Error eliminando mensaje:", error);
         MySwal.fire('Error', 'No se pudo eliminar', 'error');
       }
     }
@@ -105,7 +108,11 @@ export const Mensajeria = () => {
     setSelectedMessage(message);
     setShowDetail(true);
     if (!message.read) {
-      await updateDoc(doc(db, 'mensajes', message.id), { read: true });
+      try {
+        await updateDoc(doc(db, 'mensajes', message.id), { read: true });
+      } catch (error) {
+        console.error("Error marcando como leído:", error);
+      }
     }
   };
 
@@ -126,7 +133,7 @@ export const Mensajeria = () => {
 
   return (
     <Container className="py-4">
-      <h2 className="text-center mb-4 fw-bold text-primary">Centro de Mensajería</h2>
+      <h2 className="text-center mb-4 fw-bold text-white">Centro de Mensajería</h2>
       
       <Row className="g-4">
         {/* COLUMNA IZQUIERDA: FORMULARIO */}
@@ -138,27 +145,29 @@ export const Mensajeria = () => {
             </Card.Header>
             <Card.Body className="p-4">
               <Form onSubmit={handleSendMessage}>
-                <Form.Label className="small fw-bold text-muted">DESTINATARIO</Form.Label>
+                <Form.Label className="small fw-bold text-muted">DESTINATARIO ({etiquetas.bloque.toUpperCase()} / {etiquetas.unidad.toUpperCase()})</Form.Label>
                 <Row className="g-2 mb-3">
                   <Col>
                     <InputGroup size="sm">
-                      <InputGroup.Text>Mzn</InputGroup.Text>
+                      <InputGroup.Text>{etiquetas.bloque.substring(0,3)}</InputGroup.Text>
                       <Form.Control 
-                        type="number" 
+                        type="text" // Cambiado a texto por si usan letras en torres/bloques
                         value={receiverManzana} 
                         onChange={e => setReceiverManzana(e.target.value)} 
                         required 
+                        placeholder="Ej: 5"
                       />
                     </InputGroup>
                   </Col>
                   <Col>
                     <InputGroup size="sm">
-                      <InputGroup.Text>Lote</InputGroup.Text>
+                      <InputGroup.Text>{etiquetas.unidad.substring(0,3)}</InputGroup.Text>
                       <Form.Control 
-                        type="number" 
+                        type="text" // Cambiado a texto por la misma razón
                         value={receiverLote} 
                         onChange={e => setReceiverLote(e.target.value)} 
                         required 
+                        placeholder="Ej: 14"
                       />
                     </InputGroup>
                   </Col>
@@ -215,7 +224,8 @@ export const Mensajeria = () => {
                       <div className="flex-grow-1 min-width-0">
                         <div className="d-flex justify-content-between align-items-center mb-1">
                           <span className={`small ${!msg.read ? 'fw-bold text-dark' : ''}`}>
-                            Lote {msg.sender} <span className="text-muted fw-normal">({msg.senderName})</span>
+                            {/* Aplicamos etiquetas dinámicas al remitente */}
+                            {etiquetas.unidad} {msg.sender.split('-')[1]} ({etiquetas.bloque} {msg.sender.split('-')[0]}) <span className="text-muted fw-normal">({msg.senderName})</span>
                           </span>
                           <span className="x-small text-muted">{formatTime(msg.timestamp)}</span>
                         </div>
@@ -245,6 +255,7 @@ export const Mensajeria = () => {
           message={selectedMessage} 
           handleClose={() => setShowDetail(false)} 
           currentUser={socioActual} 
+          etiquetas={etiquetas} // Pasamos las etiquetas al detalle
         />
       )}
     </Container>

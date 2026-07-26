@@ -18,13 +18,20 @@ export const RegistrarSocio = () => {
   const [barrios, setBarrios] = useState([]);
   const [barrioSeleccionado, setBarrioSeleccionado] = useState('');
 
+  // ESTADO PARA ETIQUETAS DINÁMICAS (Por defecto)
+  const [etiquetas, setEtiquetas] = useState({
+    distribucion: 'Isla',
+    unidad: 'Lote',
+    bloque: 'Manzana'
+  });
+
   // Estados del Formulario
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
   const [email, setEmail] = useState('');
   const [manzana, setManzana] = useState('');
-  const [lote, setLote] = useState('');
-  const [isla, setIsla] = useState('');
+  const [lote, setLote] = useState(''); // Ahora es tratado como texto en el input
+  const [isla, setIsla] = useState(''); // Se mantiene como número
   const [tel, setTel] = useState('');
   const [codPais, setCodPais] = useState('+54');
   const [contrasena, setContrasena] = useState('');
@@ -44,6 +51,25 @@ export const RegistrarSocio = () => {
     };
     obtenerBarrios();
   }, []);
+
+  // Función para manejar el cambio de barrio y actualizar las etiquetas
+  const handleBarrioChange = (e) => {
+    const id = e.target.value;
+    setBarrioSeleccionado(id);
+
+    const barrioEncontrado = barrios.find(b => b.id === id);
+
+    if (barrioEncontrado && barrioEncontrado.etiquetas) {
+      setEtiquetas({
+        distribucion: barrioEncontrado.etiquetas.distribucion || 'Isla',
+        unidad:       barrioEncontrado.etiquetas.unidad       || 'Lote',
+        bloque:       barrioEncontrado.etiquetas.bloque       || 'Manzana'
+      });
+    } else {
+      // Valores por defecto
+      setEtiquetas({ distribucion: 'Isla', unidad: 'Lote', bloque: 'Manzana' });
+    }
+  };
 
   const rolesMap = {
     propietario: { valor: 'propietario', administrador: false, propietario: true, inquilino: false, guardia: false },
@@ -80,6 +106,7 @@ export const RegistrarSocio = () => {
       const numeroCompleto = `${codPais}${tel}`;
 
       // 3. GUARDADO EN FIRESTORE
+      // Se guarda como isla y lote en la BD, sin importar cómo se llamó visualmente
       await setDoc(doc(db, "usuarios", user.uid), {
         uid: user.uid,
         nombre,
@@ -87,12 +114,12 @@ export const RegistrarSocio = () => {
         email,
         manzana,
         lote,
-        isla,
+        isla: Number(isla), // Aseguramos que la isla se guarde como número
         rol: rolesMap[rolSeleccionado],
         contrasena: contrasena, 
         numerotelefono: numeroCompleto,
         idPublico,
-        barrioId: barrioSeleccionado, // <--- AHORA ES DINÁMICO
+        barrioId: barrioSeleccionado,
         createdAt: new Date()
       });
 
@@ -125,7 +152,7 @@ export const RegistrarSocio = () => {
                     <Form.Floating>
                       <Form.Select 
                         value={barrioSeleccionado} 
-                        onChange={(e) => setBarrioSeleccionado(e.target.value)}
+                        onChange={handleBarrioChange} // Usamos la nueva función
                         required
                       >
                         <option value="">Seleccione el barrio donde vive...</option>
@@ -165,20 +192,22 @@ export const RegistrarSocio = () => {
                 <Row>
                   <Col md={4} className="mb-3">
                     <Form.Floating>
-                      <Form.Control type="number" placeholder="Manzana" value={manzana} onChange={(e) => setManzana(e.target.value)} required />
-                      <label><FaHome className="me-2" />Manzana</label>
+                      <Form.Control type="number" placeholder={etiquetas.bloque} value={manzana} onChange={(e) => setManzana(e.target.value)} required />
+                      <label><FaHome className="me-2" />{etiquetas.bloque}</label>
                     </Form.Floating>
                   </Col>
                   <Col md={4} className="mb-3">
                     <Form.Floating>
-                      <Form.Control type="number" placeholder="Lote" value={lote} onChange={(e) => setLote(e.target.value)} required />
-                      <label>Lote</label>
+                      {/* Lote ahora es tipo "text" para admitir strings */}
+                      <Form.Control type="text" placeholder={etiquetas.unidad} value={lote} onChange={(e) => setLote(e.target.value)} required />
+                      <label>{etiquetas.unidad}</label>
                     </Form.Floating>
                   </Col>
                   <Col md={4} className="mb-3">
                     <Form.Floating>
-                      <Form.Control type="number" placeholder="Isla" value={isla} onChange={(e) => setIsla(e.target.value)} required />
-                      <label>Isla</label>
+                      {/* Isla se mantiene como tipo "number" */}
+                      <Form.Control type="number" placeholder={etiquetas.distribucion} value={isla} onChange={(e) => setIsla(e.target.value)} required />
+                      <label>{etiquetas.distribucion}</label>
                     </Form.Floating>
                   </Col>
                 </Row>

@@ -72,22 +72,41 @@ export const UserProvider = ({ children }) => {
         setBarrioConfig({
           id: snapshot.id,
           ...data,
-          // FIX: isAdminPack agregado — lo consumía Navbar pero nunca se calculaba
+          // Feature flags por planes existentes
           isStandard:   data.plan === 'standard' || data.plan === 'full',
           isSeguridad:  data.plan === 'seguridad' || data.plan === 'full',
           isAdminPack:  data.plan === 'admin'     || data.plan === 'full',
           cupoAgotado:  (data.usuariosActuales || 0) >= (data.limiteUsuarios || 100),
+
+          // ── NUEVO: Mapeo de Estructura Dinámica (Fallback por defecto a CUBE / Estándar) ──
+          etiquetas: {
+            distribucion: data.etiquetas?.distribucion || 'Isla',
+            unidad:       data.etiquetas?.unidad       || 'Lote',
+            documento:    data.etiquetas?.documento    || 'DNI'
+          },
+          modulos: {
+            invitados: {
+              activo:          data.modulos?.invitados?.activo !== false, // default true
+              requierePatente: data.modulos?.invitados?.requierePatente || false
+            },
+            panico: {
+              activo:     data.modulos?.panico?.activo || false,
+              tipoAlerta: data.modulos?.panico?.tipoAlerta || 'guardia'
+            },
+            mensajeria: {
+              activo:                data.modulos?.mensajeria?.activo !== false,
+              permitirVecinoAVecino: data.modulos?.mensajeria?.permitirVecinoAVecino || false
+            }
+          }
         });
 
-        // Inyección dinámica de estilos CSS
+        // Inyección dinámica de estilos CSS (Se mantiene igual)
         const root = document.documentElement;
         root.style.setProperty('--primary-color',   data.colorPrincipal  || CSS_DEFAULTS['--primary-color']);
         root.style.setProperty('--secondary-color', data.colorSecundario || CSS_DEFAULTS['--secondary-color']);
         root.style.setProperty('--navbar-bg',       data.colorNavbar     || CSS_DEFAULTS['--navbar-bg']);
         root.style.setProperty('--bg-image',
-          data.fondoUrl
-            ? `url(${data.fondoUrl})`
-            : CSS_DEFAULTS['--bg-image']
+          data.fondoUrl ? `url(${data.fondoUrl})` : CSS_DEFAULTS['--bg-image']
         );
         root.style.setProperty('--bg-footer',
           data.fondoUrl ? 'transparent' : CSS_DEFAULTS['--bg-footer']
