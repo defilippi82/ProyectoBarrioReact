@@ -11,6 +11,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { useMediaQuery } from 'react-responsive';
 
+
 export const NavbarComponent = ({ startTutorial }) => {
   // Ahora traemos barrioConfig desde el Context
   const { userData, logout, barrioConfig } = useContext(UserContext);

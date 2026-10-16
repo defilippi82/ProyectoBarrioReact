@@ -16,6 +16,7 @@ import { NavbarComponent } from './components/Views/Navbar.jsx';
 import { Footer } from './components/Views/Footer';
 import { Login } from "./utils/Login";
 import { Privacidad } from "./components/Views/Privacidad";
+import { RiverNavbarBanner } from './components/Views/RiverNavbarBanner.jsx';
 
 // --- COMPONENTES DE SOCIOS / INICIO ---
 import { Panico } from './components/Socios/Panico';
@@ -179,6 +180,8 @@ const AppContent = () => {
         handleLogout={handleLogout} 
         startTutorial={() => setRunTutorial(true)} 
       />
+      {/* --- BANNER DE RÍOS VISIBLE SOLO SI HAY USUARIO LOGUEADO --- */}
+      {userData && <RiverNavbarBanner />}
 
       <main style={{ marginBottom: '100px', marginTop: '80px', padding: '0rem auto' }}>
         <Routes>
