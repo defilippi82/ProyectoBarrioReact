@@ -10,24 +10,34 @@ export const RiverNavbarBanner = () => {
 
     const fetchInaEscobar = async () => {
       try {
-        // Consultamos la serie 42 (Escobar - Altura hidrométrica) de la API del INA
-        const response = await fetch('https://alerta.ina.gob.ar/pub/datos/datos&serie=42&format=json');
+        // Obtenemos la fecha actual y de hace 7 días para armar dinámicamente el rango
+        const hoy = new Date().toISOString().split('T')[0];
+        const haceUnaSemana = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        const url = `https://alerta.ina.gob.ar/pub/datos/datos&timeStart=${haceUnaSemana}&timeEnd=${hoy}&seriesId=42&siteCode=42&varId=2&format=json`;
+
+        const response = await fetch(url);
         if (!response.ok) throw new Error('Error al conectar con la API del INA');
         
         const json = await response.json();
         
-        // Dependiendo de cómo devuelva el array el endpoint de datos, 
-        // tomamos el último elemento (el registro más actual)
-        const ultimaMedicion = Array.isArray(json) ? json[json.length - 1] : json;
-        const alturaActual = parseFloat(ultimaMedicion.valor || ultimaMedicion[1]); // Ajustar según estructura exacta del JSON de datos
+        // El array de mediciones viene en la propiedad o como parte del JSON de datos
+        // Tomamos el último registro de la lista (el más reciente)
+        const registros = Array.isArray(json) ? json : (json.data || []);
+        const ultimaMedicion = registros[registros.length - 1];
+
+        if (!ultimaMedicion) throw new Error('Sin datos en la respuesta');
+
+        const alturaActual = parseFloat(ultimaMedicion.valor);
+        const fechaRegistro = ultimaMedicion.timestart ? ultimaMedicion.timestart.split('T')[0] : 'Hoy';
 
         setData([
           { 
             id: '42', 
             nombre: 'Escobar (Río Luján)', 
-            altura: isNaN(alturaActual) ? 1.70 : alturaActual, 
+            altura: alturaActual, 
             estado: alturaActual >= 2.00 ? 'ALERTA' : 'Normal', 
-            fecha: ultimaMedicion.fecha || 'Actualizado' 
+            fecha: fechaRegistro 
           }
         ]);
         setLoading(false);
