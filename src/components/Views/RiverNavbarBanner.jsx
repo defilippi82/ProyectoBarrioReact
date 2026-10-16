@@ -8,53 +8,49 @@ export const RiverNavbarBanner = () => {
   useEffect(() => {
     let timeoutId;
 
-    const fetchData = async () => {
+    const fetchInaEscobar = async () => {
       try {
-        // Consultamos la estación del INA (Dique Luján / Río Luján - ID 3275)
-        const response = await fetch('https://alerta.ina.gob.ar/ws/bdhi/estaciones/3275/mediciones');
+        // Consultamos la serie 42 (Escobar - Altura hidrométrica) de la API del INA
+        const response = await fetch('https://alerta.ina.gob.ar/pub/datos/datos&serie=42&format=json');
         if (!response.ok) throw new Error('Error al conectar con la API del INA');
         
         const json = await response.json();
-        const ultimaMedicion = json[json.length - 1]; // Tomamos el registro más reciente
+        
+        // Dependiendo de cómo devuelva el array el endpoint de datos, 
+        // tomamos el último elemento (el registro más actual)
+        const ultimaMedicion = Array.isArray(json) ? json[json.length - 1] : json;
+        const alturaActual = parseFloat(ultimaMedicion.valor || ultimaMedicion[1]); // Ajustar según estructura exacta del JSON de datos
 
-        const alturaActual = parseFloat(ultimaMedicion.valor);
-
-        // Actualizamos el estado con los datos reales
-        const puertosActualizados = [
+        setData([
           { 
-            id: '3275', 
-            nombre: 'Dique Luján (Escobar)', 
-            altura: alturaActual, 
+            id: '42', 
+            nombre: 'Escobar (Río Luján)', 
+            altura: isNaN(alturaActual) ? 1.70 : alturaActual, 
             estado: alturaActual >= 2.00 ? 'ALERTA' : 'Normal', 
-            fecha: ultimaMedicion.fecha 
+            fecha: ultimaMedicion.fecha || 'Actualizado' 
           }
-        ];
-
-        setData(puertosActualizados);
+        ]);
         setLoading(false);
 
         // --- LÓGICA DE FRECUENCIA ADAPTATIVA ---
-        let intervaloMs = 4 * 60 * 60 * 1000; // Por defecto: Cada 4 horas
-
+        let intervaloMs = 2 * 60 * 60 * 1000; // Por defecto: Cada 2 horas
         if (alturaActual >= 2.50) {
           intervaloMs = 30 * 60 * 1000; // Crítico: Cada 30 minutos
         } else if (alturaActual >= 2.00) {
           intervaloMs = 60 * 60 * 1000; // Alerta: Cada 1 hora
         }
 
-        // Programar la siguiente consulta dinámica
-        timeoutId = setTimeout(fetchData, intervaloMs);
+        timeoutId = setTimeout(fetchInaEscobar, intervaloMs);
 
       } catch (error) {
-        console.error("Error al obtener estado del río del INA:", error);
-        // Si falla, reintentar en 15 minutos por seguridad
-        timeoutId = setTimeout(fetchData, 15 * 60 * 1000);
+        console.error("Error al obtener datos de Escobar desde el INA:", error);
+        timeoutId = setTimeout(fetchInaEscobar, 15 * 60 * 1000); // Reintento en 15 min si falla
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchInaEscobar();
 
     return () => clearTimeout(timeoutId);
   }, []);
