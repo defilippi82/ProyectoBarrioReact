@@ -15,8 +15,17 @@ export const RiverNavbarBanner = () => {
         const resSeries = await fetch('https://alerta.ina.gob.ar/pub/datos/series&siteCode=42&format=json');
         if (resSeries.ok) {
           const jsonSeries = await resSeries.json();
-          const serieAltura = jsonSeries.find(s => s.seriesid === 42 || s.varid === 2);
-          
+          const series = Array.isArray(jsonSeries)
+  ? jsonSeries
+  : jsonSeries.data ?? [];
+
+const serieAltura = series.find(
+  s =>
+    Number(s.seriesid) === 42 &&
+    Number(s.varid) === 2 &&
+    Number(s.procid) === 1 &&
+    Number(s.unitid) === 11
+);
           if (serieAltura && serieAltura.to_date) {
             const fechaFin = serieAltura.to_date.split('T')[0];
             const d = new Date(fechaFin);
