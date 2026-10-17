@@ -89,56 +89,41 @@ export const RiverNavbarBanner = () => {
           );
         }
 
+        
         // 2. Consultar los registros de los últimos siete días.
-        const paramsDatos = new URLSearchParams({
-          timeStart: fechaLocalISO(haceSieteDias),
-          timeEnd: fechaLocalISO(hoy),
-          seriesId: String(SERIES_ID),
-          format: 'json',
-        });
+        const fechaInicio = fechaLocalISO(haceSieteDias);
+        const fechaFin = fechaLocalISO(hoy);
 
-        const resDatos = await fetch(
-          `${INA_BASE}/datos?${paramsDatos.toString()}`,
-          { cache: 'no-store' }
-        );
+        const urlDatos =
+          `${INA_BASE}/datos&timeStart=${fechaInicio}` +
+          `&timeEnd=${fechaFin}` +
+          `&seriesId=${SERIES_ID}` +
+          `&format=json`;
+
+        console.log('URL consultada al INA:', urlDatos);
+
+        const resDatos = await fetch(urlDatos, {
+          cache: 'no-store',
+        });
 
         if (!resDatos.ok) {
           throw new Error(`Datos INA: HTTP ${resDatos.status}`);
         }
 
         const jsonDatos = await resDatos.json();
+
+        console.log('Respuesta de mediciones INA:', jsonDatos);
+
         const registros = obtenerRegistros(jsonDatos);
 
-        if (jsonDatos?.mensaje && registros.length === 0) {
-          throw new Error(jsonDatos.mensaje);
+        if (!registros.length) {
+          throw new Error(
+            jsonDatos?.mensaje ||
+            jsonDatos?.message ||
+            'El INA no devolvió mediciones para el período consultado.'
+          );
         }
 
-        const validos = registros
-          .filter((r) => {
-            const valor = Number(r.valor);
-            const fecha = r.timestart ?? r.timeStart ?? r.fecha;
-
-            return (
-              Number.isFinite(valor) &&
-              fecha &&
-              !Number.isNaN(new Date(fecha).getTime())
-            );
-          })
-          .sort((a, b) => {
-            const fechaA = new Date(
-              a.timestart ?? a.timeStart ?? a.fecha
-            ).getTime();
-
-            const fechaB = new Date(
-              b.timestart ?? b.timeStart ?? b.fecha
-            ).getTime();
-
-            return fechaA - fechaB;
-          });
-
-        if (!validos.length) {
-          throw new Error('El INA no devolvió mediciones válidas.');
-        }
 
         const ultimo = validos[validos.length - 1];
         const anterior = validos.length > 1
