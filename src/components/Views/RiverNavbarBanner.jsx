@@ -1,10 +1,9 @@
 
-
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const INA_BASE = "https://alerta.ina.gob.ar/pub/datos";
 
-// Estaciones del catálogo hidrológico del INA.
+// Estaciones del INA
 const ESTACION_PRINCIPAL = {
   siteCode: 42,
   nombre: "Escobar",
@@ -15,15 +14,20 @@ const ESTACION_RESPALDO = {
   nombre: "Dique Luján",
 };
 
-// Intervalos de actualización.
-const INTERVALO_NORMAL = 6 * 60 * 60 * 1000;
-const INTERVALO_ALERTA = 60 * 60 * 1000;
-const INTERVALO_CRITICO = 30 * 60 * 1000;
-const INTERVALO_ERROR = 15 * 60 * 1000;
+// Actualización automática
+const INTERVALO_NORMAL = 6 * 60 * 60 * 1000; // 6 horas
+const INTERVALO_ALERTA = 60 * 60 * 1000; // 1 hora
+const INTERVALO_CRITICO = 30 * 60 * 1000; // 30 minutos
+const INTERVALO_ERROR = 15 * 60 * 1000; // 15 minutos
 
+// Umbrales operativos del banner, no niveles oficiales de evacuación
 const UMBRAL_ALERTA = 2;
 const UMBRAL_CRITICO = 2.5;
 const TOLERANCIA_ESTABLE = 0.005;
+
+// --------------------------------------------------
+// FUNCIONES AUXILIARES
+// --------------------------------------------------
 
 function fechaLocalISO(fecha) {
   const anio = fecha.getFullYear();
@@ -35,26 +39,24 @@ function fechaLocalISO(fecha) {
 
 function obtenerRegistros(respuesta) {
   if (Array.isArray(respuesta)) return respuesta;
-
   if (Array.isArray(respuesta?.data)) return respuesta.data;
   if (Array.isArray(respuesta?.datos)) return respuesta.datos;
   if (Array.isArray(respuesta?.results)) return respuesta.results;
-  if (Array.isArray(respuesta?.resultados)) {
-    return respuesta.resultados;
-  }
+  if (Array.isArray(respuesta?.resultados)) return respuesta.resultados;
 
   return [];
 }
 
 function obtenerFecha(registro) {
   const posibles = [
-    registro?.fecha,
+    registro?.timestart,
+    registro?.timeStart,
+    registro?.timestamp,
     registro?.fecha_hora,
     registro?.datetime,
-    registro?.timestamp,
+    registro?.fecha,
     registro?.time,
     registro?.date,
-    registro?.timestart,
     registro?.obs_time,
   ];
 
@@ -62,9 +64,13 @@ function obtenerFecha(registro) {
     (item) => item !== undefined && item !== null && item !== ""
   );
 
-  if (!valor) return null;
+  if (valor === undefined) return null;
 
-  const fecha = new Date(valor);
+  // Algunos servicios expresan los timestamps en segundos.
+  const fecha =
+    typeof valor === "number"
+      ? new Date(valor < 1e12 ? valor * 1000 : valor)
+      : new Date(valor);
 
   return Number.isNaN(fecha.getTime()) ? null : fecha;
 }
@@ -116,6 +122,10 @@ function formatearHora(fecha) {
   }).format(fecha);
 }
 
+// --------------------------------------------------
+// ESTADO DEL RÍO E INTERVALO DE ACTUALIZACIÓN
+// --------------------------------------------------
+
 function obtenerEstado(altura) {
   if (altura > UMBRAL_CRITICO) {
     return {
@@ -153,7 +163,6 @@ function obtenerTendencia(registros) {
   const anterior = registros[registros.length - 2].valor;
   const ultimo = registros[registros.length - 1].valor;
   const diferencia = ultimo - anterior;
-  const centimetros = Math.round(Math.abs(diferencia) * 100);
 
   if (Math.abs(diferencia) <= TOLERANCIA_ESTABLE) {
     return {
@@ -163,6 +172,8 @@ function obtenerTendencia(registros) {
       centimetros: 0,
     };
   }
+
+  const centimetros = Math.round(Math.abs(diferencia) * 100);
 
   if (diferencia > 0) {
     return {
@@ -181,6 +192,10 @@ function obtenerTendencia(registros) {
   };
 }
 
+// --------------------------------------------------
+// CONSULTA DE UNA ESTACIÓN AL INA
+// --------------------------------------------------
+
 async function consultarEstacion(estacion) {
   const urlSeries =
     `${INA_BASE}/series&siteCode=${estacion.siteCode}&format=json`;
@@ -190,33 +205,51 @@ async function consultarEstacion(estacion) {
   });
 
   if (!respuestaSeries.ok) {
-    throw new Error(`No se pudieron consultar las series de ${estacion.nombre}`);
+    throw new Error(
+      `Error al consultar las series de ${estacion.nombre}: HTTP ${respuestaSeries.status}`
+    );
   }
 
   const jsonSeries = await respuestaSeries.json();
   const series = obtenerRegistros(jsonSeries);
 
-  // Se elige una serie de altura hidrométrica observada,
-  // evitando series simuladas o de traza.
-  const serie = series.find(
-    (item) =>
-      Number(item.sitecode ?? item.siteCode) === estacion.siteCode &&
-      Number(item.varid ?? item.varId) === 2 &&
-      Number(item.procid ?? item.procId) === 1 &&
-      item.to_date
-  );
+  // Preferimos identificar la serie por estación y variable.
+  // Para Escobar conservamos la selección que ya utilizaba el proyecto.
+  const seriesEstacion = series.filter((serie) => {
+    const siteCode = serie.sitecode ?? serie.siteCode;
+    const varId = serie.varid ?? serie.varId;
+
+    return (
+      Number(varId) === 2 &&
+      (siteCode === undefined || Number(siteCode) === estacion.siteCode)
+    );
+  });
+
+  const serie =
+    (estacion.siteCode === 42
+      ? seriesEstacion.find(
+          (item) =>
+            Number(item.seriesid ?? item.seriesId) === 42
+        )
+      : null) ?? seriesEstacion[0];
 
   if (!serie) {
-    throw new Error(`No se encontró una serie observada para ${estacion.nombre}`);
+    throw new Error(
+      `No se encontró una serie de altura para ${estacion.nombre}`
+    );
   }
 
   const hoy = new Date();
-  const fechaFin = fechaLocalISO(hoy);
 
-  const inicio = new Date(hoy);
-  inicio.setDate(inicio.getDate() - 7);
-  const fechaInicio = fechaLocalISO(inicio);
+  const fechaFin =
+    typeof serie.to_date === "string" && serie.to_date.length >= 10
+      ? serie.to_date.slice(0, 10)
+      : fechaLocalISO(hoy);
 
+  const fechaInicioDate = new Date(`${fechaFin}T12:00:00`);
+  fechaInicioDate.setDate(fechaInicioDate.getDate() - 7);
+
+  const fechaInicio = fechaLocalISO(fechaInicioDate);
   const seriesId = serie.seriesid ?? serie.seriesId;
 
   const urlDatos =
@@ -224,14 +257,16 @@ async function consultarEstacion(estacion) {
     `&timeEnd=${fechaFin}` +
     `&seriesId=${seriesId}` +
     `&siteCode=${estacion.siteCode}` +
-    `&varId=2&format=json`;
+    "&varId=2&format=json";
 
   const respuestaDatos = await fetch(urlDatos, {
     cache: "no-store",
   });
 
   if (!respuestaDatos.ok) {
-    throw new Error(`No se pudieron consultar las mediciones de ${estacion.nombre}`);
+    throw new Error(
+      `Error al consultar las mediciones de ${estacion.nombre}: HTTP ${respuestaDatos.status}`
+    );
   }
 
   const jsonDatos = await respuestaDatos.json();
@@ -243,7 +278,7 @@ async function consultarEstacion(estacion) {
     }))
     .filter(
       (registro) =>
-        registro.fecha &&
+        registro.fecha !== null &&
         Number.isFinite(registro.valor) &&
         registro.valor >= -20 &&
         registro.valor <= 30
@@ -251,7 +286,9 @@ async function consultarEstacion(estacion) {
     .sort((a, b) => a.fecha.getTime() - b.fecha.getTime());
 
   if (registros.length === 0) {
-    throw new Error(`La estación ${estacion.nombre} no devolvió mediciones válidas`);
+    throw new Error(
+      `No hay mediciones válidas disponibles para ${estacion.nombre}`
+    );
   }
 
   const ultimo = registros[registros.length - 1];
@@ -268,7 +305,11 @@ async function consultarEstacion(estacion) {
   };
 }
 
-export default function RiverNavbarBanner() {
+// --------------------------------------------------
+// COMPONENTE DEL BANNER
+// --------------------------------------------------
+
+export const RiverNavbarBanner = () => {
   const [lectura, setLectura] = useState(null);
   const [horaConsulta, setHoraConsulta] = useState(null);
   const [error, setError] = useState("");
@@ -283,22 +324,26 @@ export default function RiverNavbarBanner() {
       if (cancelado) return;
 
       setConsultando(true);
-      setError("");
 
       let nuevaLectura = null;
       let respaldo = false;
+      let siguienteIntervalo = INTERVALO_ERROR;
+      let mensajeError = "";
 
       try {
         try {
           nuevaLectura = await consultarEstacion(ESTACION_PRINCIPAL);
         } catch (errorPrincipal) {
           console.warn(
-            "Falló la estación Escobar. Se intentará Dique Luján:",
+            "Falló Escobar. Intentando estación de respaldo:",
             errorPrincipal
           );
 
           nuevaLectura = await consultarEstacion(ESTACION_RESPALDO);
           respaldo = true;
+
+          mensajeError =
+            "Escobar no respondió. Se muestra Dique Luján como respaldo.";
         }
 
         if (cancelado) return;
@@ -306,32 +351,31 @@ export default function RiverNavbarBanner() {
         setLectura(nuevaLectura);
         setEsRespaldo(respaldo);
         setHoraConsulta(new Date());
+        setError(mensajeError);
+
+        // El próximo intervalo depende de la última lectura válida.
+        siguienteIntervalo = nuevaLectura.estado.intervalo;
       } catch (errorConsulta) {
         if (cancelado) return;
 
-        console.error("Error al actualizar la altura del río:", errorConsulta);
+        console.error(
+          "Error al actualizar la altura del río:",
+          errorConsulta
+        );
 
+        // No se borra la última medición válida.
         setError(
           "No se pudo actualizar. Se conserva la última medición válida."
         );
+
+        siguienteIntervalo = INTERVALO_ERROR;
       } finally {
         if (!cancelado) {
           setConsultando(false);
 
-          const intervalo = error
-            ? INTERVALO_ERROR
-            : lectura?.estado?.intervalo ?? INTERVALO_NORMAL;
-
-          // Se calcula el intervalo con la lectura más reciente
-          // dentro de esta ejecución, no con el estado anterior.
-          const intervaloSiguiente =
-            nuevaLectura && !error
-              ? nuevaLectura.estado.intervalo
-              : INTERVALO_ERROR;
-
           temporizador = setTimeout(
             actualizar,
-            nuevaLectura ? intervaloSiguiente : INTERVALO_ERROR
+            siguienteIntervalo
           );
         }
       }
@@ -348,41 +392,52 @@ export default function RiverNavbarBanner() {
   const estado = lectura?.estado;
   const tendencia = lectura?.tendencia;
 
+  const colorBanner =
+    lectura?.altura > UMBRAL_CRITICO
+      ? "#fee2e2"
+      : lectura?.altura > UMBRAL_ALERTA
+        ? "#fef3c7"
+        : "#f1f5f9";
+
+  const colorTexto =
+    lectura?.altura > UMBRAL_CRITICO
+      ? "#991b1b"
+      : lectura?.altura > UMBRAL_ALERTA
+        ? "#92400e"
+        : "#1e293b";
+
   return (
     <div
       className="river-navbar-banner"
+      role="status"
+      aria-live="polite"
       style={{
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        gap: "12px",
         flexWrap: "wrap",
+        gap: "12px",
         padding: "8px 14px",
+        marginTop: "70px",
         borderRadius: "10px",
-        background: "var(--bs-tertiary-bg, #f8fafc)",
-        color: "var(--bs-body-color, #1e293b)",
-        fontSize: "0.9rem",
+        background: colorBanner,
+        color: colorTexto,
+        fontSize: "0.85rem",
       }}
-      aria-live="polite"
     >
       <div style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
         🌊 Altura Ríos CUBE
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        <span>Escobar:</span>
+        <span>{lectura?.estacion ?? "Escobar"}:</span>
 
         <strong style={{ fontSize: "1.05rem" }}>
           {lectura ? `${lectura.altura.toFixed(2)} m` : "-- m"}
         </strong>
 
         {estado && (
-          <span
-            style={{
-              color: estado.color,
-              fontWeight: 700,
-            }}
-          >
+          <span style={{ color: estado.color, fontWeight: 700 }}>
             {estado.texto}
           </span>
         )}
@@ -414,11 +469,13 @@ export default function RiverNavbarBanner() {
           )}
       </div>
 
-      <div style={{ fontSize: "0.78rem", lineHeight: 1.4 }}>
+      <div style={{ fontSize: "0.78rem", lineHeight: 1.5 }}>
         <div>
           Medición:{" "}
           {lectura ? formatearFecha(lectura.fechaMedicion) : "Sin datos"}
-          {lectura ? ` · ${formatearHora(lectura.fechaMedicion)}` : ""}
+          {lectura
+            ? ` · ${formatearHora(lectura.fechaMedicion)}`
+            : ""}
         </div>
 
         <div>
@@ -434,11 +491,13 @@ export default function RiverNavbarBanner() {
         )}
 
         {error && (
-          <div style={{ color: "#dc2626", fontWeight: 600 }}>
-            {error}
+          <div style={{ color: "#b91c1c", fontWeight: 600 }}>
+            ⚠️ {error}
           </div>
         )}
       </div>
     </div>
   );
-}
+};
+
+export default RiverNavbarBanner;
