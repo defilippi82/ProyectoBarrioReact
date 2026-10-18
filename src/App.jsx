@@ -34,7 +34,7 @@ import { RegistrarSocio } from "./components/Admin/RegistrarSocios.jsx";
 // --- COMPONENTES DE ADMINISTRACIÓN ---
 import { Administracion } from "./components/Admin/Administracion";
 import { AdminMensajeria } from "./components/Admin/AdminMensajeria.jsx";
-//import { Reservas } from "./components/Admin/Reservas";
+import { Reservas } from "./components/Admin/Reservas";
 import { EditarReserva } from "./components/Admin/EditarReserva";
 import { EditarSocio } from "./components/Admin/EditarSocio";
 
