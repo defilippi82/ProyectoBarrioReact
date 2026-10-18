@@ -10,12 +10,12 @@ export const Footer = () => {
       <section className="sm-4 text-center">
        
                 
-        <a
+        {/* --- <a
            className="btn btn-outline-light btn-floating m-1"
            href="mailto:federico.filippi@trenesargentinos.gob.ar"
            role="button"
            ><i className="fa fa-train "></i
-          ></a>
+          ></a>*/}
 
         <a
            className="btn btn-outline-light btn-floating m-1"

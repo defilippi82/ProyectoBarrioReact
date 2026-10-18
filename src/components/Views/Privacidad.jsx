@@ -73,7 +73,7 @@ export const Privacidad = () => {
       </p>
       <p>
         Federico De Filippi<br />
-        Correo electrónico: <a href="mailto:f.defilippigmail.com">f.defilippigmail.com</a><br />
+        Correo electrónico: <a href="mailto:f.defilippi@gmail.com">f.defilippi@gmail.com</a><br />
         
       </p>
       <p>

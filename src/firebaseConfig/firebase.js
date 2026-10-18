@@ -21,12 +21,11 @@ export const auth = getAuth(app);
 export const analytics = getAnalytics(app);
 export const messaging = getMessaging(app);
 
-// COMENTA ESTO TEMPORALMENTE
-/*
+
 enableIndexedDbPersistence(db).catch((err) => {
   console.log("Error persistencia: ", err.code);
 });
-*/
+
 
 export const obtenerTokenFCM = async () => {
   try {

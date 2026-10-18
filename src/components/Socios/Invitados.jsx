@@ -167,7 +167,6 @@ export const Invitados = () => {
           </tbody>
         </Table>
       </Card>
-      {/* ... Resto de modales (Lista y QR) igual al original ... */}
-    </div>
+      </div>
   );
 };

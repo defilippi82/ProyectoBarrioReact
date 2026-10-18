@@ -118,20 +118,7 @@ const AppContent = () => {
     }
   };
 
-  /*const solicitarPermiso = async () => {
-    try {
-      const permiso = await Notification.requestPermission();
-      if (permiso === 'granted') {
-        const token = await getToken(messaging, { 
-          vapidKey: 'BC1dFTH3QJeInZ8LL-2ZrBj6EXE8iWmDu7PDfDGhx7LiADYJ_KjzZdK-izhIaPOpmI2qQ0cveH_fl5orZ1znFTw' 
-        });
-        guardarTokenEnBaseDeDatos(token);
-      }
-    } catch (error) {
-      console.error('Error en notificaciones:', error);
-    }
-  };*/
-
+ 
   useEffect(() => {
     if (userData) {
       /*solicitarPermiso();*/
