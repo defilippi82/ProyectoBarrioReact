@@ -7,7 +7,22 @@
     text-shadow: 2px 2px 5px rgba(12, 12, 12, 0.1);
     font-weight: 700;
 }
+.nav-tabs .nav-link {
+  color: #495057; /* Color gris oscuro / negro para las pestañas inactivas */
+  font-weight: 600;
+}
 
+/* Color y estilo cuando la pestaña está ACTIVA */
+.nav-tabs .nav-link.active {
+  color: #000000 !important; /* Texto negro para la pestaña seleccionada */
+  background-color: #ffffff; /* Fondo blanco para resaltar */
+  border-color: #dee2e6 #dee2e6 #fff;
+}
+
+/* Color al pasar el cursor por encima (hover) */
+.nav-tabs .nav-link:hover {
+  color: #000000;
+}
 /* Post-its adaptables */
 .post-it-card {
     border-radius: 4px 30px 4px 4px;
