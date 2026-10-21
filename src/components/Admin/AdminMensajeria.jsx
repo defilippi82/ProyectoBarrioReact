@@ -32,7 +32,7 @@ export const AdminMensajeria = () => {
     setState(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
   };
 
- const sendMessages = async () => {
+  const sendMessages = async () => {
     if (!title || !body || (selectedIslas.length === 0 && selectedManzanas.length === 0)) {
       Swal.fire('Error', 'Completá los campos y seleccioná destino', 'error');
       return;
@@ -43,12 +43,12 @@ export const AdminMensajeria = () => {
       await addDoc(collection(db, 'campanas'), {
         title,
         body,
-        islasDestino: selectedIslas.map(i => String(i)), // Aseguramos formato texto
+        islasDestino: selectedIslas.map(i => String(i)),
         manzanasDestino: selectedManzanas.map(m => String(m)),
         timestamp: Timestamp.now(),
         sender: 'ADMIN',
         active: true,
-        barrioId: userData?.barrioId // 👈 CRÍTICO: Vincular al barrio actual
+        barrioId: userData?.barrioId // Vinculado al barrio actual
       });
 
       Swal.fire('Enviado', 'La campaña se registró correctamente', 'success');
@@ -105,7 +105,6 @@ export const AdminMensajeria = () => {
                 </Form.Group>
               </Col>
               <Col md={3} className="d-grid">
-                {/* BOTÓN HORIZONTAL */}
                 <Button variant="primary" className="fw-bold h-100" onClick={sendMessages} disabled={loading}>
                   {loading ? <Spinner animation="border" size="sm" /> : <><FaPaperPlane className="me-2" /> ENVIAR</>}
                 </Button>
