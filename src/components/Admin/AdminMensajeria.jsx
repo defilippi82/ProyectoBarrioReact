@@ -1,21 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebaseConfig/firebase';
-import { 
-  collection, 
-  addDoc, 
-  getDocs, 
-  deleteDoc, 
-  doc, 
-  query, 
-  orderBy, 
-  onSnapshot, 
-  Timestamp 
-} from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Form, Button, Spinner, Row, Col, Card, Container, Table } from 'react-bootstrap';
 import { FaBullhorn, FaPaperPlane, FaTrashAlt, FaHistory } from 'react-icons/fa';
+import { UserContext } from '../Services/UserContext';
 import Swal from 'sweetalert2';
 
 export const AdminMensajeria = () => {
+  const { userData } = useContext(UserContext);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [selectedIslas, setSelectedIslas] = useState([]);
@@ -40,7 +32,7 @@ export const AdminMensajeria = () => {
     setState(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
   };
 
-  const sendMessages = async () => {
+ const sendMessages = async () => {
     if (!title || !body || (selectedIslas.length === 0 && selectedManzanas.length === 0)) {
       Swal.fire('Error', 'Completá los campos y seleccioná destino', 'error');
       return;
@@ -51,11 +43,12 @@ export const AdminMensajeria = () => {
       await addDoc(collection(db, 'campanas'), {
         title,
         body,
-        islasDestino: selectedIslas,
-        manzanasDestino: selectedManzanas,
+        islasDestino: selectedIslas.map(i => String(i)), // Aseguramos formato texto
+        manzanasDestino: selectedManzanas.map(m => String(m)),
         timestamp: Timestamp.now(),
         sender: 'ADMIN',
-        active: true
+        active: true,
+        barrioId: userData?.barrioId // 👈 CRÍTICO: Vincular al barrio actual
       });
 
       Swal.fire('Enviado', 'La campaña se registró correctamente', 'success');
@@ -64,6 +57,7 @@ export const AdminMensajeria = () => {
       setSelectedIslas([]);
       setSelectedManzanas([]);
     } catch (error) {
+      console.error(error);
       Swal.fire('Error', 'No se pudo enviar', 'error');
     }
     setLoading(false);
