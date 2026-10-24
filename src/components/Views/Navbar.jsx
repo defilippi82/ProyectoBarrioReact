@@ -131,10 +131,10 @@ export const NavbarComponent = ({ startTutorial }) => {
                 <NavItem to="/seguridad" icon={faShieldAlt} text="Guardia" />
               )}
 
-              {/* --- PANEL GOD (SUPER ADMIN) --- */}
+              {/* --- PANEL GOD (SUPER ADMIN) --- 
               {isGod && (
                 <NavItem to="/god-panel" icon={faCrown} text="PANEL GOD" className="text-warning fw-bold bg-dark rounded mt-2 mt-lg-0 ms-lg-2" />
-              )}
+              )}*/}
 
               {rol.administrador && <NavItem to="/administracion" icon={faUsersCog} text="Panel Admin" />}
 

@@ -212,7 +212,7 @@ export const Novedades = () => {
                     </Row>
                 </Tab>
 
-                <Tab eventKey="telefonos" title="📞 GUÍA ÚTIL">
+                <Tab eventKey="telefonos" title="📞 TELÉFONOS ÚTILES">
                     <div className="d-flex justify-content-end my-3">
                         <Button variant="success" className="btn-add-modern shadow" onClick={() => setShowModalTel(true)}>
                             <FaPlus className="me-2"/> Sugerir Contacto
