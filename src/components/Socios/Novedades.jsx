@@ -159,7 +159,7 @@ export const Novedades = () => {
                 </div>
             ))}
 
-            <div className="text-center mb-5 board-header">
+            <div className="text-center mb-2 board-header">
                 <h1 className="display-3 main-board-title">Tablero de la Comunidad</h1>
                 {/* Fallback doble por si la config del contexto demora: usamos el que guardamos en Login */}
                 <p className="lead text-muted text-uppercase fw-bold">
