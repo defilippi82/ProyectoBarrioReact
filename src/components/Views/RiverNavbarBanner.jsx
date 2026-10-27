@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 
 const INA_BASE = "https://alerta.ina.gob.ar/pub/datos";
 
-// Estaciones del INA
+// Estaciones a consultar en paralelo
 const ESTACION_PRINCIPAL = {
   siteCode: 42,
   nombre: "Escobar",
@@ -11,7 +11,7 @@ const ESTACION_PRINCIPAL = {
 
 const ESTACION_RESPALDO = {
   siteCode: 50,
-  nombre: "Dique Luján",
+  nombre: "ESCOBAR",
 };
 
 // Actualización automática
@@ -20,7 +20,7 @@ const INTERVALO_ALERTA = 60 * 60 * 1000; // 1 hora
 const INTERVALO_CRITICO = 30 * 60 * 1000; // 30 minutos
 const INTERVALO_ERROR = 15 * 60 * 1000; // 15 minutos
 
-// Umbrales operativos del banner, no niveles oficiales de evacuación
+// Umbrales operativos del banner
 const UMBRAL_ALERTA = 2;
 const UMBRAL_CRITICO = 2.5;
 const TOLERANCIA_ESTABLE = 0.005;
@@ -66,7 +66,6 @@ function obtenerFecha(registro) {
 
   if (valor === undefined) return null;
 
-  // Algunos servicios expresan los timestamps en segundos.
   const fecha =
     typeof valor === "number"
       ? new Date(valor < 1e12 ? valor * 1000 : valor)
@@ -123,7 +122,7 @@ function formatearHora(fecha) {
 }
 
 // --------------------------------------------------
-// ESTADO DEL RÍO E INTERVALO DE ACTUALIZACIÓN
+// ESTADO E INTERVALO
 // --------------------------------------------------
 
 function obtenerEstado(altura) {
@@ -193,12 +192,11 @@ function obtenerTendencia(registros) {
 }
 
 // --------------------------------------------------
-// CONSULTA DE UNA ESTACIÓN AL INA
+// CONSULTA DE ESTACIÓN AL INA
 // --------------------------------------------------
 
 async function consultarEstacion(estacion) {
-  const urlSeries =
-    `${INA_BASE}/series&siteCode=${estacion.siteCode}&format=json`;
+  const urlSeries = `${INA_BASE}/series&siteCode=${estacion.siteCode}&format=json`;
 
   const respuestaSeries = await fetch(urlSeries, {
     cache: "no-store",
@@ -213,8 +211,6 @@ async function consultarEstacion(estacion) {
   const jsonSeries = await respuestaSeries.json();
   const series = obtenerRegistros(jsonSeries);
 
-  // Preferimos identificar la serie por estación y variable.
-  // Para Escobar conservamos la selección que ya utilizaba el proyecto.
   const seriesEstacion = series.filter((serie) => {
     const siteCode = serie.sitecode ?? serie.siteCode;
     const varId = serie.varid ?? serie.varId;
@@ -228,8 +224,7 @@ async function consultarEstacion(estacion) {
   const serie =
     (estacion.siteCode === 42
       ? seriesEstacion.find(
-          (item) =>
-            Number(item.seriesid ?? item.seriesId) === 42
+          (item) => Number(item.seriesid ?? item.seriesId) === 42
         )
       : null) ?? seriesEstacion[0];
 
@@ -306,15 +301,15 @@ async function consultarEstacion(estacion) {
 }
 
 // --------------------------------------------------
-// COMPONENTE DEL BANNER
+// COMPONENTE DEL BANNER (DOBLE MEDICIÓN)
 // --------------------------------------------------
 
 export const RiverNavbarBanner = () => {
-  const [lectura, setLectura] = useState(null);
+  const [lecturaEscobar, setLecturaEscobar] = useState(null);
+  const [lecturaDique, setLecturaDique] = useState(null);
   const [horaConsulta, setHoraConsulta] = useState(null);
   const [error, setError] = useState("");
   const [consultando, setConsultando] = useState(true);
-  const [esRespaldo, setEsRespaldo] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
@@ -324,60 +319,44 @@ export const RiverNavbarBanner = () => {
       if (cancelado) return;
 
       setConsultando(true);
-
-      let nuevaLectura = null;
-      let respaldo = false;
-      let siguienteIntervalo = INTERVALO_ERROR;
       let mensajeError = "";
+      let minIntervalo = INTERVALO_NORMAL;
 
+      // 1. Consultar Escobar (Principal)
       try {
-        try {
-          nuevaLectura = await consultarEstacion(ESTACION_PRINCIPAL);
-        } catch (errorPrincipal) {
-          console.warn(
-            "Falló Escobar. Intentando estación de respaldo:",
-            errorPrincipal
-          );
-
-          nuevaLectura = await consultarEstacion(ESTACION_RESPALDO);
-          respaldo = true;
-
-          mensajeError =
-            "Escobar no respondió. Se muestra Dique Luján como respaldo.";
+        const resEscobar = await consultarEstacion(ESTACION_PRINCIPAL);
+        if (!cancelado) {
+          setLecturaEscobar(resEscobar);
+          if (resEscobar.estado.intervalo < minIntervalo) {
+            minIntervalo = resEscobar.estado.intervalo;
+          }
         }
+      } catch (errEscobar) {
+        console.warn("Error al consultar Escobar:", errEscobar);
+        mensajeError += "Escobar sin conexión. ";
+      }
 
-        if (cancelado) return;
+      // 2. Consultar ESCOBAR (Secundaria / Respaldo)
+      try {
+        const resDique = await consultarEstacion(ESTACION_RESPALDO);
+        if (!cancelado) {
+          setLecturaDique(resDique);
+          if (resDique.estado.intervalo < minIntervalo) {
+            minIntervalo = resDique.estado.intervalo;
+          }
+        }
+      } catch (errDique) {
+        console.warn("Error al consultar ESCOBAR:", errDique);
+        mensajeError += "ESCOBAR sin conexión.";
+      }
 
-        setLectura(nuevaLectura);
-        setEsRespaldo(respaldo);
+      if (!cancelado) {
         setHoraConsulta(new Date());
         setError(mensajeError);
+        setConsultando(false);
 
-        // El próximo intervalo depende de la última lectura válida.
-        siguienteIntervalo = nuevaLectura.estado.intervalo;
-      } catch (errorConsulta) {
-        if (cancelado) return;
-
-        console.error(
-          "Error al actualizar la altura del río:",
-          errorConsulta
-        );
-
-        // No se borra la última medición válida.
-        setError(
-          "No se pudo actualizar. Se conserva la última medición válida."
-        );
-
-        siguienteIntervalo = INTERVALO_ERROR;
-      } finally {
-        if (!cancelado) {
-          setConsultando(false);
-
-          temporizador = setTimeout(
-            actualizar,
-            siguienteIntervalo
-          );
-        }
+        // Programar próxima actualización según la criticidad de los ríos
+        temporizador = setTimeout(actualizar, minIntervalo);
       }
     }
 
@@ -389,22 +368,17 @@ export const RiverNavbarBanner = () => {
     };
   }, []);
 
-  const estado = lectura?.estado;
-  const tendencia = lectura?.tendencia;
+  // Evaluar si alguna de las dos estaciones supera los umbrales para colorear el banner
+  const alturaMax = Math.max(
+    lecturaEscobar?.altura ?? 0,
+    lecturaDique?.altura ?? 0
+  );
 
-  const colorBanner =
-    lectura?.altura > UMBRAL_CRITICO
-      ? "#fee2e2"
-      : lectura?.altura > UMBRAL_ALERTA
-        ? "#fef3c7"
-        : "#f1f5f9";
+  const esCritico = alturaMax > UMBRAL_CRITICO;
+  const esAlerta = alturaMax > UMBRAL_ALERTA;
 
-  const colorTexto =
-    lectura?.altura > UMBRAL_CRITICO
-      ? "#991b1b"
-      : lectura?.altura > UMBRAL_ALERTA
-        ? "#92400e"
-        : "#1e293b";
+  const colorBanner = esCritico ? "#fee2e2" : esAlerta ? "#fef3c7" : "#f1f5f9";
+  const colorTexto = esCritico ? "#991b1b" : esAlerta ? "#92400e" : "#1e293b";
 
   return (
     <div
@@ -422,78 +396,57 @@ export const RiverNavbarBanner = () => {
         borderRadius: "10px",
         background: colorBanner,
         color: colorTexto,
-        fontSize: "0.85rem",
+        fontSize: "0.82rem",
       }}
     >
       <div style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
-        🌊 Altura Ríos CUBE
+        🌊 Ríos CUBE
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        <span>{lectura?.estacion ?? "Escobar"}:</span>
-
-        <strong style={{ fontSize: "1.05rem" }}>
-          {lectura ? `${lectura.altura.toFixed(2)} m` : "-- m"}
+      {/* ESTACIÓN 1: ESCOBAR */}
+      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+        <span style={{ fontWeight: 600 }}>Escobar:</span>
+        <strong style={{ fontSize: "1rem" }}>
+          {lecturaEscobar ? `${lecturaEscobar.altura.toFixed(2)} m` : "-- m"}
         </strong>
-
-        {estado && (
-          <span style={{ color: estado.color, fontWeight: 700 }}>
-            {estado.texto}
+        {lecturaEscobar?.estado && (
+          <span style={{ color: lecturaEscobar.estado.color, fontWeight: 700 }}>
+            {lecturaEscobar.estado.texto}
+          </span>
+        )}
+        {lecturaEscobar?.tendencia && (
+          <span style={{ color: lecturaEscobar.tendencia.color, fontWeight: 700 }}>
+            {lecturaEscobar.tendencia.flecha}
           </span>
         )}
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "5px",
-          color: tendencia?.color ?? "#64748b",
-          fontWeight: 700,
-        }}
-        title="Comparación con la medición anterior de la misma estación"
-      >
-        <span style={{ fontSize: "1.2rem" }}>
-          {tendencia?.flecha ?? "→"}
-        </span>
-
-        <span>{tendencia?.texto ?? "SIN DATOS"}</span>
-
-        {tendencia?.centimetros !== null &&
-          tendencia?.centimetros !== undefined && (
-            <span>
-              {tendencia.centimetros === 0
-                ? "0 cm"
-                : `${tendencia.centimetros} cm`}
-            </span>
-          )}
+      {/* ESTACIÓN 2: ESCOBAR */}
+      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+        <span style={{ fontWeight: 600 }}>ESCOBAR:</span>
+        <strong style={{ fontSize: "1rem" }}>
+          {lecturaDique ? `${lecturaDique.altura.toFixed(2)} m` : "-- m"}
+        </strong>
+        {lecturaDique?.estado && (
+          <span style={{ color: lecturaDique.estado.color, fontWeight: 700 }}>
+            {lecturaDique.estado.texto}
+          </span>
+        )}
+        {lecturaDique?.tendencia && (
+          <span style={{ color: lecturaDique.tendencia.color, fontWeight: 700 }}>
+            {lecturaDique.tendencia.flecha}
+          </span>
+        )}
       </div>
 
-      <div style={{ fontSize: "0.78rem", lineHeight: 1.5 }}>
+      {/* DETALLES Y HORARIOS */}
+      <div style={{ fontSize: "0.75rem", lineHeight: 1.4, textAlign: "right" }}>
         <div>
-          Medición:{" "}
-          {lectura ? formatearFecha(lectura.fechaMedicion) : "Sin datos"}
-          {lectura
-            ? ` · ${formatearHora(lectura.fechaMedicion)}`
-            : ""}
+          Actualizado: {horaConsulta ? formatearHora(horaConsulta) : "--:--"}
+          {consultando ? " · Sincronizando…" : ""}
         </div>
-
-        <div>
-          Consulta: {horaConsulta ? formatearHora(horaConsulta) : "--:--"}
-          {consultando ? " · Actualizando…" : ""}
-        </div>
-
-        {lectura && (
-          <div>
-            Fuente: INA · {lectura.estacion}
-            {esRespaldo ? " (respaldo)" : ""}
-          </div>
-        )}
-
         {error && (
-          <div style={{ color: "#b91c1c", fontWeight: 600 }}>
-            ⚠️ {error}
-          </div>
+          <div style={{ color: "#b91c1c", fontWeight: 600 }}>⚠️ {error}</div>
         )}
       </div>
     </div>
