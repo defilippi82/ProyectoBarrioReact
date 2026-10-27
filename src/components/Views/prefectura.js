@@ -1,4 +1,3 @@
-// api/prefectura.js (Ejemplo para Vercel Serverless / Node.js)
 import * as cheerio from 'cheerio';
 
 export default async function handler(req, res) {
@@ -10,7 +9,7 @@ export default async function handler(req, res) {
     const $ = cheerio.load(html);
     const registros = [];
 
-    // Buscamos las filas de la tabla histórica de Prefectura
+    // Recorremos la tabla histórica de Prefectura
     $('table tr').each((i, row) => {
       const cols = $(row).find('td');
       if (cols.length >= 3) {
@@ -24,7 +23,10 @@ export default async function handler(req, res) {
       }
     });
 
-    return res.status(200).json({ success: true, registros });
+    // Tomamos el registro más reciente (el primero de la tabla)
+    const ultimo = registros.length > 0 ? registros[0] : null;
+
+    return res.status(200).json({ success: true, ultimo, registros });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
   }
