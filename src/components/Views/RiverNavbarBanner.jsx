@@ -11,7 +11,7 @@ const ESTACION_PRINCIPAL = {
 
 const ESTACION_RESPALDO = {
   siteCode: 50,
-  nombre: "ESCOBAR",
+  nombre: "DIQUE LUJÁN",
 };
 
 // Actualización automática
