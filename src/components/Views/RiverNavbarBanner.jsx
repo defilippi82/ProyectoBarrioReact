@@ -400,7 +400,7 @@ export const RiverNavbarBanner = () => {
       }}
     >
       <div style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
-        🌊 Ríos CUBE
+        🌊 Altura Ríos|| CUBE
       </div>
 
       {/* ESTACIÓN 1: ESCOBAR */}
@@ -421,9 +421,9 @@ export const RiverNavbarBanner = () => {
         )}
       </div>
 
-      {/* ESTACIÓN 2: ESCOBAR */}
+      {/* ESTACIÓN 2: Dique Lujan */}
       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-        <span style={{ fontWeight: 600 }}>ESCOBAR:</span>
+        <span style={{ fontWeight: 600 }}>Dique Luján:</span>
         <strong style={{ fontSize: "1rem" }}>
           {lecturaDique ? `${lecturaDique.altura.toFixed(2)} m` : "-- m"}
         </strong>
