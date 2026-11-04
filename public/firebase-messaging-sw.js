@@ -3,14 +3,13 @@ importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-comp
 
 // Inicializa Firebase en el Service Worker con tus credenciales públicas
 firebase.initializeApp({
-  apiKey: import.meta.env.VITE_API_KEY,
-  authDomain: import.meta.env.VITE_AUTH_DOMAIN,
-  databaseURL: import.meta.env.VITE_DATABASE_URL,
-  projectId: import.meta.env.VITE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_APP_ID,
-  measurementId: import.meta.env.VITE_MEASUREMENT_ID
+  apiKey: "tAIzaSyD8lSjoGXYBRo8HDm8fQtmJWT9FQrEVtHg",
+  authDomain: "cube-b5537.firebaseapp.com",
+  databaseURL: "https://cube-b5537-default-rtdb.firebaseio.com",
+  projectId: "cube-b5537",
+  storageBucket: "cube-b5537.appspot.com",
+  messagingSenderId: "1075489234567",
+  appId: "1:1075489234567:web:abcdef1234567890"
 });
 
 const messaging = firebase.messaging();
