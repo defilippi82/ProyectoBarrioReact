@@ -44,6 +44,7 @@ import { SeguridadDashboard } from "./components/Seguridad/SeguridadDashboard";
 // --- ESTILOS ---
 import './css/App.css';
 import "react-day-picker/dist/style.css";
+import Swal from 'sweetalert2'; // Para alertas visuales lindas
 
 const AppContent = () => {
   const { userData, setUserData, loading } = useContext(UserContext);
@@ -119,14 +120,53 @@ const AppContent = () => {
   };
 
  
+  // --- LÓGICA DE FIREBASE MESSAGING ---
   useEffect(() => {
-    if (userData) {
-      /*solicitarPermiso();*/
-      const unsubscribe = onMessage(messaging, (payload) => {
-        alert(payload.notification.body);
+    if (!userData) return;
+
+    const solicitarYEscucharNotificaciones = async () => {
+      try {
+        // 1. Pedir permiso al navegador
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          // 2. Obtener el token FCM con tu VAPID Key
+          const currentToken = await getToken(messaging, { 
+            vapidKey: 'BC1dFTH3QJeInZ8LL-2ZrBj6EXE8iWmDu7PDfDGhx7LiADYJ_KjzZdK-izhIaPOpmI2qQ0cveH_fl5orZ1znFTw' 
+          });
+
+          if (currentToken && auth.currentUser) {
+            // 3. Guardar el token en el documento del usuario en Firestore
+            const db = getFirestore();
+            const usuarioRef = doc(db, 'usuarios', auth.currentUser.uid);
+            await setDoc(usuarioRef, { fcmToken: currentToken }, { merge: true });
+            console.log("Token FCM guardado exitosamente.");
+          }
+        } else {
+          console.log("Permiso de notificaciones denegado por el usuario.");
+        }
+      } catch (error) {
+        console.error('Error al registrar las notificaciones push:', error);
+      }
+    };
+
+    solicitarYEscucharNotificaciones();
+
+    // 4. Escuchar mensajes en primer plano con SweetAlert2
+    const unsubscribe = onMessage(messaging, (payload) => {
+      console.log('Mensaje recibido en primer plano:', payload);
+      Swal.fire({
+        title: payload.notification?.title || 'Nuevo Mensaje',
+        text: payload.notification?.body || '',
+        icon: 'info',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 5000,
+        timerProgressBar: true
       });
-      return () => unsubscribe();
-    }
+    });
+
+    return () => unsubscribe();
   }, [userData]);
 
   const handleLogout = () => {

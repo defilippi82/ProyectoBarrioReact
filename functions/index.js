@@ -1,69 +1,87 @@
-const functions = require('firebase-functions');
-const admin = require('firebase-admin');
-const cors = require('cors')({ origin: true });
-
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const admin = require("firebase-admin");
 admin.initializeApp();
 
-exports.sendNotification = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
-    const { title, body, isla, manzana, rol } = req.body;
+// 1. Notificación cuando un vecino envía un mensaje directo por Mensajería
+exports.enviarNotificacionMensaje = onDocumentCreated("mensajeria/{mensajeId}", async (event) => {
+  const snapshot = event.data;
+  if (!snapshot) return;
+  const mensaje = snapshot.data();
 
-    if (!title || !body || (!isla && !manzana && !rol)) {
-      res.status(400).send('El título, el cuerpo y al menos uno de los filtros (isla, manzana, rol) son obligatorios.');
+  try {
+    // Buscamos al usuario receptor en la colección 'usuarios' usando su formato Manzana-Lote o ID
+    // (Asumiendo que guardas el token en su documento de usuario)
+    const usuariosRef = admin.firestore().collection("usuarios");
+    const querySnapshot = await usuariosRef.where("barrioId", "==", mensaje.barrioId).get();
+
+    let fcmToken = null;
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      // O puedes mapear el receptor exacto si guardas la relación con su UID
+      const socioActual = `${data.manzana}-${data.lote}`;
+      if (socioActual === mensaje.receiver && data.fcmToken) {
+        fcmToken = data.fcmToken;
+      }
+    });
+
+    if (!fcmToken) {
+      console.log("El destinatario no tiene un token FCM registrado.");
       return;
     }
 
-    try {
-      const tokens = await getUserTokens(isla, manzana, rol);
+    const payload = {
+      token: fcmToken,
+      notification: {
+        title: `Nuevo mensaje de ${mensaje.senderName || 'un vecino'}`,
+        body: mensaje.content.substring(0, 100),
+      },
+      data: {
+        click_action: "FLUTTER_NOTIFICATION_CLICK",
+        remitente: mensaje.sender,
+      },
+    };
 
-      if (tokens.length === 0) {
-        res.status(404).send('No se encontraron tokens para los filtros proporcionados.');
-        return;
-      }
-
-      const message = {
-        notification: {
-          title: title,
-          body: body
-        },
-        tokens: tokens
-      };
-
-      const response = await admin.messaging().sendMulticast(message);
-      console.log('Successfully sent message:', response);
-      res.status(200).json({ success: true, response });
-    } catch (error) {
-      console.error('Error sending message:', error);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
+    await admin.messaging().send(payload);
+    console.log("Notificación de mensaje enviada con éxito.");
+  } catch (error) {
+    console.error("Error al enviar notificación push:", error);
+  }
 });
 
-const getUserTokens = async (isla, manzana, rol) => {
-  const db = admin.firestore();
-  const tokens = [];
-  let queryRef = db.collection('usuarios');
+// 2. Notificación cuando la administración crea una Campaña masiva
+exports.enviarNotificacionCampana = onDocumentCreated("campanas/{campanaId}", async (event) => {
+  const snapshot = event.data;
+  if (!snapshot) return;
+  const campana = snapshot.data();
 
-  if (isla && isla.length > 0) {
-    queryRef = queryRef.where('isla', 'in', isla);
-  }
+  try {
+    const usuariosRef = admin.firestore().collection("usuarios");
+    const querySnapshot = await usuariosRef.where("barrioId", "==", campana.barrioId).get();
 
-  if (manzana && manzana.length > 0) {
-    queryRef = queryRef.where('manzana', 'in', manzana);
-  }
+    const tokens = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.fcmToken) {
+        tokens.push(data.fcmToken);
+      }
+    });
 
-  if (rol && rol.length > 0) {
-    queryRef = queryRef.where('rol.guardia', '==', true); // Asegúrate de ajustar la consulta al nuevo formato de rol
-  }
-
-  const snapshot = await queryRef.get();
-
-  snapshot.forEach(doc => {
-    const userData = doc.data();
-    if (userData.fcmToken) {
-      tokens.push(userData.fcmToken);
+    if (tokens.length === 0) {
+      console.log("No hay tokens registrados para esta campaña.");
+      return;
     }
-  });
 
-  return tokens;
-};
+    const message = {
+      notification: {
+        title: campana.title,
+        body: campana.body,
+      },
+      tokens: tokens, // Firebase permite enviar hasta 500 tokens en lote
+    };
+
+    const response = await admin.messaging().sendEachForMulticast(message);
+    console.log(`Campañas enviadas con éxito: ${response.successCount} notificaciones.`);
+  } catch (error) {
+    console.error("Error al enviar campañas masivas:", error);
+  }
+});
